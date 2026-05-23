@@ -25,6 +25,9 @@ students:
     grade: 4
     aliases: [alice]
     tablet_slides_dir: tablet-slides/alice/active
+    mindfeast:
+      remote_url: http://192.168.1.5:8787
+      remote_token: ""
     curricula_dir: curricula/third-party
     curricula:
       level-4-language-arts/Level-4-Language-Arts.md:
@@ -56,6 +59,9 @@ students:
     grade: preschool
     aliases: [charlie, cj]
     tablet_slides_dir: tablet-slides/charlie/active
+    mindfeast:
+      remote_url: http://192.168.1.5:8787
+      remote_token: ""
     curricula_dir: curricula/third-party
     curricula: {}
     subjects:

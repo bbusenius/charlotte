@@ -48,8 +48,8 @@ answer: Jean Honore Fragonard
 accept:
   - Fragonard
 choices:
-  - Jean Honore Fragonard
   - Elisabeth Vigee Le Brun
+  - Jean Honore Fragonard
   - Mary Cassatt
   - Johannes Vermeer
 difficulty: medium
@@ -198,6 +198,7 @@ The lock-screen challenge should make the student retrieve or notice one meaning
 - Prefer concrete questions with one clear answer.
 - Put accepted variants in `accept`.
 - Use `choices` when spelling, accents, or young-reader typing would get in the way.
+- For multiple-choice slides, put `choices` in their final display order and deliberately vary the correct answer's position across a set. Do not default to putting the correct answer first; when making several slides, spread correct answers among first, middle, and last positions.
 - Use free text when recall matters and the answer is short.
 - Avoid trick questions, vague wording, and overly long answers.
 - Hints should reopen attention to the material, not give the answer away.

@@ -1,10 +1,10 @@
 # Charlotte Mason Homeschool Agent
 
-Charlotte is a Charlotte Mason homeschool agent system for automating lesson time logging, reading-list logging, pedagogically grounded field trip planning, curriculum and lesson authoring, and material creation. It coordinates Signal message capture, AI-assisted identification, spreadsheet logging, on-demand trip planning, and on-demand material generation — all against a local pedagogy wiki.
+Charlotte is a Charlotte Mason homeschool agent system for automating lesson time logging, reading-list logging, pedagogically grounded field trip planning, curriculum and lesson authoring, material creation, and MindFeast slide generation. It coordinates Signal message capture, AI-assisted identification, spreadsheet logging, on-demand trip planning, weekly review slide creation, and on-demand material generation — all against a local pedagogy wiki.
 
 ## How it works
 
-Two Signal-driven logging pipelines (lessons, books) plus two on-demand planning/creation skills (field trips, materials), all reading the local pedagogy wiki for framing. Per-student metadata lives in `students.yaml` at the repo root (see [Student registry](#student-registry)).
+Two Signal-driven logging pipelines (lessons, books) plus on-demand planning/creation skills (field trips, materials, MindFeast slides), all reading the local pedagogy wiki for framing. Per-student metadata lives in `students.yaml` at the repo root (see [Student registry](#student-registry)).
 
 ### Lesson time logging (`/time-log`)
 
@@ -51,15 +51,38 @@ Material types include printable worksheets, copywork pages, flashcards, narrati
 
 `mason-aesthetics` and `mason-print-design` are internal peer skills — invoked *by* `materials-builder` (and, in time, future creation skills), not directly by the user.
 
+### MindFeast weekly slides (`/mindfeast-weekly-slides`)
+
+Generates a small weekly review set for the MindFeast Android lock-screen app from a student's time-tracking spreadsheet. Given a student and optional week, the skill:
+
+1. Reads the student's logged lesson rows via `skills/mindfeast-weekly-slides/scripts/collect_week.py`
+2. Reads configured curriculum files or other known lesson materials when available to understand what was actually covered
+3. Chooses a small set of useful slide opportunities, usually fewer than 8 and sometimes 0
+4. Uses `tablet-slide-builder` to create MindFeast-compatible slide folders under the student's `tablet_slides_dir`
+5. Validates each slide package
+6. Optionally POSTs to the student's MindFeast remote sync endpoint and waits for the sync result before reporting
+
+Slide types are content-driven: informational cards, multiple-choice questions, free-text questions, and essay/narration prompts are all valid. If a slide is based on a known public-domain artwork, the skill prefers the actual image from Wikimedia Commons rather than generated art.
+
 ## Student registry
 
-Per-student metadata lives in `students.yaml` at the repo root. This is the single source of truth for display name, grade, aliases, curriculum files (with lesson-header regex), subjects, time-tracking spreadsheet path, Signal group alias, and reading list config (spreadsheet path, sheet indices, Signal group alias). Skills read from it rather than hard-coding student data, so the repo stays portable — another family can ship their own `students.yaml`.
+Per-student metadata lives in `students.yaml` at the repo root. This is the single source of truth for display name, grade, aliases, curriculum files (with lesson-header regex), subjects, time-tracking spreadsheet path, tablet slide directory, MindFeast remote sync config, Signal group alias, and reading list config (spreadsheet path, sheet indices, Signal group alias). Skills read from it rather than hard-coding student data, so the repo stays portable — another family can ship their own `students.yaml`.
 
 Adding a student:
 
 1. Add an entry under `students:` in `students.yaml`
 2. Put any third-party curriculum markdown under `curricula/third-party/<slug>/<filename>.md` and list that relative path in the student's `curricula` map
 3. Skills that need the metadata will pick it up automatically
+
+MindFeast sync is configured per student:
+
+```yaml
+mindfeast:
+  remote_url: http://192.168.1.23:8787
+  remote_token: ""
+```
+
+`remote_url` is the base URL for the tablet's MindFeast remote server. `remote_token` is the bearer token copied from MindFeast remote settings. Keep real tokens in local `students.yaml`, not in committed examples.
 
 ## Local content roots
 
@@ -71,6 +94,7 @@ The following paths are writable local content roots and are intentionally gitig
 - `tablet-slides/` — generated Android lock-screen slide packages
 - `field-trips/` — generated field trip plans
 - `.backups/` — local spreadsheet backups created during logging workflows
+- `.logs/` — local sync and long-running operation logs
 
 Docker/OpenClaw/Hermes runtimes should treat these paths as local data volumes, not source code.
 
@@ -213,6 +237,10 @@ From a skill-aware harness, while in the project directory:
 /materials-builder <...> --image gemini|grok              # force image provider
 /materials-builder <...> --format pdf|html|svg|png|md     # override default format
 /materials-builder <...> --size 1K|2K|4K                  # override illustration resolution
+
+/mindfeast-weekly-slides alice                            # generate this week's MindFeast slides
+/mindfeast-weekly-slides alice --week-start 2026-05-18    # generate from a specific week
+/mindfeast-weekly-slides alice --no-sync                  # create/validate slides without tablet sync
 ```
 
 Examples:
@@ -220,6 +248,7 @@ Examples:
 - `/field-trip-planner We've just finished Math-3 Lessons 40–45 (rounding and estimation). Plan a trip in Hyde Park, Chicago, within 5 miles.`
 - `/materials-builder A copywork page for Alice on a Robert Louis Stevenson couplet, with a small pen-and-ink vignette at the top.`
 - `/materials-builder A set of six picture-study cards for monarch butterfly life stages, tablet-first, watercolor register.`
+- `/mindfeast-weekly-slides Alice for this week, but don't sync yet.`
 
 ## Scripts
 
@@ -252,6 +281,7 @@ charlotte/
 │   ├── book-log/            # book-logging skill
 │   ├── field-trip-planner/  # pedagogy-grounded field trip planning skill
 │   ├── materials-builder/   # Charlotte Mason material creation skill
+│   ├── mindfeast-weekly-slides/ # weekly MindFeast slide generation from time logs
 │   ├── mason-aesthetics/    # peer skill: aesthetic direction (typography, palette, illustration register)
 │   └── mason-print-design/  # peer skill: print-fidelity rules + rendering toolchain
 ├── .claude/skills/          # Claude adapter symlinks to skills/
@@ -270,5 +300,6 @@ charlotte/
 │       └── validate_slide.py
 ├── scripts/local/           # ignored local one-off curriculum conversion scripts
 ├── field-trips/             # local-only saved field trip plans
+├── .logs/                   # local-only sync/operation logs
 └── .backups/                # local-only spreadsheet backups
 ```
