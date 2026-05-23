@@ -1,0 +1,18 @@
+[project]
+name = "homeschool-hub"
+version = "0.1.0"
+description = "Tools for logging homeschool lessons and reading"
+requires-python = ">=3.12"
+dependencies = [
+    "playwright>=1.58",
+    "requests>=2.32",
+    "openpyxl>=3.1",
+    "google-genai>=0.3",
+    "PyYAML>=6.0",
+    "weasyprint>=62",
+    "signal-sieve @ git+https://github.com/bbusenius/signal-sieve.git@master",
+    "xlsx-append @ git+https://github.com/bbusenius/xlsx-append.git@master",
+]
+
+[tool.setuptools]
+packages = []
