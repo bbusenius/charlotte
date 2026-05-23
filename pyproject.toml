@@ -1,7 +1,7 @@
 [project]
-name = "homeschool-hub"
+name = "charlotte"
 version = "0.1.0"
-description = "Tools for logging homeschool lessons and reading"
+description = "Charlotte Mason homeschool agent for logging, planning, and material creation"
 requires-python = ">=3.12"
 dependencies = [
     "playwright>=1.58",

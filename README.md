@@ -1,6 +1,6 @@
-# homeschool-hub
+# Charlotte Mason Homeschool Agent
 
-Central project for automating homeschool lesson tracking, reading-list logging, pedagogically grounded field trip planning, and Charlotte Mason material creation. Coordinates Signal message capture, AI-assisted identification, logging into spreadsheets, on-demand trip planning, and on-demand material generation — all against a local pedagogy wiki.
+Charlotte is a Charlotte Mason homeschool agent system for automating lesson time logging, reading-list logging, pedagogically grounded field trip planning, curriculum and lesson authoring, and material creation. It coordinates Signal message capture, AI-assisted identification, spreadsheet logging, on-demand trip planning, and on-demand material generation — all against a local pedagogy wiki.
 
 ## How it works
 
@@ -193,7 +193,7 @@ Stored in `~/Documents/Homeschool/<child>/`:
 
 ## Skill usage
 
-From a skill-aware harness, while in the homeschool-hub project directory:
+From a skill-aware harness, while in the project directory:
 
 ```
 /time-log                    # process all children's lesson messages
@@ -238,7 +238,7 @@ Local one-off conversion scripts for paid curriculum imports live in ignored `sc
 ## Project structure
 
 ```
-homeschool-hub/
+charlotte/
 ├── README.md
 ├── AGENTS.md               # canonical agent instructions
 ├── CLAUDE.md               # Claude adapter; points to AGENTS.md

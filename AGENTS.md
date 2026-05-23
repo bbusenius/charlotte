@@ -1,6 +1,6 @@
-# homeschool-hub
+# Charlotte Mason Homeschool Agent
 
-Authoring tools for a Mason-shaped homeschool: lessons, units, curricula, materials, and field trips, grounded in the pedagogy wiki under `pedagogy/wiki/`. The canonical skills live under `skills/` — `lesson-plan-builder`, `unit-builder`, `curriculum-builder`, `materials-builder`, `mason-aesthetics`, `mason-print-design`, `field-trip-planner`, plus the data-pipeline skills `time-log` and `book-log`. Harness-specific skill directories such as `.claude/skills/` and `.agents/skills/` are adapters, usually symlinks, back to the canonical skill directories. Per-student configuration lives in `students.yaml` at the repo root.
+Charlotte is a Mason-shaped homeschool agent system: lessons, units, curricula, materials, field trips, time logging, and book logging, grounded in the pedagogy wiki under `pedagogy/wiki/`. The canonical skills live under `skills/` — `lesson-plan-builder`, `unit-builder`, `curriculum-builder`, `materials-builder`, `mason-aesthetics`, `mason-print-design`, `field-trip-planner`, plus the data-pipeline skills `time-log` and `book-log`. Harness-specific skill directories such as `.claude/skills/` and `.agents/skills/` are adapters, usually symlinks, back to the canonical skill directories. Per-student configuration lives in `students.yaml` at the repo root.
 
 ## Sub-agent spawn convention
 
