@@ -14,7 +14,7 @@ Charlotte skills assume a small set of runtime capabilities. Runtime adapters ca
 | Browser automation | Lexile lookup | Playwright plus `tools.chrome_path` in `runtime.yaml` |
 | Spreadsheet append | `hsd-time-log`, `hsd-book-log` | `xlsx-append` from `pyproject.toml` |
 | Signal message state | `hsd-time-log`, `hsd-book-log` | `signal-sieve` CLI plus configured Signal capture state |
-| MindFeast remote sync | `mindfeast-slide-sync`, `mindfeast-weekly-slides` | HTTP POST from the runtime network |
+| MindFeast remote control | `mindfeast-slide-sync`, `mindfeast-slide-trigger`, `mindfeast-weekly-slides` | HTTP POST from the runtime network |
 
 ## External AI And Research Tools
 

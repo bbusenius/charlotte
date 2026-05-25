@@ -1,8 +1,10 @@
 # Students registry — copy this file to students.yaml and fill in your own data.
 #
 # This file is the single source of truth for per-student metadata used by
-# skills in this project (materials-builder, hsd-time-log, hsd-book-log,
-# lesson-plan-builder, field-trip-planner, unit-builder, curriculum-builder).
+# skills in this project (materials-builder, tablet-slide-builder,
+# mindfeast-weekly-slides, mindfeast-slide-sync, mindfeast-slide-trigger,
+# hsd-time-log, hsd-book-log, lesson-plan-builder, field-trip-planner,
+# unit-builder, curriculum-builder).
 #
 # Students are keyed by a lowercase slug. Paid third-party curricula live
 # under `curricula/third-party/<curriculum-slug>/` and are shared across

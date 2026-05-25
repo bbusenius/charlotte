@@ -75,6 +75,10 @@ Slide types are content-driven: informational cards, multiple-choice questions, 
 
 Syncs already-created tablet slide packages to the student's configured MindFeast remote endpoint. Given a student, it reads `mindfeast.remote_url` and `mindfeast.remote_token` from `students.yaml`, POSTs once to `<remote_url>/api/sync`, and reports the endpoint host/path and response summary without printing the token. If no student is named, it syncs every student with complete MindFeast sync config.
 
+### MindFeast slide trigger (`/mindfeast-slide-trigger`)
+
+Triggers a configured tablet to show a MindFeast slide now. Given a student, it reads `mindfeast.remote_url` and `mindfeast.remote_token` from `students.yaml`, POSTs once to `<remote_url>/api/trigger`, and reports the endpoint host/path, response summary, and returned `slideId` without printing the token. If no student is named, it triggers every student with complete MindFeast remote config.
+
 ## Student registry
 
 Per-student metadata lives in `students.yaml` at the repo root. This is the single source of truth for display name, grade, aliases, curriculum files (with lesson-header regex), subjects, time-tracking spreadsheet path, tablet slide directory, MindFeast remote sync config, Signal group alias, and reading list config (spreadsheet path, sheet indices, Signal group alias). Skills read from it rather than hard-coding student data, so the repo stays portable — another family can ship their own `students.yaml`.
@@ -302,6 +306,10 @@ From a skill-aware harness, while in the project directory:
 /mindfeast-slide-sync <student>                           # sync existing slides for one student
 /mindfeast-slide-sync --all                               # sync every configured tablet
 /mindfeast-slide-sync <student> --dry-run                 # validate sync config without POSTing
+
+/mindfeast-slide-trigger <student>                        # trigger a slide on one tablet
+/mindfeast-slide-trigger --all                            # trigger every configured tablet
+/mindfeast-slide-trigger <student> --dry-run              # validate trigger config without POSTing
 ```
 
 Examples:
@@ -311,6 +319,7 @@ Examples:
 - `/materials-builder A set of six picture-study cards for monarch butterfly life stages, tablet-first, watercolor register.`
 - `/mindfeast-weekly-slides <student> for this week, but don't sync yet.`
 - `/mindfeast-slide-sync <student>`
+- `/mindfeast-slide-trigger <student>`
 
 ## Scripts
 
@@ -323,6 +332,7 @@ Examples:
 | `scripts/charlotte_image.py` | Routes image generation through configured sources in `runtime.yaml`; exits 2 when only runtime-native fallback remains |
 | `scripts/gemini_image.py` | Direct Google/Gemini image backend used by `scripts/charlotte_image.py` when configured |
 | `skills/mindfeast-slide-sync/scripts/sync.py` | Syncs existing MindFeast tablet slides through the per-student remote endpoint in `students.yaml` |
+| `skills/mindfeast-slide-trigger/scripts/trigger.py` | Triggers a configured MindFeast tablet to show a slide through the per-student remote endpoint in `students.yaml` |
 | `skills/tablet-slide-builder/scripts/make_slide.py` | Creates a Homeschool Screen Lock slide folder with `slide.md` and optional copied media |
 | `skills/tablet-slide-builder/scripts/validate_slide.py` | Validates Homeschool Screen Lock slide folders before delivery |
 
@@ -347,6 +357,7 @@ charlotte/
 │   ├── materials-builder/   # Charlotte Mason material creation skill
 │   ├── mindfeast-weekly-slides/ # weekly MindFeast slide generation from time logs
 │   ├── mindfeast-slide-sync/ # sync existing MindFeast slides to tablets
+│   ├── mindfeast-slide-trigger/ # trigger a MindFeast tablet slide remotely
 │   ├── tablet-slide-builder/ # Android lock-screen slide generation skill
 │   │   └── scripts/
 │   │       ├── make_slide.py
