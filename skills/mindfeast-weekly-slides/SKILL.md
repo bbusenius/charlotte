@@ -9,9 +9,9 @@ Create a small, judgment-driven set of MindFeast slides from a student's week of
 
 This skill orchestrates:
 
-- `time-log` data already written to the student's time-tracking spreadsheet.
+- `hsd-time-log` data already written to the student's time-tracking spreadsheet.
 - `tablet-slide-builder` for the actual slide packages.
-- MindFeast remote sync via the per-student config in `students.yaml`.
+- MindFeast remote sync via the per-student config in `students.yaml`. The standalone sync contract lives in `mindfeast-slide-sync`.
 
 ## Student Config
 
@@ -46,20 +46,20 @@ If MindFeast config is missing, still generate slides when appropriate, but skip
 2. Run the bundled helper from the repo root to collect relevant rows:
 
 ```bash
-python skills/mindfeast-weekly-slides/scripts/collect_week.py \
+.venv/bin/python skills/mindfeast-weekly-slides/scripts/collect_week.py \
   --student <student-slug-or-name> \
   --week-start YYYY-MM-DD
 ```
 
 Omit `--week-start` to use the current week. The helper outputs JSON grouped from the student's time-tracking workbook, including optional `Notes`/`Note` column values when present.
 
-3. When a row references a configured curriculum lesson, use the student's `curricula_dir` and `curricula` map the same way `time-log` does: find the curriculum whose configured `subject` matches the row's subject, locate the lesson with `lesson_header_pattern`, and read the full matched lesson or covered section when it is available. Do this even when the time-log description is already useful; the curriculum or source material gives better context for choosing and writing slides. If the configured regex misses, do a targeted search in the curriculum file using the lesson number and any distinctive terms from the row. Also read any other lesson material explicitly named in the row when it is available. Skip material lookup only when the curriculum/source is unavailable or the lookup remains ambiguous.
+3. When a row references a configured curriculum lesson, use the student's `curricula_dir` and `curricula` map the same way `hsd-time-log` does: find the curriculum whose configured `subject` matches the row's subject, locate the lesson with `lesson_header_pattern`, and read the full matched lesson or covered section when it is available. Do this even when the time-log description is already useful; the curriculum or source material gives better context for choosing and writing slides. If the configured regex misses, do a targeted search in the curriculum file using the lesson number and any distinctive terms from the row. Also read any other lesson material explicitly named in the row when it is available. Skip material lookup only when the curriculum/source is unavailable or the lookup remains ambiguous.
 4. Read the enriched rows as a whole week. Consider subject, lesson description, recovered curriculum material, time spent, notes, and repetition across the week.
 5. Decide whether slides are warranted. It is valid and sometimes best to create no slides.
 6. Build a slide plan before writing files. Keep the plan small: usually 3-6 slides, hard cap 8 unless the user explicitly asks for more.
 7. Use `tablet-slide-builder` to create each planned slide in the student's `tablet_slides_dir`.
-8. Validate every created slide folder with `scripts/tablet-slides/validate_slide.py`.
-9. If at least one slide was created and sync is not disabled, trigger MindFeast sync as a background POST, run it exactly once, and wait for it to finish.
+8. Validate every created slide folder with `skills/tablet-slide-builder/scripts/validate_slide.py`.
+9. If at least one slide was created and sync is not disabled, trigger MindFeast sync with `mindfeast-slide-sync`, run it exactly once, and wait for it to finish.
 10. Report created slides, skipped opportunities, validation results, and the completed sync result. Never print the remote token.
 
 ## Selection Heuristics
@@ -113,15 +113,13 @@ Normalize the sync endpoint:
 - Strip trailing slash.
 - Append `/api/sync`.
 
-Trigger sync with a background POST, then wait for it to finish before reporting. This may take a couple of minutes. Run the POST exactly once; never start a second sync because the first one is taking a while.
+Trigger sync with the standalone helper, then wait for it to finish before reporting. This may take a couple of minutes. Run the POST exactly once; never start a second sync because the first one is taking a while.
 
 ```bash
-curl --silent --show-error --fail-with-body \
-  -X POST "<remote-url>/api/sync" \
-  -H "Authorization: Bearer <token>"
+.venv/bin/python skills/mindfeast-slide-sync/scripts/sync.py --student <student-slug-or-name>
 ```
 
-Use the harness's background-command mode when available (for example, `run_in_background: true`) so the agent can wait/poll without blocking the interface. When the command completes, inspect the exit code and response body. Report the endpoint host/path and response summary, but never print the token. If the POST fails because network access is blocked, the host is unreachable, authorization fails, or MindFeast returns a non-2xx response, leave the slides on disk and report that sync failed with the relevant status/message.
+Use the harness's background-command mode when available (for example, `run_in_background: true`) so the agent can wait/poll without blocking the interface. When the command completes, inspect the exit code and JSON output. Report the endpoint host/path and response summary, but never print the token. If the POST fails because network access is blocked, the host is unreachable, authorization fails, or MindFeast returns a non-2xx response, leave the slides on disk and report that sync failed with the relevant status/message.
 
 ## Delivery
 

@@ -1,28 +1,35 @@
 # Charlotte Mason Homeschool Agent
 
-Charlotte is a Charlotte Mason homeschool agent system for automating lesson time logging, reading-list logging, pedagogically grounded field trip planning, curriculum and lesson authoring, material creation, and MindFeast slide generation. It coordinates Signal message capture, AI-assisted identification, spreadsheet logging, on-demand trip planning, weekly review slide creation, and on-demand material generation — all against a local pedagogy wiki.
+Charlotte is a Charlotte Mason homeschool agent system for automating [Homeschool Dashboard](https://github.com/bbusenius/Homeschool-Dashboard) compatible lesson time logging, Homeschool Dashboard compatible reading-list logging, pedagogically grounded field trip planning, curriculum and lesson authoring, material creation, and MindFeast slide generation. It coordinates Signal message capture, AI-assisted identification, spreadsheet logging, on-demand trip planning, weekly review Android tablet lock slide creation, and on-demand material generation — all against a local pedagogy wiki.
 
 ## How it works
 
-Two Signal-driven logging pipelines (lessons, books) plus on-demand planning/creation skills (field trips, materials, MindFeast slides), all reading the local pedagogy wiki for framing. Per-student metadata lives in `students.yaml` at the repo root (see [Student registry](#student-registry)).
+Charlotte allows users to log time and books through [Signal](https://signal.org/) chats. It uses [signal-sieve](https://github.com/bbusenius/signal-sieve) to strip metadata and protect privacy. AI agents only receive the minimal amount of data they need to do their job, not the kitchen sink. Charlotte also comes with on-demand planning/creation skills (field trips, materials, MindFeast slides), all reading the local pedagogy wiki for framing. Per-student metadata lives in `students.yaml` at the repo root (see [Student registry](#student-registry)).
 
-### Lesson time logging (`/time-log`)
+Charlotte can be used in one of two ways:
+
+1. Use as a standalone tool with applications like Claude Code, Codex, or OpenCode.
+   - Just clone the repo and run skills in your coding agent of choice.
+2. Run as an always on [Hermes agent](https://github.com/nousresearch/hermes-agent) with a gateway of your choice (Telegram recommended).
+   - Tell the agent to run workglows or configure skills to run in `cron`.
+
+### Homeschool Dashboard lesson time logging (`/hsd-time-log`)
 
 1. A parent sends Signal messages (text + screenshots) to a per-child lesson group documenting what was covered
 2. **signal-sieve** captures those messages into SQLite (runs as a systemd service)
-3. The `time-log` skill:
-   - Reads text and screenshot images (via Grok Vision) to identify lessons
+3. The `hsd-time-log` skill:
+   - Reads text and screenshot images with a vision-capable runtime tool to identify lessons
    - Looks up lesson details in the curriculum markdown files
    - Logs entries to the child's time-tracking spreadsheet
    - Marks messages as processed
 
-### Book logging (`/book-log`)
+### Homeschool Dashboard book logging (`/hsd-book-log`)
 
 1. Messages (book titles or cover photos) are sent to a per-child book group (configured via `reading.signal_group_alias` in `students.yaml`)
 2. **signal-sieve** captures them the same way
-3. The `book-log` skill:
-   - Reads text / extracts title + author from cover images via Grok Vision
-   - Looks up metadata in order: **Lexile → Open Library → Grok** (last-resort confirmation/search)
+3. The `hsd-book-log` skill:
+   - Reads text / extracts title + author from cover images with a vision-capable runtime tool
+   - Looks up metadata in order: **Lexile → Open Library → live search** (last-resort confirmation/search)
    - Writes a row to the child's reading-list spreadsheet (sheet chosen by position: "read by" vs "read to")
    - Marks messages as processed
 
@@ -44,12 +51,12 @@ Also a planning/creation skill rather than a Signal-driven pipeline. Given a pro
 1. Resolves the student (if any) via `students.yaml` and, if curriculum files are referenced, reads the relevant lessons from the paths `students.yaml` resolves them to
 2. Invokes `mason-aesthetics` (peer skill) for aesthetic direction — typography tradition, palette direction, illustration register, font-availability check
 3. Invokes `mason-print-design` (peer skill) for the rendering toolchain (WeasyPrint for HTML→PDF, Inkscape for SVG→PDF/PNG) and print-fidelity rules, including a lettering carve-out so hand-lettered or decorative text can be baked into the image when lettering *is* the art
-4. Generates illustrations through `scripts/gemini_image.py` (Gemini Imagen 4 at 1K/2K, Gemini 3 Pro at 4K). If `GEMINI_API_KEY` is unset, falls back to the Grok MCP (`mcp__grok-mcp__generate_image`) and names the provenance in the delivery
-5. Writes the finished material to the current working directory (or `--out PATH`), naming the image provider and model in the final message
+4. Generates illustrations through `scripts/charlotte_image.py`, using the image routes configured in local `runtime.yaml`. Gemini and Grok are model-family preferences; NanoGPT, direct provider keys, or runtime-native tools can supply those capabilities depending on the active runtime.
+5. Writes the finished material to the current working directory (or `--out PATH`), naming the image source and model in the final message
 
 Material types include printable worksheets, copywork pages, flashcards, narration templates, picture-study cards, period maps, posters, and tablet-first illustrations. Grounded in the same Charlotte Mason wiki at `pedagogy/wiki/`, `mason-aesthetics` roots its guidance in [[concepts/children-are-born-persons]], [[concepts/education-is-atmosphere-discipline-life]], [[concepts/knowledge-as-food]], [[concepts/living-books]], [[concepts/science-of-relations]], and [[concepts/narration]].
 
-`mason-aesthetics` and `mason-print-design` are internal peer skills — invoked *by* `materials-builder` (and, in time, future creation skills), not directly by the user.
+`mason-aesthetics` and `mason-print-design` are internal peer skills — invoked *by* creation skills such as `materials-builder`, not directly by the user.
 
 ### MindFeast weekly slides (`/mindfeast-weekly-slides`)
 
@@ -63,6 +70,10 @@ Generates a small weekly review set for the MindFeast Android lock-screen app fr
 6. Optionally POSTs to the student's MindFeast remote sync endpoint and waits for the sync result before reporting
 
 Slide types are content-driven: informational cards, multiple-choice questions, free-text questions, and essay/narration prompts are all valid. If a slide is based on a known public-domain artwork, the skill prefers the actual image from Wikimedia Commons rather than generated art.
+
+### MindFeast slide sync (`/mindfeast-slide-sync`)
+
+Syncs already-created tablet slide packages to the student's configured MindFeast remote endpoint. Given a student, it reads `mindfeast.remote_url` and `mindfeast.remote_token` from `students.yaml`, POSTs once to `<remote_url>/api/sync`, and reports the endpoint host/path and response summary without printing the token. If no student is named, it syncs every student with complete MindFeast sync config.
 
 ## Student registry
 
@@ -86,12 +97,13 @@ mindfeast:
 
 ## Local content roots
 
-This repository tracks the homeschool agent system, reusable skills, scripts, examples, and pedagogy scaffolding. It does not track family content, paid curriculum text, generated lesson content, generated slide packages, trip plans, spreadsheets, or backups.
+This repository tracks the homeschool agent system, reusable skills, scripts, examples, and pedagogy scaffolding. It does not track family content, paid curriculum text, generated lesson content, generated slide packages, standalone generated images, trip plans, spreadsheets, or backups.
 
 The following paths are writable local content roots and are intentionally gitignored:
 
 - `curricula/` — paid/imported curriculum markdown plus generated curricula, units, lessons, and lesson assets
 - `tablet-slides/` — generated Android lock-screen slide packages
+- `generated-images/` — standalone generated images that are not tablet slide packages or printable materials
 - `field-trips/` — generated field trip plans
 - `.backups/` — local spreadsheet backups created during logging workflows
 - `.logs/` — local sync and long-running operation logs
@@ -104,7 +116,7 @@ Python scripts live in a project-local venv.
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install -e .
+.venv/bin/python -m pip install -e .
 ```
 
 This installs the Python dependencies from `pyproject.toml`, including `signal-sieve`, `xlsx-append`, and `weasyprint` into `.venv/bin/`. Playwright uses the system `google-chrome-stable` by default, so no separate browser download is needed on systems where that executable exists.
@@ -114,6 +126,14 @@ Install non-Python rendering/browser tools with your system package manager:
 ```bash
 sudo apt install inkscape
 ```
+
+### Signal capture setup
+
+The Charlotte install provides the `signal-sieve` CLI in `.venv/bin/`, which is enough for skills to read captured messages and mark them processed when `signal-sieve` config and data already exist.
+
+Signal-driven logging also needs a running Signal capture service. In the currently supported setup, that service is host-owned: `signal-cli` and `signal-sieve listen` run on the host, while Hermes-in-Docker mounts the host `signal-sieve` config, database, and attachments. This is only required for the `hsd-time-log` and `hsd-book-log` workflows; Telegram chat, curriculum/material generation, tablet slides, and MindFeast sync do not require Signal capture.
+
+Host-owned Signal capture setup belongs to local operator provisioning. See [runtime/hermes/](runtime/hermes/) for the Docker mount configuration Charlotte expects when Hermes consumes host-captured Signal messages.
 
 ### Runtime configuration
 
@@ -132,13 +152,49 @@ tools:
 
 `scripts/lexile/lookup.py` uses `tools.chrome_path` for its Playwright browser executable. Leave `runtime.yaml` absent if the default path works.
 
+Secret local settings live in ignored `.env`. Copy the example and fill only the keys your local runtime needs:
+
+```bash
+cp .env.example .env
+chmod 600 .env
+```
+
+Currently used keys can include direct provider keys such as `GEMINI_API_KEY` and `XAI_API_KEY`, plus runtime adapter keys such as `NANOGPT_API_KEY` when the active runtime uses NanoGPT. Image-generation source order is configured in ignored `runtime.yaml`, not hard-coded in the skills. `scripts/charlotte_image.py` reads repo-local `.env` for these route variables during local Claude/Codex use. Runtime adapters document their own setup in their runtime directories, including configurable Docker mounts for host files referenced from `students.yaml`.
+
+### Image routing
+
+Standalone image requests and skill-generated illustrations go through `scripts/charlotte_image.py`. The router reads ignored `runtime.yaml` and tries image routes in the configured order. The example configuration prefers direct Gemini, then direct Grok, then lower-cost NanoGPT subscription images as fallback.
+
+When `--mason-aesthetics` is used, the router reads the compact `#### Image-router summary` from `skills/mason-aesthetics/SKILL.md` and wraps the user's plain subject with that visual direction. Agents should pass the user's requested subject and constraints plainly to `--prompt`; they should not invent style adjectives, lighting, camera language, scenery, props, or emotional tone unless the user asked for them. The script reports the actual saved path because providers may return a different image format than the requested file extension.
+
+### Agent runtimes
+
+Charlotte's core scaffolding is runtime-neutral. `AGENTS.md`, `skills/`, `students.yaml`, the local content roots, and the helper scripts are canonical. The [runtime contract](docs/runtime-contract.md) defines the shared expectations for any runtime adapter added to this repo, and the [runtime tool surface](docs/runtime-tool-surface.md) lists the concrete local, MCP, and runtime-native capabilities skills expect.
+
+Signal remains the structured workflow queue through `signal-sieve`.
+
+Hermes Docker runtime support lives in [runtime/hermes/](runtime/hermes/).
+
+### Homeschool-Dashboard-compatible records
+
+The current `hsd-time-log` and `hsd-book-log` skills write to spreadsheet records compatible with [Homeschool-Dashboard](https://github.com/bbusenius/Homeschool-Dashboard). Workbook paths live in `students.yaml`, so local Codex/Claude usage can keep host-native `~/...` paths. Docker runtimes must mount any host directories containing those workbooks, and host-owned Signal capture also requires mounting `signal-sieve` config/data paths; the Hermes adapter does both with `CHARLOTTE_HOME_MOUNTS`.
+
 ### Material creation prerequisites
 
 `materials-builder` additionally relies on:
 
-- **`GEMINI_API_KEY`** in the environment (e.g. exported from `~/.bashrc`) for `scripts/gemini_image.py`. If unset, the skill falls back to the Grok MCP and notes the provenance.
-- **WeasyPrint** — HTML → PDF rendering, invoked from `mason-print-design`. Installed by `.venv/bin/pip install -e .`; system libraries such as `libpango` and `libcairo` may still be required depending on the platform.
+- **Image capability routes** in ignored `runtime.yaml` when a material needs generated images. `scripts/charlotte_image.py` tries the configured routes in order; direct Gemini via `scripts/gemini_image.py` is one available backend, not a required default.
+- **WeasyPrint** — HTML → PDF rendering, invoked from `mason-print-design`. Installed by `.venv/bin/python -m pip install -e .`; system libraries such as `libpango` and `libcairo` may still be required depending on the platform.
 - **Inkscape** — SVG → PDF/PNG rendering. Install from your package manager (`apt install inkscape`).
+
+### Tests
+
+Install the development extra to run the pytest suite:
+
+```bash
+.venv/bin/python -m pip install -e ".[dev]"
+.venv/bin/python -m pytest
+```
 
 ## Dependencies
 
@@ -148,14 +204,17 @@ These are separate, reusable tools that this project relies on:
 |------|----------|---------|
 | [signal-sieve](https://github.com/bbusenius/signal-sieve) | Installed from Git URL in `pyproject.toml` | Captures Signal messages into SQLite |
 | [xlsx-append](https://github.com/bbusenius/xlsx-append) | Installed from Git URL in `pyproject.toml` | Appends rows to Excel spreadsheets |
-| Grok MCP (Vision + live_search + image generation) | Configured in the active harness | Analyzes screenshot images; last-resort book lookups; fallback image generation for `materials-builder` |
+| Vision/search-capable runtime tools | Configured in the active harness | Analyze screenshot and cover images; last-resort book lookups. Grok MCP is one supported implementation. |
 | Google Maps MCP | Configured in the active harness | Geocoding, places search, place details, and directions for field trip planning |
-| Gemini (`google-genai` SDK) | `scripts/gemini_image.py` | Primary image generation for `materials-builder` (Imagen 4 at 1K/2K, Gemini 3 Pro at 4K). Requires `GEMINI_API_KEY`. |
+| Image capability router | `scripts/charlotte_image.py` + ignored `runtime.yaml` | Routes image generation through configured sources such as NanoGPT, direct Google/Gemini, direct xAI/Grok, or runtime-native fallback |
+| Gemini (`google-genai` SDK) | `scripts/gemini_image.py` | Direct Google/Gemini image backend used when configured as a route |
 | WeasyPrint | Installed from `pyproject.toml` | HTML → PDF rendering; invoked from `mason-print-design` |
 | Inkscape | system package | SVG → PDF/PNG rendering; invoked from `mason-print-design` |
 | hub.lexile.com (free tier) | — | Primary source for book metadata + Lexile level |
 | openlibrary.org | — | Secondary source for title/author/ISBN when Lexile misses |
 | `pedagogy/wiki/` | This repo | Local pedagogy knowledge base (Charlotte Mason); read by the field trip planner and material-creation skills for framing |
+
+See [Runtime Tool Surface](docs/runtime-tool-surface.md) for the support checklist runtime adapters should satisfy.
 
 ## signal-sieve commands (used by the skill)
 
@@ -210,7 +269,7 @@ Curricula authored inside this repo (via `unit-builder` / `curriculum-builder`, 
 
 ## Spreadsheets
 
-Stored in `~/Documents/Homeschool/<child>/`:
+Configured per student in `students.yaml`. The example registry stores Homeschool-Dashboard-compatible records under `~/Documents/Homeschool/<child>/`, but local paths can differ:
 
 - **Time tracking** (`Time-<level>.xlsx`) — one sheet per subject/class.
 - **Reading list** (`Reading List-<level>.xlsx`) — two sheets per workbook. By position: sheet `0` is books the child reads, sheet `1` is books read to the child. The skill resolves these by index so sheet names can change freely.
@@ -220,13 +279,11 @@ Stored in `~/Documents/Homeschool/<child>/`:
 From a skill-aware harness, while in the project directory:
 
 ```
-/time-log                    # process all children's lesson messages
-/time-log alice              # only Alice's lesson messages
-/time-log charlie            # only Charlie's lesson messages
+/hsd-time-log                # process all children's lesson messages
+/hsd-time-log <student>      # only one student's lesson messages
 
-/book-log                    # process both children's book messages
-/book-log alice              # only Alice's book messages
-/book-log charlie            # only Charlie's book messages
+/hsd-book-log                # process both children's book messages
+/hsd-book-log <student>      # only one student's book messages
 
 /field-trip-planner <theme + location in prose>           # ranked list + interactive pick
 /field-trip-planner <...> --auto                          # skip the ranked list; take rank 1
@@ -234,21 +291,26 @@ From a skill-aware harness, while in the project directory:
 
 /materials-builder <material description in prose>        # generate a homeschool material
 /materials-builder <...> --out path/to/file               # override save location (default: CWD)
-/materials-builder <...> --image gemini|grok              # force image provider
+/materials-builder <...> --image gemini|grok              # force model-family preference
 /materials-builder <...> --format pdf|html|svg|png|md     # override default format
 /materials-builder <...> --size 1K|2K|4K                  # override illustration resolution
 
-/mindfeast-weekly-slides alice                            # generate this week's MindFeast slides
-/mindfeast-weekly-slides alice --week-start 2026-05-18    # generate from a specific week
-/mindfeast-weekly-slides alice --no-sync                  # create/validate slides without tablet sync
+/mindfeast-weekly-slides <student>                        # generate this week's MindFeast slides
+/mindfeast-weekly-slides <student> --week-start 2026-05-18 # generate from a specific week
+/mindfeast-weekly-slides <student> --no-sync              # create/validate slides without tablet sync
+
+/mindfeast-slide-sync <student>                           # sync existing slides for one student
+/mindfeast-slide-sync --all                               # sync every configured tablet
+/mindfeast-slide-sync <student> --dry-run                 # validate sync config without POSTing
 ```
 
 Examples:
 
 - `/field-trip-planner We've just finished Math-3 Lessons 40–45 (rounding and estimation). Plan a trip in Hyde Park, Chicago, within 5 miles.`
-- `/materials-builder A copywork page for Alice on a Robert Louis Stevenson couplet, with a small pen-and-ink vignette at the top.`
+- `/materials-builder A copywork page for a mid-elementary student on a Robert Louis Stevenson couplet, with a small pen-and-ink vignette at the top.`
 - `/materials-builder A set of six picture-study cards for monarch butterfly life stages, tablet-first, watercolor register.`
-- `/mindfeast-weekly-slides Alice for this week, but don't sync yet.`
+- `/mindfeast-weekly-slides <student> for this week, but don't sync yet.`
+- `/mindfeast-slide-sync <student>`
 
 ## Scripts
 
@@ -258,9 +320,11 @@ Examples:
 | `scripts/openlibrary/lookup.py` | Looks up a book on Open Library; returns metadata with a high/medium/low confidence tier |
 | `scripts/openlibrary/subject_search.py` | Discovers books on a topic via Open Library subject search; classifies results as `picture_book`, `chapter_book`, `middle_grade`, `young_adult`, or `adult` for enrichment bucketing in field trip plans |
 | `scripts/get-sheet-name.py` | Resolves a sheet name by its positional index in an xlsx file |
-| `scripts/gemini_image.py` | Generates images via the `google-genai` SDK; routes 1K/2K to Imagen 4 and 4K to Gemini 3 Pro; exit 2 on missing key/SDK, exit 1 on API failure |
-| `scripts/tablet-slides/make_slide.py` | Creates a Homeschool Screen Lock slide folder with `slide.md` and optional copied media |
-| `scripts/tablet-slides/validate_slide.py` | Validates Homeschool Screen Lock slide folders before delivery |
+| `scripts/charlotte_image.py` | Routes image generation through configured sources in `runtime.yaml`; exits 2 when only runtime-native fallback remains |
+| `scripts/gemini_image.py` | Direct Google/Gemini image backend used by `scripts/charlotte_image.py` when configured |
+| `skills/mindfeast-slide-sync/scripts/sync.py` | Syncs existing MindFeast tablet slides through the per-student remote endpoint in `students.yaml` |
+| `skills/tablet-slide-builder/scripts/make_slide.py` | Creates a Homeschool Screen Lock slide folder with `slide.md` and optional copied media |
+| `skills/tablet-slide-builder/scripts/validate_slide.py` | Validates Homeschool Screen Lock slide folders before delivery |
 
 Local one-off conversion scripts for paid curriculum imports live in ignored `scripts/local/` and are not part of the reusable project surface.
 
@@ -277,11 +341,16 @@ charlotte/
 ├── curricula/               # local-only content root
 │   └── third-party/         # third-party curricula, one subdirectory per curriculum
 ├── skills/                  # canonical tracked skills
-│   ├── time-log/            # lesson time-logging skill
-│   ├── book-log/            # book-logging skill
+│   ├── hsd-time-log/        # Homeschool-Dashboard-compatible lesson time logging skill
+│   ├── hsd-book-log/        # Homeschool-Dashboard-compatible book logging skill
 │   ├── field-trip-planner/  # pedagogy-grounded field trip planning skill
 │   ├── materials-builder/   # Charlotte Mason material creation skill
 │   ├── mindfeast-weekly-slides/ # weekly MindFeast slide generation from time logs
+│   ├── mindfeast-slide-sync/ # sync existing MindFeast slides to tablets
+│   ├── tablet-slide-builder/ # Android lock-screen slide generation skill
+│   │   └── scripts/
+│   │       ├── make_slide.py
+│   │       └── validate_slide.py
 │   ├── mason-aesthetics/    # peer skill: aesthetic direction (typography, palette, illustration register)
 │   └── mason-print-design/  # peer skill: print-fidelity rules + rendering toolchain
 ├── .claude/skills/          # Claude adapter symlinks to skills/
@@ -291,13 +360,11 @@ charlotte/
 │   └── CLAUDE.md            # Claude adapter; points to AGENTS.md
 ├── scripts/
 │   ├── get-sheet-name.py
-│   ├── gemini_image.py      # image generation via google-genai (Imagen 4 / Gemini 3 Pro)
+│   ├── charlotte_image.py   # configured image capability router
+│   ├── gemini_image.py      # direct Google/Gemini image backend
 │   ├── lexile/lookup.py
 │   ├── openlibrary/lookup.py
-│   ├── openlibrary/subject_search.py
-│   └── tablet-slides/
-│       ├── make_slide.py
-│       └── validate_slide.py
+│   └── openlibrary/subject_search.py
 ├── scripts/local/           # ignored local one-off curriculum conversion scripts
 ├── field-trips/             # local-only saved field trip plans
 ├── .logs/                   # local-only sync/operation logs

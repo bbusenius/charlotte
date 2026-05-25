@@ -1,18 +1,17 @@
 ---
-name: time-log
-description: Process Signal messages from homeschool lesson groups, identify lessons covered, and log time entries to spreadsheets.
+name: hsd-time-log
+description: Process Signal messages from homeschool lesson groups, identify lessons covered, and log time entries to Homeschool-Dashboard-compatible time-tracking spreadsheets configured in students.yaml.
 argument-hint: [child-name]
 ---
 
-# Time Log
+# HSD Time Log
 
-Process unprocessed Signal messages to identify homeschool lessons and log them to time tracking spreadsheets.
+Process unprocessed Signal messages to identify homeschool lessons and log them to Homeschool-Dashboard-compatible time-tracking spreadsheets.
 
 ## Usage
 
-- `/time-log` — process all children
-- `/time-log alice` — process only Alice's messages
-- `/time-log charlie` — process only Charlie's messages
+- `/hsd-time-log` — process all children
+- `/hsd-time-log <student>` — process only one student's messages
 
 ## Workflow
 
@@ -30,11 +29,13 @@ Read `students.yaml` at the repo root. This is the single source of truth for al
 
 Also read the top-level `teacher:` field — this is the fallback name written to the Teacher column if a message has no `sender_alias`.
 
-Use the project-local console commands `.venv/bin/signal-sieve` and `.venv/bin/xlsx-append`. These are installed by `.venv/bin/pip install -e .`.
+Use the project-local console commands `.venv/bin/signal-sieve` and `.venv/bin/xlsx-append`. These are installed by `.venv/bin/python -m pip install -e .`.
 
 If `$ARGUMENTS` names a child (by slug or any alias), restrict processing to that student. Otherwise process all students.
 
 ### Step 1: Fetch messages
+
+Do not derive the Signal group name from the display name or user capitalization. Always use the exact `signal_group_alias` value from `students.yaml`; aliases are case-sensitive.
 
 For each student to process, run:
 
@@ -52,7 +53,7 @@ Look at ALL messages for a student together to understand the full context. Mess
 - A mix of text and images for the same lesson
 - Multiple messages about the same lesson session
 
-For each message with image attachments, use the Grok Vision MCP (`mcp__grok-mcp__chat_with_vision`) to analyze the image. The attachment `path` field in the JSON gives the full file path to pass to Grok. **Important**: Include in your Grok prompt that the image may be rotated or sideways, and to try reading it in all orientations before determining lesson numbers and titles.
+For each message with image attachments, use a vision-capable runtime tool to analyze the image. Grok Vision MCP is the preferred implementation when available, but an equivalent runtime vision tool is acceptable. The attachment `path` field in the JSON gives the full file path to pass to the vision tool. **Important**: Include in your vision prompt that the image may be rotated or sideways, and to try reading it in all orientations before determining lesson numbers and titles.
 
 From the messages, extract:
 - **Subject** (must match one of the student's `subjects` exactly — case-sensitive)
@@ -73,10 +74,10 @@ Then read the content around that line to understand what the lesson covers. If 
 
 If the configured lesson-header regex misses, do not stop immediately. Curriculum markdown is often produced from OCR/PDF extraction and may contain broken spacing or malformed headings. Fall back to a targeted text search in the same curriculum file using the lesson number, visible title/topic, book/chapter names, assessment label, or distinctive terms from the screenshot. If the fallback search finds a clear match, use it and note the regex miss only if it matters to the final summary. If the fallback search is ambiguous, skip that entry rather than guessing.
 
-**Cross-check**: Compare the topic Grok described from the image against the curriculum title for the looked-up lesson number. If they don't match (e.g. Grok described "Highway Themes" but the curriculum says "Adjectives and Adverbs"), the lesson number was likely misread. In that case:
-1. Search the curriculum file for a lesson whose title better matches what Grok described.
+**Cross-check**: Compare the topic the vision tool described from the image against the curriculum title for the looked-up lesson number. If they don't match (e.g. the vision tool described "Highway Themes" but the curriculum says "Adjectives and Adverbs"), the lesson number was likely misread. In that case:
+1. Search the curriculum file for a lesson whose title better matches what the vision tool described.
 2. If a better match is found, use that lesson number instead.
-3. If no match is found, flag the entry in the summary as uncertain and still log it using Grok's description (not the mismatched curriculum title).
+3. If no match is found, flag the entry in the summary as uncertain and still log it using the vision-derived description (not the mismatched curriculum title).
 
 Use the confirmed lesson info to write the description for the spreadsheet entry.
 

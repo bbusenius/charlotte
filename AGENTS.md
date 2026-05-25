@@ -1,6 +1,26 @@
 # Charlotte Mason Homeschool Agent
 
-Charlotte is a Mason-shaped homeschool agent system: lessons, units, curricula, materials, field trips, time logging, and book logging, grounded in the pedagogy wiki under `pedagogy/wiki/`. The canonical skills live under `skills/` — `lesson-plan-builder`, `unit-builder`, `curriculum-builder`, `materials-builder`, `mason-aesthetics`, `mason-print-design`, `field-trip-planner`, plus the data-pipeline skills `time-log` and `book-log`. Harness-specific skill directories such as `.claude/skills/` and `.agents/skills/` are adapters, usually symlinks, back to the canonical skill directories. Per-student configuration lives in `students.yaml` at the repo root.
+Charlotte is a Mason-shaped homeschool agent system: lessons, units, curricula, materials, field trips, Homeschool-Dashboard-compatible time logging, Homeschool-Dashboard-compatible book logging, tablet slide generation, and tablet slide sync, grounded in the pedagogy wiki under `pedagogy/wiki/`. The canonical skills live under `skills/` — `lesson-plan-builder`, `unit-builder`, `curriculum-builder`, `materials-builder`, `tablet-slide-builder`, `mindfeast-weekly-slides`, `mindfeast-slide-sync`, `mason-aesthetics`, `mason-print-design`, `field-trip-planner`, plus the Homeschool-Dashboard data-pipeline skills `hsd-time-log` and `hsd-book-log`. Harness-specific skill directories such as `.claude/skills/` and `.agents/skills/` are adapters, usually symlinks, back to the canonical skill directories. Per-student configuration lives in `students.yaml` at the repo root.
+
+Plain requests to make a slide, tablet slide, lock-screen slide, unlock question, or MindFeast slide should route to `tablet-slide-builder`. Do not start those requests with `materials-builder`, `mason-aesthetics`, `mason-print-design`, WeasyPrint, or SVG/PDF rendering unless the user separately asks for a printable/static material.
+
+Plain requests to make an image, picture, illustration, drawing, or visual asset are standalone image requests unless the user explicitly asks for a slide, tablet slide, lock-screen slide, MindFeast slide, printable material, worksheet, PDF, curriculum artifact, or names a workflow-specific output. For standalone image requests, run the Charlotte image router from the project root and deliver the generated file. In the Hermes Docker runtime, use absolute `/workspace` paths:
+
+```bash
+.venv/bin/python /workspace/scripts/charlotte_image.py \
+  --prompt "<image prompt>" \
+  --out /workspace/generated-images/<short-slug>.png \
+  --mason-aesthetics \
+  --json
+```
+
+Use the JSON `path` value exactly when delivering the image with `MEDIA:<path>`; providers may save a different extension than the requested output path. Do not use Hermes creative skills such as ComfyUI, p5js, or hand-written SVG as the first path for ordinary image requests. Do not save standalone images under `tablet-slides/`; that tree is only for valid tablet slide packages.
+
+For standalone image requests, preserve the user's requested subject and constraints. Do not invent style adjectives, settings, lighting, camera language, emotional tone, species, props, scenery, or composition details unless the user explicitly asks for them. The `--mason-aesthetics` flag owns the default visual register; pass the user's request plainly to `--prompt`.
+
+Plain requests to sync slides, push slides, update the tablet, or refresh MindFeast should route to `mindfeast-slide-sync`. Do not invoke `mindfeast-weekly-slides` unless the user also asks to create slides from time logs.
+
+Plain requests to log homeschool lesson time, process lesson Signal messages, or update Homeschool-Dashboard time records should route to `hsd-time-log`. Plain requests to log books, process book Signal messages, or update Homeschool-Dashboard reading records should route to `hsd-book-log`. These workflows must resolve the student from `students.yaml` and pass the exact configured Signal alias (`signal_group_alias` or `reading.signal_group_alias`) to `signal-sieve`; do not derive the Signal group name from display names or user capitalization.
 
 ## Sub-agent spawn convention
 

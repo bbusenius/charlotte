@@ -7,6 +7,7 @@ students.yaml
 curricula/**
 tablet-slides/**
 field-trips/**
+generated-images/**
 
 # Local backups and app state
 .backups/
@@ -28,6 +29,7 @@ __pycache__/
 # Secrets and local environment
 .env
 .env.*
+!.env.example
 runtime.yaml
 
 # Editor files

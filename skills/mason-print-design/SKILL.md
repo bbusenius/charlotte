@@ -1,6 +1,6 @@
 ---
 name: mason-print-design
-description: Create print-ready educational materials (worksheets, copywork sheets, maps, flashcards, narration pages, nature-notebook pages, certificates) using HTML/WeasyPrint or SVG/Inkscape. Use this skill when the user asks to render homeschool materials intended for print, PDF, or tablet display.
+description: Create print-ready educational materials (worksheets, copywork sheets, maps, flashcards, narration pages, nature-notebook pages, certificates) using HTML/WeasyPrint or SVG/Inkscape. Use this skill when the user asks to render homeschool materials intended for print, PDF, or static tablet reading. Do not use for Homeschool Screen Lock, MindFeast, unlock questions, or app slide packages; those belong to tablet-slide-builder.
 ---
 
 This skill guides creation of print-ready educational materials that render correctly when converted to PDF or PNG. It covers worksheets, copywork sheets, maps, flashcards, picture-study and composer cards, nature-notebook pages, timelines, narration templates, vocabulary cards, memory-verse cards, and related printables. Output is suitable for home printing or tablet display.

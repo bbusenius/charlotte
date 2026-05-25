@@ -1,0 +1,39 @@
+model:
+  default: "minimax/minimax-m2.7"
+  provider: "custom:nanogpt"
+  base_url: ""
+
+custom_providers:
+  - name: "nanogpt"
+    base_url: "https://nano-gpt.com/api/subscription/v1"
+    key_env: "NANOGPT_API_KEY"
+    model: "minimax/minimax-m2.7"
+    api_mode: "chat_completions"
+
+terminal:
+  backend: "local"
+  cwd: "/workspace"
+  timeout: 180
+  docker_mount_cwd_to_workspace: false
+  lifetime_seconds: 300
+  env_passthrough:
+    - GEMINI_API_KEY
+    - GOOGLE_API_KEY
+    - GOOGLE_MAPS_API_KEY
+    - XAI_API_KEY
+    - XAI_IMAGE_MODEL
+    - NANOGPT_API_KEY
+    - NANOGPT_IMAGE_MODEL_SUBSCRIPTION
+    - NANOGPT_IMAGE_MODEL_GEMINI
+    - NANOGPT_IMAGE_MODEL_GROK
+
+skills:
+  external_dirs:
+    - /workspace/skills
+
+platform_toolsets:
+  cli: [hermes-cli]
+  telegram: [terminal, file, web, vision, skills, todo, cronjob]
+
+agent:
+  max_turns: 60

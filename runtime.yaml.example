@@ -5,3 +5,67 @@ tools:
   # Used by scripts/lexile/lookup.py. In Docker or on non-Debian systems,
   # set this to the Chrome/Chromium executable available in that runtime.
   chrome_path: /usr/bin/google-chrome-stable
+
+capabilities:
+  image_generation:
+    # Routes are tried in order. Skills pass a preference such as "gemini" or
+    # "grok", but non-strict requests still follow this configured order so the
+    # operator controls fallback. If the user explicitly forces one provider
+    # family, only routes with that exact preference are tried.
+    #
+    # `source: nanogpt` with `api_mode: subscription_images` calls NanoGPT's
+    # subscription image endpoint and uses models from the subscription image
+    # model list. `source: openai_compatible` and `source: xai` call an
+    # OpenAI-compatible /images/generations endpoint. Secrets and model IDs can
+    # come from the environment or repo-local .env.
+    #
+    # `source: google` uses the repo-local scripts/gemini_image.py backend.
+    # `source: agent` documents that the active harness/runtime may provide an
+    # image tool; Python cannot invoke that tool directly, so skills use it only
+    # after charlotte_image.py exits 2.
+    routes:
+      # Example: direct Google route for Gemini-family output.
+      - preference: gemini
+        source: google
+        api_key_env: GEMINI_API_KEY
+
+      # Example: direct xAI route for Grok-family output.
+      - preference: grok
+        source: xai
+        api_key_env: XAI_API_KEY
+        base_url: https://api.x.ai/v1
+        model_env: XAI_IMAGE_MODEL
+
+      # Example: use the NanoGPT subscription image allowance as a lower-cost
+      # fallback. Subscription image models may be less reliable at following
+      # the Mason visual register than Gemini/Grok routes.
+      - preference: subscription
+        source: nanogpt
+        api_mode: subscription_images
+        api_key_env: NANOGPT_API_KEY
+        endpoint: https://nano-gpt.com/api/generate-image
+        model_env: NANOGPT_IMAGE_MODEL_SUBSCRIPTION
+
+      # Example: paid OpenAI-compatible NanoGPT route for Gemini-family models
+      # such as Nano Banana. This may use separate USD balance rather than
+      # subscription daily image allowance.
+      - preference: gemini
+        source: openai_compatible
+        api_key_env: NANOGPT_API_KEY
+        base_url: https://nano-gpt.com/v1
+        model_env: NANOGPT_IMAGE_MODEL_GEMINI
+
+      # Example: paid OpenAI-compatible NanoGPT route for Grok-family models.
+      # This may use separate USD balance rather than subscription daily image
+      # allowance.
+      - preference: grok
+        source: openai_compatible
+        api_key_env: NANOGPT_API_KEY
+        base_url: https://nano-gpt.com/v1
+        model_env: NANOGPT_IMAGE_MODEL_GROK
+
+      # Optional runtime-native fallback. The script cannot call this directly;
+      # skills may use it when the script reports that no script-callable
+      # provider is available.
+      - preference: runtime
+        source: agent

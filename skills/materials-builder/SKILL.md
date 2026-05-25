@@ -1,6 +1,6 @@
 ---
 name: materials-builder
-description: Build homeschool materials — maps, timelines, flashcards, copywork sheets, nature-notebook pages, narration templates, picture-study and composer cards, vocabulary and memory-verse cards, math/phonics/handwriting practice, and illustrations — grounded in the project's pedagogy wiki. Invokes mason-aesthetics for visual direction and mason-print-design for rendering. Generates images via Gemini (default) or Grok.
+description: Build printable or standalone homeschool materials — maps, timelines, flashcards, copywork sheets, nature-notebook pages, narration templates, picture-study and composer cards, vocabulary and memory-verse cards, math/phonics/handwriting practice, PDFs, SVGs, PNG illustrations, and similar resources — grounded in the project's pedagogy wiki. Invokes mason-aesthetics for visual direction and mason-print-design for rendering. Generates images through the configured Charlotte image router, using Gemini/Grok as model-family preferences when requested. Do not use for Android lock-screen slides, MindFeast slides, unlock questions, or Homeschool Screen Lock app packages; use tablet-slide-builder for those.
 argument-hint: <material description in prose, optionally referencing a student or lesson> [--out PATH] [--image gemini|grok] [--format pdf|html|svg|png|md] [--size 1K|2K|4K]
 ---
 
@@ -15,7 +15,7 @@ This skill owns the *what* — material type, content, pedagogical framing, curr
 
 Do not restate or reimplement those skills' guidance — invoke them.
 
-For Android Homeschool Screen Lock challenge slides synced from `tablet-slides/`, use `tablet-slide-builder` instead. Those slides have an app-specific folder, YAML, media, and validation contract rather than a print-rendering contract.
+For Android Homeschool Screen Lock challenge slides synced from `tablet-slides/`, use `tablet-slide-builder` instead. This includes bare requests such as "make a slide about toads" when the active project context is MindFeast/tablet slides. Those slides have an app-specific folder, YAML, media, and validation contract rather than a print-rendering contract.
 
 ## Usage
 
@@ -29,9 +29,9 @@ For Android Homeschool Screen Lock challenge slides synced from `tablet-slides/`
 ### Flags
 
 - `--out PATH` — directory (or file path for single outputs) to write to. Default: current working directory. The future lesson-plan-builder will set this explicitly; for now the user is in control.
-- `--image gemini|grok` — image provider. Default: `gemini`. See "Image generation" below for fallback behavior.
+- `--image gemini|grok` — image model-family preference. Default: `gemini`. See "Image generation" below for fallback behavior.
 - `--format pdf|html|svg|png|md` — output format. If omitted, pick the sensible default for the material type (see below).
-- `--size 1K|2K|4K` — when generating images via Gemini. Default: `1K` unless the material is a wall card / large-format poster, in which case `2K`.
+- `--size 1K|2K|4K` — when generating images through the image router. Default: `1K` unless the material is a wall card / large-format poster, in which case `2K`.
 
 ## Inputs (parsed from the prompt)
 
@@ -101,43 +101,54 @@ When the prompt implies a material not in the table, pick the closest analogue a
 
 ## Image generation
 
-### Default: Gemini
+Image generation for this skill is a capability-routed workflow. This skill expresses a model-family preference; `runtime.yaml` decides which source supplies that capability.
 
-Use the helper, invoked through the project's venv so `google-genai` is available:
+- Keep using `mason-aesthetics` and `mason-print-design` before image generation. The router only chooses the provider/source; it does not replace Mason aesthetic direction or print-design constraints.
+- Gemini and Grok are preferences, not hard requirements for direct `GEMINI_API_KEY` or `XAI_API_KEY` use.
+- Use the repo-local router below, invoked from the project root through `.venv/bin/python`.
+- If the router exits `2`, no configured script-callable image provider is available. At that point, use a runtime-native image tool if the active harness exposes one. If no runtime image tool exists, report that image generation is unavailable.
+- If the router exits `3`, stop. That is a policy/safety rejection; do not try another provider.
+
+### Default preference: Gemini
+
+Use the router with `--preference gemini`:
 
 ```bash
-.venv/bin/python scripts/gemini_image.py \
+.venv/bin/python scripts/charlotte_image.py \
   --prompt "…" --out path/to/file.png \
-  --size 1K --aspect-ratio 4:3
+  --size 1K --aspect-ratio 4:3 \
+  --preference gemini --json
 ```
 
 Run from the project root. The `--out` path can be relative to the project root or absolute.
 
-The helper reads `GEMINI_API_KEY` from the environment. It routes `1K`/`2K` to Imagen 4.0 and `4K` to Gemini 3 Pro (preview). Exit code `2` means the key is missing or the SDK isn't installed; exit code `1` means the API call failed (policy violation, rate limit, etc.).
+The router reads `capabilities.image_generation.routes` from `runtime.yaml`. It tries routes in configured order. Use the JSON `path` in the result as the actual media file path; some providers return `.jpg` even when the requested path ended in `.png`.
 
-### Fallback to Grok on missing Gemini key
+Exit codes:
 
-If Gemini is the default provider and its key is unavailable — specifically, the helper exits `2` with a "GEMINI_API_KEY is not set" message — **fall back to Grok automatically** rather than blocking the user. Note the fallback in the delivery message.
+- `0` success. Use the JSON output to name the source/model in delivery.
+- `1` configured providers were called but failed. Report the failure; do not hide it.
+- `2` no script-callable provider is configured or available. Use a runtime-native image tool if available.
+- `3` policy/safety rejection. Stop.
 
-Do not fall back on exit code `1` (API-level failure). That's not a provider-availability problem and silently switching would hide a real issue.
+### Explicit provider preference
 
-If the user passed `--image gemini` explicitly and the key is missing, stop and ask — they've named the provider; don't override their choice.
+If the user explicitly passes `--image gemini` or `--image grok`, pass `--strict-preference` to the router:
 
-### Grok (`--image grok` or fallback)
-
-Load the tool and call it:
-
+```bash
+.venv/bin/python scripts/charlotte_image.py \
+  --prompt "…" --out path/to/file.png \
+  --size 1K --aspect-ratio 4:3 \
+  --preference grok --strict-preference --json
 ```
-ToolSearch(query: "select:mcp__grok-mcp__generate_image", max_results: 1)
-```
 
-Then invoke `mcp__grok-mcp__generate_image` with a prompt that starts with the illustration register (see `mason-aesthetics`). The Grok path does not support all of Imagen's size controls; if the user asked for `4K` they need Gemini.
+When strict preference is set, do not silently switch to another model family.
 
 ### Naming the provider in the delivery
 
-The delivery message always names which provider generated any images included in the material. A short line is enough: *"Illustration generated with Gemini (Imagen 4, 1K)"* or *"Illustration generated with Grok (fallback — Gemini key not set)"*.
+The delivery message always names which source/model generated any images included in the material. A short line is enough: *"Illustration generated via NanoGPT using `<model>`"* or *"Illustration generated via Google using Imagen 4, 1K"*.
 
-### Illustration prompt rules (applies to both providers)
+### Illustration prompt rules
 
 - State the visual register explicitly ("pen-and-ink botanical plate," "watercolor in the register of Beatrix Potter," "Victorian nature-study illustration"). See `mason-aesthetics` §4.
 - Say "no text, no labels, no captions" — we add text in HTML or SVG, not in the image.
@@ -198,7 +209,7 @@ Specific rules this skill adds on top of the two peer skills:
 
 ### Step 7 — Generate any illustrations
 
-Use the Gemini helper (default) or Grok (if `--image grok` or on fallback). Place the image in the final composition via `<img>` (HTML) or `<image>` (SVG); text stays vector unless the lettering carve-out applies.
+Use `scripts/charlotte_image.py` with the selected model-family preference. Place the image in the final composition via `<img>` (HTML) or `<image>` (SVG); text stays vector unless the lettering carve-out applies.
 
 ### Step 8 — Save
 
@@ -221,12 +232,12 @@ Output a short summary of what was produced and where it was saved. Include:
 
 - Material type and what's in it (in one line)
 - File path(s)
-- **Image provider named** when any image was generated (e.g. "illustration via Gemini Imagen 4, 1K" or "illustration via Grok — Gemini key not set")
+- **Image source/model named** when any image was generated (e.g. "illustration via NanoGPT using `<model>`" or "illustration via Google using Imagen 4, 1K")
 - A single one-line note if anything about the request sits in real tension with the pedagogy — offered as an alternative, never as a correction, never more than once.
 
 Example:
 
-> Made `copywork-heidi-2026-04-19.pdf` — a half-page passage from *Heidi* Ch. 3 over ruled manuscript writing lines, classical serif body, cream ground. Illustration via Gemini (Imagen 4, 1K). Saved in the current directory.
+> Made `copywork-heidi-2026-04-19.pdf` — a half-page passage from *Heidi* Ch. 3 over ruled manuscript writing lines, classical serif body, cream ground. Illustration via NanoGPT using `<model>`. Saved in the current directory.
 >
 > *If useful, I can also produce a matching narration page for this passage — Mason's method is narration after a single reading.*
 
@@ -238,8 +249,8 @@ Example:
 - **Student data lives in `students.yaml`.** This skill never hard-codes student names, aliases, curriculum file paths, grade, or lesson-header patterns. All of that comes from the registry at runtime.
 - **Living-book and curriculum sources beat generic content.** When a passage, word, or problem can come from a real source the student has been working in, it comes from there.
 - **Image prompts state the register.** Never a vague prompt. Always "no text, no labels" unless the lettering carve-out applies.
-- **Image provider is named in delivery.** Always. When Gemini fell back to Grok due to a missing key, the delivery says so.
-- **Automatic fallback is scoped.** Gemini → Grok only when `GEMINI_API_KEY` is missing (helper exit 2). API-level failures (exit 1) do not trigger fallback. If the user explicitly passed `--image gemini`, never fall back — stop and ask.
+- **Image source/model is named in delivery.** Always.
+- **Automatic fallback is capability-routed.** Follow the configured `runtime.yaml` route order unless the user explicitly passed `--image gemini` or `--image grok`; explicit provider-family choices use `--strict-preference`.
 - **No twaddle in language.** The material's copy addresses a person.
 - **Date.** Use today's date from the env. Never guess.
 - **No hallucinated sources.** If a passage, title, author, or historical fact goes on the page, it's real and correctly attributed. Don't invent a quote; open the book (or the curriculum file) and use a real passage, or ask the user to supply one.

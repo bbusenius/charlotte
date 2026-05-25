@@ -1,6 +1,6 @@
 ---
 name: tablet-slide-builder
-description: Generate Android lock-screen question, essay, or informational slides for the Homeschool Screen Lock app. Resolves the output directory per-student from students.yaml (`tablet_slides_dir`), creates `<dir>/<id>/` folders containing slide.md plus optional image/audio media, validates the app-specific YAML/frontmatter contract, uses provided prompt images when available, and can generate Mason-shaped images when none are provided.
+description: Use for any request to make a slide, tablet slide, lock-screen slide, unlock question, MindFeast slide, or Homeschool Screen Lock app package. Generates Android lock-screen question, essay, or informational slides; resolves the output directory per-student from students.yaml (`tablet_slides_dir`); creates `<dir>/<id>/` folders containing slide.md plus optional image/audio media; validates the app-specific YAML/frontmatter contract; uses provided prompt images when available; and can generate Mason-shaped images when none are provided. Do not route slide requests through materials-builder or mason-print-design unless the user separately asks for a printable/PDF material.
 argument-hint: <slide request in prose, optionally referencing a student, lesson, provided image, or media> [--out PATH] [--id SLUG] [--image gemini|grok|provided] [--difficulty easy|medium|hard] [--type question|essay|informational] [--subject SUBJECT]
 ---
 
@@ -8,7 +8,7 @@ argument-hint: <slide request in prose, optionally referencing a student, lesson
 
 Create one or more Android lock-screen question, essay, or informational slides for the Homeschool Screen Lock app. A slide is not a printable material; it is an app package synced from a Samba share. Output directory is resolved per-student from `students.yaml`; see *Output resolution* below.
 
-Use this skill when the user asks for tablet lock-screen slides, screen-lock challenges, unlock questions, essay prompts, informational unlock slides, or slides for the Homeschool Screen Lock app.
+Use this skill when the user asks for a slide, tablet slide, lock-screen slide, screen-lock challenge, unlock question, essay prompt, informational unlock slide, MindFeast slide, or slide for the Homeschool Screen Lock app. A bare request such as "make Eliana a slide about toads" means this skill.
 
 ## Output resolution
 
@@ -139,10 +139,10 @@ Markdown body:
 4. If no image is provided and the slide is not audio-only, generate one using the image generation rules below. Prompt for no text, no labels, no captions.
 5. If the request is for music/listening, prefer audio when the user provides an audio file. Do not invent or download copyrighted audio.
 6. Choose a stable `id` slug from the subject unless `--id` is given. Use lowercase ASCII letters, digits, and hyphens only.
-7. Write `slide.md` and media into `<out>/<id>/`. Prefer the bundled scaffold script for ordinary single-slide packages — pass the resolved `<out>` as `--out`:
+7. Write `slide.md` and media into `<out>/<id>/`. Prefer the skill-local scaffold script for ordinary single-slide packages — pass the resolved `<out>` as `--out`:
 
 ```bash
-python scripts/tablet-slides/make_slide.py \
+.venv/bin/python skills/tablet-slide-builder/scripts/make_slide.py \
   --out <out> \
   --id <slide-id> \
   --type question \
@@ -160,7 +160,7 @@ python scripts/tablet-slides/make_slide.py \
 For informational slides:
 
 ```bash
-python scripts/tablet-slides/make_slide.py \
+.venv/bin/python skills/tablet-slide-builder/scripts/make_slide.py \
   --out <out> \
   --id <slide-id> \
   --type informational \
@@ -172,7 +172,7 @@ python scripts/tablet-slides/make_slide.py \
 For essay slides:
 
 ```bash
-python scripts/tablet-slides/make_slide.py \
+.venv/bin/python skills/tablet-slide-builder/scripts/make_slide.py \
   --out <out> \
   --id <slide-id> \
   --type essay \
@@ -186,7 +186,7 @@ python scripts/tablet-slides/make_slide.py \
 8. Run the bundled validator before delivery:
 
 ```bash
-python scripts/tablet-slides/validate_slide.py <out>/<slide-id>
+.venv/bin/python skills/tablet-slide-builder/scripts/validate_slide.py <out>/<slide-id>
 ```
 
 For multiple slides, validate each folder.
@@ -231,37 +231,58 @@ Use `type: essay` when the student should respond in their own words. Essay slid
 
 Use the same provider policy as `materials-builder`, but with slide-specific aspect ratios and output paths.
 
+Image generation for this skill is a capability-routed workflow. This skill expresses a model-family preference; `runtime.yaml` decides which source supplies that capability.
+
+- Gemini and Grok are preferences, not hard requirements for direct `GEMINI_API_KEY` or `XAI_API_KEY` use.
+- Use the repo-local router below, invoked from the project root through `.venv/bin/python`.
+- If the router exits `2`, no configured script-callable image provider is available. At that point, use a runtime-native image tool if the active harness exposes one. If no runtime image tool exists, report that image generation is unavailable.
+- If the router exits `3`, stop. That is a policy/safety rejection; do not try another provider.
+
 ### Provided image
 
 If the user attaches or names an image, use it. Do not generate a replacement unless the user asks for one. Copy it into the slide folder and set `image:` to the copied filename.
 
-### Default: Gemini
+### Default preference: Gemini
 
-When no image is provided and an image slide is needed, use the shared Gemini helper from the repo root:
+When no image is provided and an image slide is needed, use the shared image router from the repo root:
 
 ```bash
-.venv/bin/python scripts/gemini_image.py \
+.venv/bin/python scripts/charlotte_image.py \
   --prompt "..." \
   --out "<out>/<slide-id>/<slide-id>.png" \
   --size 1K \
-  --aspect-ratio 16:9
+  --aspect-ratio 16:9 \
+  --preference gemini \
+  --json
 ```
 
 Use `--aspect-ratio 16:9` for `orientation: landscape`. Use `--aspect-ratio 3:4` for `orientation: portrait`.
 
-The helper reads `GEMINI_API_KEY` from the environment. Exit code `2` means the key is missing or the SDK is unavailable. Exit code `1` means the API call failed.
+The router reads `capabilities.image_generation.routes` from `runtime.yaml`. It tries routes in configured order. Use the JSON `path` in the result as the actual media file path; some providers return `.jpg` even when the requested path ended in `.png`.
 
-### Fallback to Grok on missing Gemini key
+Exit codes:
 
-If Gemini is the default provider and the helper exits `2` because `GEMINI_API_KEY` is missing, fall back to Grok automatically rather than blocking. Note the fallback in delivery.
+- `0` success. Use the JSON output to name the source/model in delivery.
+- `1` configured providers were called but failed. Report the failure; do not hide it.
+- `2` no script-callable provider is configured or available. Use a runtime-native image tool if available.
+- `3` policy/safety rejection. Stop.
 
-Do not fall back on helper exit code `1`; that is an API-level failure such as policy, rate limit, or provider error. If the user explicitly passed `--image gemini`, do not fall back. Stop and ask because they named the provider.
+### Explicit provider preference
 
-### Grok (`--image grok` or fallback)
+If the user explicitly passes `--image gemini` or `--image grok`, pass `--strict-preference` to the router:
 
-Use Grok when the user explicitly passes `--image grok`, or when the Gemini missing-key fallback applies. Generate a slide background image with the same visual prompt, save it into `<out>/<slide-id>/<slide-id>.png`, and then package it with `make_slide.py`.
+```bash
+.venv/bin/python scripts/charlotte_image.py \
+  --prompt "..." \
+  --out "<out>/<slide-id>/<slide-id>.png" \
+  --size 1K \
+  --aspect-ratio 16:9 \
+  --preference grok \
+  --strict-preference \
+  --json
+```
 
-If the Grok image tool is unavailable in the current environment, say so and stop rather than inventing a media file.
+When strict preference is set, do not silently switch to another model family.
 
 ### Prompt rules
 
@@ -271,7 +292,7 @@ If the Grok image tool is unavailable in the current environment, say so and sto
 - **Compose for the panel overlay, don't reserve space for it.** The app's translucent question panel overlays the lower portion of the image. Anchor the focal subject in the upper or center portion of the frame so the panel falls over painted-but-less-essential content (foreground, ground plane, table surface, grass) — keep that region painted, just not where the focal subject lives. **Do not** ask for "empty space," "room for text," or "a text panel" at the bottom — image models interpret that literally and paint a blank rectangle into the image.
 - Use enough contrast that the subject still reads once the panel overlays the bottom.
 - Prefer calm, specific, non-novelty imagery aligned with `mason-aesthetics`.
-- Name the provider in delivery: Gemini, Grok, or provided image.
+- Name the image source/model in delivery, or say that the user provided the image.
 
 ## Media Rules
 
@@ -310,4 +331,4 @@ This skill owns the app-specific slide package. Use `materials-builder` only as 
 
 ## Delivery
 
-Report the slide id, full path, type, subject if present, media filename, visible text/question, answer when present, whether choices were used, and validation result. For essay slides, note that the response is free-form and parent-visible in Stats after submission. Name the resolved student (or "no student / fallback") and which resolution rule applied (`--out`, student's `tablet_slides_dir`, or fallback). If an image was generated, name the image provider.
+Report the slide id, full path, type, subject if present, media filename, visible text/question, answer when present, whether choices were used, and validation result. For essay slides, note that the response is free-form and parent-visible in Stats after submission. Name the resolved student (or "no student / fallback") and which resolution rule applied (`--out`, student's `tablet_slides_dir`, or fallback). If an image was generated, name the image source/model.

@@ -1,7 +1,7 @@
 # Students registry — copy this file to students.yaml and fill in your own data.
 #
 # This file is the single source of truth for per-student metadata used by
-# skills in this project (materials-builder, time-log, book-log,
+# skills in this project (materials-builder, hsd-time-log, hsd-book-log,
 # lesson-plan-builder, field-trip-planner, unit-builder, curriculum-builder).
 #
 # Students are keyed by a lowercase slug. Paid third-party curricula live
@@ -77,7 +77,7 @@ students:
       read_to_sheet_index: 1
       default_sheet: read_to
 
-# Default teacher recorded on time-tracking entries (used by time-log).
+# Default teacher recorded on time-tracking entries (used by hsd-time-log).
 # TRANSITIONAL: to be replaced during a future refactor with a value passed
 # through from signal-sieve (respecting the message source, including sender
 # aliases). Leaving a default here until then.

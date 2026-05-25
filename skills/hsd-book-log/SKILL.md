@@ -1,18 +1,17 @@
 ---
-name: book-log
-description: Process Signal messages from book-logging groups, identify books (from title or cover image), look up metadata, and log to the reading-list spreadsheets.
+name: hsd-book-log
+description: Process Signal messages from book-logging groups, identify books (from title or cover image), look up metadata, and log to Homeschool-Dashboard-compatible reading-list spreadsheets configured in students.yaml.
 argument-hint: [child-name]
 ---
 
-# Book Log
+# HSD Book Log
 
-Process unprocessed Signal messages to identify books read (by or to a child) and log them to the reading-list spreadsheets.
+Process unprocessed Signal messages to identify books read (by or to a child) and log them to Homeschool-Dashboard-compatible reading-list spreadsheets.
 
 ## Usage
 
-- `/book-log` — process both children
-- `/book-log alice` — process only Alice's book messages
-- `/book-log charlie` — process only Charlie's book messages
+- `/hsd-book-log` — process both children
+- `/hsd-book-log <student>` — process only one student's book messages
 
 ## Workflow
 
@@ -28,11 +27,13 @@ Read `students.yaml` at the repo root. This is the single source of truth for al
 - `reading.read_to_sheet_index` — sheet index for books read to the student
 - `reading.default_sheet` — which sheet to use when the message doesn't specify (`read_by_self` or `read_to`)
 
-Use the project-local console commands `.venv/bin/signal-sieve` and `.venv/bin/xlsx-append`. These are installed by `.venv/bin/pip install -e .`.
+Use the project-local console commands `.venv/bin/signal-sieve` and `.venv/bin/xlsx-append`. These are installed by `.venv/bin/python -m pip install -e .`.
 
 If `$ARGUMENTS` names a child (by slug or any alias), restrict processing to that student. Otherwise process all students.
 
 ### Step 1: Fetch messages
+
+Do not derive the Signal group name from the display name or user capitalization. Always use the exact `reading.signal_group_alias` value from `students.yaml`; aliases are case-sensitive.
 
 Run `.venv/bin/signal-sieve list --group <reading.signal_group_alias>` to get unprocessed messages as JSON. If `$ARGUMENTS` specifies a child, only fetch that group; otherwise fetch both.
 
@@ -43,7 +44,7 @@ If there are no unprocessed messages, tell the user and stop.
 For each message, you need: **title**, and optionally **author** and a **language hint**.
 
 - **Text-only message**: the text is typically just the book title. It may occasionally include author ("Frog and Toad Are Friends by Arnold Lobel"), language cues ("this is a Spanish book"), or context flags — parse these out.
-- **Image attachment**: use the Grok Vision MCP (`mcp__grok-mcp__chat_with_vision`) to read the cover. Prompt it to extract **title, author, and apparent language** from the cover — and note if the image shows an audiobook/app UI (Audible, Libby, etc.) rather than a physical book. Include in the prompt that the image may be rotated; try all orientations.
+- **Image attachment**: use a vision-capable runtime tool to read the cover. Grok Vision MCP is the preferred implementation when available, but an equivalent runtime vision tool is acceptable. Prompt it to extract **title, author, and apparent language** from the cover — and note if the image shows an audiobook/app UI (Audible, Libby, etc.) rather than a physical book. Include in the prompt that the image may be rotated; try all orientations.
 - **Text + image**: combine. Text context (e.g. "this was an audiobook") overlays flags onto whatever the image identifies.
 
 Cover text beats API data when both are present — the cover is ground truth for that specific edition.
@@ -53,7 +54,7 @@ Group multiple messages that clearly refer to the same book (e.g. a cover photo 
 ### Step 3: Determine target language
 
 - Default: **english**
-- Switch to **spanish** if: Grok Vision flagged the cover as Spanish, the title is obviously Spanish ("Caperucita Roja", "Vámonos a Antigua"), or the message text says so.
+- Switch to **spanish** if: the vision tool flagged the cover as Spanish, the title is obviously Spanish ("Caperucita Roja", "Vámonos a Antigua"), or the message text says so.
 
 ### Step 4: Determine target sheet
 
@@ -67,7 +68,7 @@ Resolve the sheet name from the index before calling xlsx-append:
 
 ### Step 5: Determine flag columns
 
-Read the message text (and Grok Vision output for images) holistically. Default both flags to blank.
+Read the message text (and vision output for images) holistically. Default both flags to blank.
 
 - **Audiobook** = `Yes` if: the message mentions listening to it, or mentions Audible / Libby / Spotify / audiobook / audio book, or the image is of an audiobook app UI.
 - **Part of coursework?** = `Yes` if: the message says it was for a class, for school, for a subject (history, language arts, science, etc.), for curriculum, or for coursework.
@@ -91,7 +92,7 @@ For each book, run the lookup chain in order and stop at the first sufficient an
 .venv/bin/python scripts/openlibrary/lookup.py "<title>" --language <english|spanish> [--author "<author>"]
 ```
 
-Pass `--author` whenever you have one (from Grok Vision or from the message text).
+Pass `--author` whenever you have one (from the vision tool or from the message text).
 
 The script returns a `confidence` tier:
 
@@ -101,16 +102,16 @@ The script returns a `confidence` tier:
 
 Exit 2 (`no_results`) → fall through to Grok.
 
-#### 6c. Grok MCP (last resort)
+#### 6c. Search-capable tool (last resort)
 
-Use `mcp__grok-mcp__live_search` — never use Grok to supply a Lexile number (it will hallucinate); leave Lexile blank in this path.
+Use a search-capable runtime tool. Grok live search MCP is the preferred implementation when available, but an equivalent live/web search tool is acceptable. Never use a generative model to supply a Lexile number; leave Lexile blank in this path.
 
-- **Confirmation** (following a medium OL result): prompt Grok something like:
+- **Confirmation** (following a medium OL result): prompt the search-capable tool something like:
   > "Confirm this book exists and give its ISBN-13. Title: `<X>`. Author: `<Y>`. Language: `<english|spanish>`. Respond strictly as JSON: `{\"confirmed\": true|false, \"isbn\": \"<isbn13>\" or null, \"corrected_title\": \"<...>\" or null, \"corrected_author\": \"<...>\" or null}`."
 
-  If `confirmed: true`, fill in the ISBN from Grok's response. If `confirmed: false` but corrections are provided, swap them in. If Grok flat-out disagrees, surface this in the summary so it can be reviewed rather than silently logged.
+  If `confirmed: true`, fill in the ISBN from the tool response. If `confirmed: false` but corrections are provided, swap them in. If the search result flat-out disagrees, surface this in the summary so it can be reviewed rather than silently logged.
 
-- **Fresh search** (low-confidence OL, or both Lexile and OL missed): prompt Grok to identify the book and return structured JSON:
+- **Fresh search** (low-confidence OL, or both Lexile and OL missed): prompt the search-capable tool to identify the book and return structured JSON:
   > "Find book metadata: title `<X>` (possibly `<author>`, possibly `<language>`). Respond as JSON: `{\"title\": \"...\", \"author\": \"...\", \"language\": \"english\"|\"spanish\", \"isbn\": \"<isbn13>\" or null}`."
 
   If the response is empty or clearly wrong, log what you have (even just the title) and flag in the summary as uncertain.
