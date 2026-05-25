@@ -9,12 +9,14 @@ RUN set -eux; \
     if command -v apt-get >/dev/null 2>&1; then \
       apt-get update; \
       DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        ffmpeg \
         git \
         inkscape \
         python3-pip \
         python3-venv; \
       rm -rf /var/lib/apt/lists/*; \
     fi; \
+    uv pip install --python /opt/hermes/.venv/bin/python "faster-whisper>=1.1"; \
     uv venv /workspace/.venv --python /opt/hermes/.venv/bin/python; \
     uv pip install --python /workspace/.venv/bin/python -e /workspace; \
     chown -R hermes:hermes /workspace/.venv

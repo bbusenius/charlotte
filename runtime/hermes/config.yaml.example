@@ -10,6 +10,12 @@ custom_providers:
     model: "minimax/minimax-m2.7"
     api_mode: "chat_completions"
 
+stt:
+  enabled: true
+  provider: "local"
+  local:
+    model: "base"
+
 terminal:
   backend: "local"
   cwd: "/workspace"

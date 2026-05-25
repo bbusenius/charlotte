@@ -243,3 +243,44 @@ runtime/hermes/run.sh gateway run
 ```
 
 The gateway runs inside the Charlotte Hermes container, so `/workspace` paths are visible to the gateway. Generated files should still land under mounted local data roots such as `tablet-slides/`, `generated-images/`, `curricula/`, `field-trips/`, `.backups/`, and `.logs/`.
+
+### Voice Messages
+
+Incoming Telegram voice messages are handled by Hermes' STT layer before they reach Charlotte. The default Charlotte profile config enables local transcription:
+
+```yaml
+stt:
+  enabled: true
+  provider: "local"
+  local:
+    model: "base"
+```
+
+The Docker image installs `faster-whisper` into Hermes' own runtime venv and installs `ffmpeg` for audio handling. After changing this runtime image, rebuild and restart the gateway:
+
+```bash
+docker build -f runtime/hermes/Dockerfile -t charlotte-hermes:local .
+runtime/hermes/run.sh gateway run
+```
+
+Hermes caches incoming voice audio under its profile data directory. In this Docker adapter, the host profile directory is bind-mounted into the container:
+
+```text
+host:      ~/.hermes-charlotte
+container: /opt/data
+```
+
+On existing profiles that already have the legacy cache directory, incoming Telegram voice files are saved as `.ogg` files here:
+
+```text
+host:      ~/.hermes-charlotte/audio_cache/
+container: /opt/data/audio_cache/
+```
+
+These are the same files, not separate copies. To flush the cached audio while keeping the directory in place:
+
+```bash
+rm -f "$HOME/.hermes-charlotte/audio_cache"/*
+```
+
+New Hermes profiles may use `~/.hermes-charlotte/cache/audio/` instead if no legacy `audio_cache/` directory exists.
