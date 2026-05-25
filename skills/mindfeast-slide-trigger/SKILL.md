@@ -1,7 +1,7 @@
 ---
 name: mindfeast-slide-trigger
 description: Trigger the MindFeast / Homeschool Screen Lock remote endpoint to show a slide now on a configured tablet. Use when the user asks to trigger a slide, show a slide, pop a slide, open MindFeast, or make the tablet show the next lock-screen slide without creating or syncing slides. Reads per-student mindfeast.remote_url and mindfeast.remote_token from students.yaml, POSTs to <remote_url>/api/trigger, and never prints the token.
-argument-hint: [student name|slug|alias] [--all] [--dry-run] [--timeout SECONDS]
+argument-hint: "[student name|slug|alias] [--all] [--dry-run] [--timeout SECONDS]"
 ---
 
 # MindFeast Slide Trigger

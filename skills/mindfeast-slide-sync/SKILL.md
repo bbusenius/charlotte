@@ -1,7 +1,7 @@
 ---
 name: mindfeast-slide-sync
 description: Sync already-created MindFeast / Homeschool Screen Lock tablet slides to a student's configured tablet remote endpoint. Use when the user asks to sync slides, push slides, update the tablet, refresh MindFeast, or run slide sync without asking to create new slides. Reads per-student mindfeast.remote_url and mindfeast.remote_token from students.yaml, POSTs to <remote_url>/api/sync, and never prints the token.
-argument-hint: [student name|slug|alias] [--all] [--dry-run] [--timeout SECONDS]
+argument-hint: "[student name|slug|alias] [--all] [--dry-run] [--timeout SECONDS]"
 ---
 
 # MindFeast Slide Sync
