@@ -125,6 +125,30 @@ detect_lan_ip() {
   return 1
 }
 
+detect_timezone() {
+  local tz
+  tz="$(timedatectl show --property=Timezone --value 2>/dev/null)"
+  if [ -n "$tz" ]; then
+    printf '%s' "$tz"
+    return 0
+  fi
+  if [ -f /etc/timezone ]; then
+    tz="$(tr -d '[:space:]' < /etc/timezone 2>/dev/null)"
+    if [ -n "$tz" ]; then
+      printf '%s' "$tz"
+      return 0
+    fi
+  fi
+  if [ -L /etc/localtime ]; then
+    tz="$(readlink /etc/localtime 2>/dev/null | sed 's|.*/zoneinfo/||')"
+    if [ -n "$tz" ]; then
+      printf '%s' "$tz"
+      return 0
+    fi
+  fi
+  return 1
+}
+
 enabled_value() {
   case "$1" in
     1|true|TRUE|yes|YES) return 0 ;;
@@ -175,6 +199,7 @@ env_home_mounts="$(read_env_value CHARLOTTE_HOME_MOUNTS "$env_file")"
 env_info_page="$(read_env_value CHARLOTTE_INFO_PAGE "$env_file")"
 env_info_host="$(read_env_value CHARLOTTE_INFO_HOST "$env_file")"
 env_info_port="$(read_env_value CHARLOTTE_INFO_PORT "$env_file")"
+env_tz="$(read_env_value CHARLOTTE_TZ "$env_file")"
 
 image="${CHARLOTTE_HERMES_IMAGE:-${env_image:-charlotte-hermes:local}}"
 hermes_home="${CHARLOTTE_HERMES_HOME:-${env_hermes_home:-$HOME/.hermes-charlotte}}"
@@ -182,6 +207,10 @@ home_mounts="${CHARLOTTE_HOME_MOUNTS:-${env_home_mounts:-}}"
 info_page="${CHARLOTTE_INFO_PAGE:-${env_info_page:-1}}"
 info_host="${CHARLOTTE_INFO_HOST:-${env_info_host:-}}"
 info_port="${CHARLOTTE_INFO_PORT:-${env_info_port:-8788}}"
+tz="${CHARLOTTE_TZ:-${env_tz:-}}"
+if [ -z "$tz" ]; then
+  tz="$(detect_timezone || true)"
+fi
 
 mkdir -p "$hermes_home" "$hermes_home/home"
 if [ ! -f "$hermes_home/config.yaml" ]; then
@@ -226,6 +255,13 @@ fi
 docker_args+=(
   -e "HERMES_UID=$(id -u)"
   -e "HERMES_GID=$(id -g)"
+)
+
+if [ -n "$tz" ]; then
+  docker_args+=(-e "TZ=$tz")
+fi
+
+docker_args+=(
   -v "$hermes_home:/opt/data"
   -v "$repo_root/students.yaml:/workspace/students.yaml:ro"
   -v "$repo_root/curricula:/workspace/curricula"
