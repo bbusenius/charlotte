@@ -258,7 +258,10 @@ docker_args+=(
 )
 
 if [ -n "$tz" ]; then
-  docker_args+=(-e "TZ=$tz")
+  # TZ fixes glibc/date inside the container; HERMES_TIMEZONE makes the Hermes
+  # cron scheduler (hermes_time.now) authoritative instead of relying on its
+  # server-local fallback.
+  docker_args+=(-e "TZ=$tz" -e "HERMES_TIMEZONE=$tz")
 fi
 
 docker_args+=(
