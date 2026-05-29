@@ -1,0 +1,156 @@
+/* Charlotte info page — Mason aesthetic, self-contained for LAN/offline use.
+   Type uses a curated serif stack rather than a web font so the page renders
+   the same on a tablet with no internet. */
+
+:root {
+  --ground: #f7f1e3;
+  --ground-card: #fbf7ec;
+  --ink: #2b2622;
+  --ink-soft: #5b5147;
+  --accent: #7c3a2d;
+  --rule: #d8cdb6;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua",
+    Georgia, "Times New Roman", serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--ground);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.125rem;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: clamp(2rem, 6vw, 4.5rem) clamp(1.25rem, 5vw, 3rem) 3rem;
+}
+
+/* Masthead */
+.masthead {
+  text-align: center;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 2.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.masthead h1 {
+  margin: 0;
+  font-size: clamp(2.75rem, 12vw, 4rem);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.05;
+}
+
+.lede {
+  margin: 0.6rem 0 0;
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: 1.1rem;
+}
+
+/* Sections */
+.section-heading {
+  font-size: 0.85rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+  margin: 0 0 0.9rem;
+}
+
+.about {
+  margin-bottom: 2.75rem;
+}
+
+.about p {
+  margin: 0 0 1rem;
+}
+
+.about p:last-child {
+  margin-bottom: 0;
+}
+
+/* Tools */
+.tool-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tool-card + .tool-card {
+  margin-top: 1rem;
+}
+
+.tool-link {
+  display: block;
+  padding: 1.35rem 1.5rem;
+  background-color: var(--ground-card);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.tool-link:hover,
+.tool-link:focus-visible {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.tool-name {
+  display: block;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.tool-desc {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--ink-soft);
+  font-size: 1rem;
+}
+
+.tool-cue {
+  display: inline-block;
+  margin-top: 0.9rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+
+/* Colophon */
+.colophon {
+  margin-top: 3rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
+  text-align: center;
+}
+
+.colophon p {
+  margin: 0;
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--ink-soft);
+}

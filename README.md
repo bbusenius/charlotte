@@ -156,6 +156,8 @@ tools:
 
 `scripts/lexile/lookup.py` uses `tools.chrome_path` for its Playwright browser executable. Leave `runtime.yaml` absent if the default path works.
 
+In the Hermes Docker runtime, `runtime/hermes/run.sh` also serves a small local Charlotte info page over plain HTTP (default port `8788`) and prints a scannable QR so a tablet on the same LAN can open it. The `charlotte-url` skill re-shares that URL and QR on demand.
+
 Secret local settings live in ignored `.env`. Copy the example and fill only the keys your local runtime needs:
 
 ```bash

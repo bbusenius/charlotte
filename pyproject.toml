@@ -10,6 +10,7 @@ dependencies = [
     "google-genai>=0.3",
     "PyYAML>=6.0",
     "weasyprint>=62",
+    "qrcode[pil]>=7.4",
     "signal-sieve @ git+https://github.com/bbusenius/signal-sieve.git@master",
     "xlsx-append @ git+https://github.com/bbusenius/xlsx-append.git@master",
 ]

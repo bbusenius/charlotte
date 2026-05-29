@@ -113,6 +113,18 @@ For quality-first image generation, keep direct Gemini first and direct Grok sec
 
 `GOOGLE_MAPS_API_KEY` is for Maps-capable MCP/runtime tools. It is separate from Gemini image-generation keys and is only useful when the active Hermes toolset exposes a Google Maps capability.
 
+### Local Charlotte Info Page
+
+`runtime/hermes/run.sh` serves a small static Charlotte info page over plain HTTP in a managed `charlotte-info-page` container, then starts Hermes. The page has a short blurb about Charlotte and a Tools section linking to the spelling helper app. No microphone is involved, so it needs no HTTPS or certificate. Configure it in the repo-local ignored `.env`:
+
+```env
+CHARLOTTE_INFO_PAGE=1
+CHARLOTTE_INFO_HOST=
+CHARLOTTE_INFO_PORT=8788
+```
+
+Leave `CHARLOTTE_INFO_HOST` blank for the normal path: the wrapper detects the current LAN IP, serves the page, prints the URL plus a scannable QR, and writes the URL to `.logs/charlotte-info/url.txt`. The `charlotte-url` skill re-shares that URL and QR on demand. Set `CHARLOTTE_INFO_PAGE=0` to disable serving it.
+
 ## Tool Surface
 
 The adapter's support checklist is tracked in [../../docs/runtime-tool-surface.md](../../docs/runtime-tool-surface.md).

@@ -30,13 +30,158 @@ read_env_value() {
   done < "$file"
 }
 
+detect_lan_ip() {
+  local ip_address
+
+  if command -v ip >/dev/null 2>&1; then
+    ip_address="$(ip -o -4 addr show scope global up 2>/dev/null | awk '
+      function ignored_iface(iface) {
+        return iface ~ /^(docker|br-|veth|virbr|tun|tap|wg|tailscale|zt|cni|podman|nerdctl)/
+      }
+      function private_ip(ip) {
+        return ip ~ /^192[.]168[.]/ || ip ~ /^10[.]/ || ip ~ /^172[.](1[6-9]|2[0-9]|3[0-1])[.]/
+      }
+      function preferred_iface(iface) {
+        return iface ~ /^(wl|en|eth)/
+      }
+      {
+        iface = $2
+        split($4, addr, "/")
+        ip = addr[1]
+        if (ignored_iface(iface) || !private_ip(ip)) {
+          next
+        }
+        if (preferred_iface(iface)) {
+          candidate = ""
+          print ip
+          exit
+        }
+        if (candidate == "") {
+          candidate = ip
+        }
+      }
+      END {
+        if (candidate != "") {
+          print candidate
+        }
+      }
+    ')"
+    if [ -n "$ip_address" ]; then
+      printf '%s' "$ip_address"
+      return 0
+    fi
+
+    ip_address="$(ip route get 1.1.1.1 2>/dev/null | awk '
+      {
+        for (i = 1; i <= NF; i++) {
+          if ($i == "dev") {
+            dev = $(i + 1)
+          } else if ($i == "src") {
+            src = $(i + 1)
+          }
+        }
+      }
+      END {
+        if (src != "" && dev !~ /^(docker|br-|veth|virbr|tun|tap|wg|tailscale|zt|cni|podman|nerdctl)/) {
+          print src
+        }
+      }
+    ')"
+    if [ -n "$ip_address" ]; then
+      printf '%s' "$ip_address"
+      return 0
+    fi
+  fi
+
+  if command -v hostname >/dev/null 2>&1; then
+    ip_address="$(hostname -I 2>/dev/null | awk '
+      {
+        for (i = 1; i <= NF; i++) {
+          if ($i ~ /^192[.]168[.]/) {
+            candidate = ""
+            print $i
+            exit
+          }
+          if (candidate == "" && $i ~ /^10[.]/) {
+            candidate = $i
+          }
+          if (candidate == "" && $i ~ /^172[.](1[6-9]|2[0-9]|3[0-1])[.]/) {
+            candidate = $i
+          }
+        }
+      }
+      END {
+        if (candidate != "") {
+          print candidate
+        }
+      }
+    ')"
+    if [ -n "$ip_address" ]; then
+      printf '%s' "$ip_address"
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
+enabled_value() {
+  case "$1" in
+    1|true|TRUE|yes|YES) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+start_info_page() {
+  local container_name="charlotte-info-page"
+  local log_dir="$repo_root/.logs/charlotte-info"
+  local url="http://$info_host:$info_port"
+  local page_args
+
+  page_args=(
+    --detach
+    --name "$container_name"
+    --restart unless-stopped
+    -p "$info_port:$info_port"
+    -e "HERMES_UID=$(id -u)"
+    -e "HERMES_GID=$(id -g)"
+    -v "$repo_root/apps/charlotte:/workspace/apps/charlotte:ro"
+  )
+
+  docker rm -f "$container_name" >/dev/null 2>&1 || true
+  if ! docker run "${page_args[@]}" "$image" \
+    .venv/bin/python -m http.server "$info_port" --bind 0.0.0.0 --directory apps/charlotte/static >/dev/null; then
+    echo "Charlotte info page container failed to start; continuing without it." >&2
+    return 0
+  fi
+
+  mkdir -p "$log_dir"
+  printf '%s\n' "$url" > "$log_dir/url.txt"
+  echo "Charlotte info page URL: $url"
+  echo "Saved current info page URL to $log_dir/url.txt"
+
+  # Print a scannable QR on the host terminal so the tablet camera can open the
+  # URL without anyone retyping the IP. Renders inside the info-page container,
+  # where qrcode is installed; silently skips on any failure so it never blocks
+  # the launch.
+  echo
+  docker exec "$container_name" \
+    .venv/bin/python scripts/qr_url.py "$url" 2>/dev/null || true
+}
+
 env_image="$(read_env_value CHARLOTTE_HERMES_IMAGE "$env_file")"
 env_hermes_home="$(read_env_value CHARLOTTE_HERMES_HOME "$env_file")"
 env_home_mounts="$(read_env_value CHARLOTTE_HOME_MOUNTS "$env_file")"
+env_info_page="$(read_env_value CHARLOTTE_INFO_PAGE "$env_file")"
+env_info_host="$(read_env_value CHARLOTTE_INFO_HOST "$env_file")"
+env_info_port="$(read_env_value CHARLOTTE_INFO_PORT "$env_file")"
 
 image="${CHARLOTTE_HERMES_IMAGE:-${env_image:-charlotte-hermes:local}}"
 hermes_home="${CHARLOTTE_HERMES_HOME:-${env_hermes_home:-$HOME/.hermes-charlotte}}"
 home_mounts="${CHARLOTTE_HOME_MOUNTS:-${env_home_mounts:-}}"
+info_page="${CHARLOTTE_INFO_PAGE:-${env_info_page:-1}}"
+info_host="${CHARLOTTE_INFO_HOST:-${env_info_host:-}}"
+info_port="${CHARLOTTE_INFO_PORT:-${env_info_port:-8788}}"
 
 mkdir -p "$hermes_home" "$hermes_home/home"
 if [ ! -f "$hermes_home/config.yaml" ]; then
@@ -55,6 +200,19 @@ mkdir -p \
   "$repo_root/generated-images" \
   "$repo_root/.backups" \
   "$repo_root/.logs"
+
+if enabled_value "$info_page"; then
+  if [ -z "$info_host" ]; then
+    info_host="$(detect_lan_ip || true)"
+  fi
+  if [ -z "$info_host" ]; then
+    echo "CHARLOTTE_INFO_PAGE is enabled, but the current LAN IP could not be detected." >&2
+    echo "Set CHARLOTTE_INFO_HOST in .env to the address the tablet should use." >&2
+    echo "Continuing without the Charlotte info page." >&2
+  else
+    start_info_page
+  fi
+fi
 
 docker_args=(--rm)
 if [ -t 0 ] && [ -t 1 ]; then

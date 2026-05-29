@@ -6,6 +6,25 @@ tools:
   # set this to the Chrome/Chromium executable available in that runtime.
   chrome_path: /usr/bin/google-chrome-stable
 
+qr:
+  # Curated links for the `qr-code` skill. When you ask Charlotte for a QR code
+  # by name ("make a QR for Ambleside"), she checks this list FIRST and matches
+  # on `name` or any `aliases` (case-insensitive). This is a priority list, not
+  # a whitelist: if you paste a full URL, or name a page that isn't here, the
+  # skill still works — known_links just spares Charlotte from guessing the URL
+  # of an esoteric homeschool resource. Add entries freely.
+  known_links:
+    - name: "MindFeast"
+      aliases: ["lockscreen", "lock-screen", "educational resources"]
+      url: "https://mindfeast.life/"
+    - name: "Spelling Helper"
+      aliases: ["spelling", "spelling app", "spelling helper"]
+      url: "https://mindfeast.life/spelling"
+      notes: "Google Play page (placeholder until the app ships)"
+    - name: "Ambleside Online"
+      aliases: ["ambleside", "ao"]
+      url: "https://www.amblesideonline.org/"
+
 capabilities:
   image_generation:
     # Routes are tried in order. Skills pass a preference such as "gemini" or
