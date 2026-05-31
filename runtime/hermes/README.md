@@ -258,7 +258,7 @@ The gateway runs inside the Charlotte Hermes container, so `/workspace` paths ar
 
 ### Voice Messages
 
-Incoming Telegram voice messages are handled by Hermes' STT layer before they reach Charlotte. The default Charlotte profile config enables local transcription:
+Incoming Telegram voice messages are handled by Hermes' STT layer before they reach Charlotte. The default Charlotte profile config enables local transcription and keyless Edge TTS:
 
 ```yaml
 stt:
@@ -266,9 +266,16 @@ stt:
   provider: "local"
   local:
     model: "base"
+
+tts:
+  provider: "edge"
+  edge:
+    voice: "en-US-AriaNeural"
 ```
 
-The Docker image installs `faster-whisper` into Hermes' own runtime venv and installs `ffmpeg` for audio handling. After changing this runtime image, rebuild and restart the gateway:
+The recommended Telegram setting is `/voice on`. In that mode, Charlotte answers with voice only when the incoming message was a Telegram voice message. Typed messages still get plain text replies. Use `/voice off` to return to text-only replies, or `/voice tts` only when you intentionally want every reply spoken.
+
+The Docker image installs `faster-whisper` and `edge-tts` into Hermes' own runtime venv, and installs `ffmpeg` for audio handling. It also installs `libopus0` so the image has the codec needed for future Discord voice-channel support. After changing this runtime image, rebuild and restart the gateway:
 
 ```bash
 docker build -f runtime/hermes/Dockerfile -t charlotte-hermes:local .
@@ -296,3 +303,9 @@ rm -f "$HOME/.hermes-charlotte/audio_cache"/*
 ```
 
 New Hermes profiles may use `~/.hermes-charlotte/cache/audio/` instead if no legacy `audio_cache/` directory exists.
+
+### Future Discord Voice Rooms
+
+Discord voice-channel support is deferred until Telegram voice replies are working well. The runtime image includes the Opus codec dependency, and `.env.example` includes placeholders for the Discord bot token and numeric allowlist.
+
+When enabling Discord later, start with text DMs, then gateway voice replies, then voice rooms. Discord voice rooms require the bot to have Connect and Speak permissions, privileged gateway intents enabled in the Discord Developer Portal, and `DISCORD_ALLOWED_USERS` kept narrow.

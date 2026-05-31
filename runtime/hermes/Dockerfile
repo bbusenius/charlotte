@@ -12,11 +12,12 @@ RUN set -eux; \
         ffmpeg \
         git \
         inkscape \
+        libopus0 \
         python3-pip \
         python3-venv; \
       rm -rf /var/lib/apt/lists/*; \
     fi; \
-    uv pip install --python /opt/hermes/.venv/bin/python "faster-whisper>=1.1" "ddgs>=9.0"; \
+    uv pip install --python /opt/hermes/.venv/bin/python "faster-whisper>=1.1" "ddgs>=9.0" "edge-tts>=7.0"; \
     uv venv /workspace/.venv --python /opt/hermes/.venv/bin/python; \
     uv pip install --python /workspace/.venv/bin/python -e /workspace; \
     chown -R hermes:hermes /workspace/.venv
