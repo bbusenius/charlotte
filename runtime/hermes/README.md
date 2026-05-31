@@ -273,7 +273,7 @@ tts:
     voice: "en-US-AriaNeural"
 ```
 
-The recommended Telegram setting is `/voice on`. In that mode, Charlotte answers with voice only when the incoming message was a Telegram voice message. Typed messages still get plain text replies. Use `/voice off` to return to text-only replies, or `/voice tts` only when you intentionally want every reply spoken.
+The default Charlotte profile sets `voice.auto_tts: true`, so voice-originating gateway messages get spoken replies by default. Typed messages still get plain text replies. Use `/voice off` in a chat to opt out, `/voice on` to opt back in, or `/voice tts` only when you intentionally want every reply spoken.
 
 The Docker image installs `faster-whisper` and `edge-tts` into Hermes' own runtime venv, and installs `ffmpeg` for audio handling. It also installs `libopus0` so the image has the codec needed for future Discord voice-channel support. After changing this runtime image, rebuild and restart the gateway:
 
@@ -299,13 +299,60 @@ container: /opt/data/audio_cache/
 These are the same files, not separate copies. To flush the cached audio while keeping the directory in place:
 
 ```bash
-rm -f "$HOME/.hermes-charlotte/audio_cache"/*
+runtime/hermes/clean-audio-cache.sh
 ```
 
 New Hermes profiles may use `~/.hermes-charlotte/cache/audio/` instead if no legacy `audio_cache/` directory exists.
 
-### Future Discord Voice Rooms
+### Audio Cache Cleanup
 
-Discord voice-channel support is deferred until Telegram voice replies are working well. The runtime image includes the Opus codec dependency, and `.env.example` includes placeholders for the Discord bot token and numeric allowlist.
+Hermes stores gateway voice files in the profile data directory, not under `tablet-slides/` or other curriculum output roots:
 
-When enabling Discord later, start with text DMs, then gateway voice replies, then voice rooms. Discord voice rooms require the bot to have Connect and Speak permissions, privileged gateway intents enabled in the Discord Developer Portal, and `DISCORD_ALLOWED_USERS` kept narrow.
+```text
+host:      ~/.hermes-charlotte/audio_cache/
+container: /opt/data/audio_cache/
+
+host:      ~/.hermes-charlotte/cache/audio/
+container: /opt/data/cache/audio/
+```
+
+Inbound Telegram and Discord voice recordings are saved as files such as `audio_*.ogg`. Gateway TTS replies are saved as files such as `tts_*.mp3` or `tts_*.ogg`. Grok MCP does not store local audio files in the Charlotte setup; it may be called by the agent for reasoning/search, but Hermes handles STT/TTS through the gateway cache above.
+
+Delete all cached gateway audio:
+
+```bash
+runtime/hermes/clean-audio-cache.sh
+```
+
+Preview what would be deleted:
+
+```bash
+runtime/hermes/clean-audio-cache.sh --dry-run
+```
+
+## Discord Gateway
+
+The recommended Discord setup is a private, single-purpose `Charlotte` server with one text channel and one voice channel. In that setup, use numeric Discord user IDs for the allowlist:
+
+```env
+DISCORD_BOT_TOKEN=
+DISCORD_ALLOWED_USERS=
+```
+
+Set `discord.require_mention: false` in the Hermes profile config for this private-server pattern. The Charlotte example config uses that behavior so the dedicated Discord channel works like a direct conversation.
+
+Create the bot in the Discord Developer Portal, enable Message Content Intent, and invite it to the private server with `bot` and `applications.commands` scopes. For text testing, the bot needs View Channels, Send Messages, Send Messages in Threads, Read Message History, Use Slash Commands, and Attach Files.
+
+Run the same Hermes gateway command used for Telegram:
+
+```bash
+runtime/hermes/run.sh gateway run
+```
+
+Test Discord text first. Once text works, test voice-channel joining. Discord slash commands must be selected from the command autocomplete UI; typing literal text such as `/voice join` may not invoke the command. Type `/voice`, choose Charlotte's command, then choose `join`.
+
+### Discord Voice Rooms
+
+The runtime image includes the Opus codec dependency needed for Discord voice-channel support, and `.env.example` includes placeholders for the Discord bot token and numeric allowlist.
+
+For Discord voice rooms, add Connect, Speak, and Use Voice Activity permissions to the bot invite/server permissions. Keep `DISCORD_ALLOWED_USERS` narrow.
