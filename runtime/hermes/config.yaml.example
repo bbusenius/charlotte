@@ -33,6 +33,13 @@ terminal:
     - NANOGPT_IMAGE_MODEL_GEMINI
     - NANOGPT_IMAGE_MODEL_GROK
 
+# Web search/fetch backend for the `web` toolset. `ddgs` (DuckDuckGo) is
+# keyless and installed into the Hermes venv by runtime/hermes/Dockerfile, so
+# it works on a fresh clone with no API key. Swap to tavily/brave/exa here if
+# you add the corresponding API key to .env.
+web:
+  search_backend: ddgs
+
 skills:
   external_dirs:
     - /workspace/skills

@@ -16,7 +16,7 @@ RUN set -eux; \
         python3-venv; \
       rm -rf /var/lib/apt/lists/*; \
     fi; \
-    uv pip install --python /opt/hermes/.venv/bin/python "faster-whisper>=1.1"; \
+    uv pip install --python /opt/hermes/.venv/bin/python "faster-whisper>=1.1" "ddgs>=9.0"; \
     uv venv /workspace/.venv --python /opt/hermes/.venv/bin/python; \
     uv pip install --python /workspace/.venv/bin/python -e /workspace; \
     chown -R hermes:hermes /workspace/.venv
