@@ -8,6 +8,7 @@ curricula/**
 tablet-slides/**
 field-trips/**
 generated-images/**
+dashboards/**
 
 # Local backups and app state
 .backups/

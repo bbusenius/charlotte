@@ -170,11 +170,16 @@ start_info_page() {
     -e "HERMES_UID=$(id -u)"
     -e "HERMES_GID=$(id -g)"
     -v "$repo_root/apps/charlotte:/workspace/apps/charlotte:ro"
+    -v "$repo_root/dashboards:/workspace/dashboards:ro"
   )
 
   docker rm -f "$container_name" >/dev/null 2>&1 || true
   if ! docker run "${page_args[@]}" "$image" \
-    .venv/bin/python -m http.server "$info_port" --bind 0.0.0.0 --directory apps/charlotte/static >/dev/null; then
+    .venv/bin/python apps/charlotte/server.py \
+      --host 0.0.0.0 \
+      --port "$info_port" \
+      --static-root apps/charlotte/static \
+      --dashboard-root dashboards >/dev/null; then
     echo "Charlotte info page container failed to start; continuing without it." >&2
     return 0
   fi
@@ -191,6 +196,17 @@ start_info_page() {
   echo
   docker exec "$container_name" \
     .venv/bin/python scripts/qr_url.py "$url" 2>/dev/null || true
+}
+
+provision_dashboards() {
+  local log_dir="$repo_root/.logs/hsd-dashboard"
+
+  mkdir -p "$log_dir"
+  if ! docker run "${base_docker_args[@]}" "$image" \
+    .venv/bin/python scripts/hsd_provision_dashboards.py \
+      --log-dir .logs/hsd-dashboard; then
+    echo "Dashboard provisioning failed; continuing. See $log_dir for details." >&2
+  fi
 }
 
 env_image="$(read_env_value CHARLOTTE_HERMES_IMAGE "$env_file")"
@@ -227,32 +243,17 @@ mkdir -p \
   "$repo_root/tablet-slides" \
   "$repo_root/field-trips" \
   "$repo_root/generated-images" \
+  "$repo_root/dashboards" \
   "$repo_root/.backups" \
   "$repo_root/.logs"
 
-if enabled_value "$info_page"; then
-  if [ -z "$info_host" ]; then
-    info_host="$(detect_lan_ip || true)"
-  fi
-  if [ -z "$info_host" ]; then
-    echo "CHARLOTTE_INFO_PAGE is enabled, but the current LAN IP could not be detected." >&2
-    echo "Set CHARLOTTE_INFO_HOST in .env to the address the tablet should use." >&2
-    echo "Continuing without the Charlotte info page." >&2
-  else
-    start_info_page
-  fi
-fi
-
-docker_args=(--rm)
-if [ -t 0 ] && [ -t 1 ]; then
-  docker_args+=(-it)
-fi
+base_docker_args=(--rm)
 
 if [ -f "$env_file" ]; then
-  docker_args+=(--env-file "$env_file")
+  base_docker_args+=(--env-file "$env_file")
 fi
 
-docker_args+=(
+base_docker_args+=(
   -e "HERMES_UID=$(id -u)"
   -e "HERMES_GID=$(id -g)"
 )
@@ -261,22 +262,23 @@ if [ -n "$tz" ]; then
   # TZ fixes glibc/date inside the container; HERMES_TIMEZONE makes the Hermes
   # cron scheduler (hermes_time.now) authoritative instead of relying on its
   # server-local fallback.
-  docker_args+=(-e "TZ=$tz" -e "HERMES_TIMEZONE=$tz")
+  base_docker_args+=(-e "TZ=$tz" -e "HERMES_TIMEZONE=$tz")
 fi
 
-docker_args+=(
+base_docker_args+=(
   -v "$hermes_home:/opt/data"
   -v "$repo_root/students.yaml:/workspace/students.yaml:ro"
   -v "$repo_root/curricula:/workspace/curricula"
   -v "$repo_root/tablet-slides:/workspace/tablet-slides"
   -v "$repo_root/field-trips:/workspace/field-trips"
   -v "$repo_root/generated-images:/workspace/generated-images"
+  -v "$repo_root/dashboards:/workspace/dashboards"
   -v "$repo_root/.backups:/workspace/.backups"
   -v "$repo_root/.logs:/workspace/.logs"
 )
 
 if [ -f "$repo_root/runtime.yaml" ]; then
-  docker_args+=(-v "$repo_root/runtime.yaml:/workspace/runtime.yaml:ro")
+  base_docker_args+=(-v "$repo_root/runtime.yaml:/workspace/runtime.yaml:ro")
 fi
 
 if [ -n "$home_mounts" ]; then
@@ -303,11 +305,31 @@ if [ -n "$home_mounts" ]; then
       echo "Configured CHARLOTTE_HOME_MOUNTS path does not exist or is not a directory: $host_mount" >&2
       exit 1
     fi
-    docker_args+=(
+    base_docker_args+=(
       -v "$host_mount:$container_mount"
       -v "$host_mount:$container_home_mount"
     )
   done
+fi
+
+provision_dashboards
+
+if enabled_value "$info_page"; then
+  if [ -z "$info_host" ]; then
+    info_host="$(detect_lan_ip || true)"
+  fi
+  if [ -z "$info_host" ]; then
+    echo "CHARLOTTE_INFO_PAGE is enabled, but the current LAN IP could not be detected." >&2
+    echo "Set CHARLOTTE_INFO_HOST in .env to the address the tablet should use." >&2
+    echo "Continuing without the Charlotte info page." >&2
+  else
+    start_info_page
+  fi
+fi
+
+docker_args=("${base_docker_args[@]}")
+if [ -t 0 ] && [ -t 1 ]; then
+  docker_args+=(-it)
 fi
 
 if [ "$#" -eq 0 ]; then

@@ -33,6 +33,27 @@ Charlotte can be used in one of two ways:
    - Writes a row to the child's reading-list spreadsheet (sheet chosen by position: "read by" vs "read to")
    - Marks messages as processed
 
+### Homeschool Dashboard record queries (`/hsd-records-read`)
+
+Reads existing time and reading-list workbooks without exposing whole spreadsheets to the model. Given a natural question such as "what was the last thing Eliana did in Math?" or "what books has Isamaya read lately?", the skill:
+
+1. Resolves the student through `students.yaml`
+2. Runs `scripts/hsd_read.py` against the configured workbook
+3. Answers from compact JSON rows
+
+The helper supports time-log filters by subject, date range, text query, and latest/limit. It supports reading-list filters by text query, configured list type (`read_by_self` / `read_to`), and latest/limit.
+
+### Homeschool Dashboard viewing (`/hsd-dashboard-show`)
+
+Generates the visual [Homeschool Dashboard](https://github.com/bbusenius/Homeschool-Dashboard) HTML for a configured student. Given a request such as "show me Eliana's homeschool dashboard", the skill:
+
+1. Resolves the student through `students.yaml`
+2. Runs `scripts/hsd_dashboard.py` against the student's `time_tracking_spreadsheet`
+3. Writes `dashboards/<student>.html`
+4. Opens, links, or reports the generated HTML path depending on the active runtime
+
+This path is for visual dashboards. Conversational questions about logged records should use `/hsd-records-read`.
+
 ### Field trip planning (`/field-trip-planner`)
 
 Distinct from the logging pipelines — a planning skill, not Signal-driven. Given a theme (often lessons already studied) and a location in the prompt, the `field-trip-planner` skill:
@@ -109,6 +130,7 @@ The following paths are writable local content roots and are intentionally gitig
 - `tablet-slides/` — generated Android lock-screen slide packages
 - `generated-images/` — standalone generated images that are not tablet slide packages or printable materials
 - `field-trips/` — generated field trip plans
+- `dashboards/` — generated Homeschool Dashboard HTML
 - `.backups/` — local spreadsheet backups created during logging workflows
 - `.logs/` — local sync and long-running operation logs
 
@@ -210,6 +232,7 @@ These are separate, reusable tools that this project relies on:
 |------|----------|---------|
 | [signal-sieve](https://github.com/bbusenius/signal-sieve) | Installed from Git URL in `pyproject.toml` | Captures Signal messages into SQLite |
 | [xlsx-append](https://github.com/bbusenius/xlsx-append) | Installed from Git URL in `pyproject.toml` | Appends rows to Excel spreadsheets |
+| [Homeschool-Dashboard](https://github.com/bbusenius/Homeschool-Dashboard) | Installed from Git URL in `pyproject.toml` | Generates visual dashboard HTML from time-tracking spreadsheets |
 | Vision/search-capable runtime tools | Configured in the active harness | Analyze screenshot and cover images; last-resort book lookups. Grok MCP is one supported implementation. |
 | Google Maps MCP | Configured in the active harness | Geocoding, places search, place details, and directions for field trip planning |
 | Image capability router | `scripts/charlotte_image.py` + ignored `runtime.yaml` | Routes image generation through configured sources such as NanoGPT, direct Google/Gemini, direct xAI/Grok, or runtime-native fallback |
@@ -238,6 +261,19 @@ See [Runtime Tool Surface](docs/runtime-tool-surface.md) for the support checkli
 Lesson spreadsheet columns: Date, Start Time, End Time, Description, Teacher
 
 Reading list spreadsheet columns (same across both "read by" and "read to" sheets): Title, Author, Language, ISBN, SKU, Level, Audiobook, Part of coursework?
+
+## Homeschool record read commands
+
+```bash
+.venv/bin/python scripts/hsd_read.py --student eliana time --subject Math --latest 1
+.venv/bin/python scripts/hsd_read.py --student eliana books --latest 10
+```
+
+## Homeschool dashboard command
+
+```bash
+.venv/bin/python scripts/hsd_dashboard.py --student eliana
+```
 
 ## Curricula
 
@@ -331,6 +367,8 @@ Examples:
 | `scripts/openlibrary/lookup.py` | Looks up a book on Open Library; returns metadata with a high/medium/low confidence tier |
 | `scripts/openlibrary/subject_search.py` | Discovers books on a topic via Open Library subject search; classifies results as `picture_book`, `chapter_book`, `middle_grade`, `young_adult`, or `adult` for enrichment bucketing in field trip plans |
 | `scripts/get-sheet-name.py` | Resolves a sheet name by its positional index in an xlsx file |
+| `scripts/hsd_read.py` | Reads configured Homeschool-Dashboard-compatible time and reading-list spreadsheets as compact JSON |
+| `scripts/hsd_dashboard.py` | Generates visual Homeschool Dashboard HTML for a configured student |
 | `scripts/charlotte_image.py` | Routes image generation through configured sources in `runtime.yaml`; exits 2 when only runtime-native fallback remains |
 | `scripts/gemini_image.py` | Direct Google/Gemini image backend used by `scripts/charlotte_image.py` when configured |
 | `skills/mindfeast-slide-sync/scripts/sync.py` | Syncs existing MindFeast tablet slides through the per-student remote endpoint in `students.yaml` |
@@ -355,6 +393,8 @@ charlotte/
 ├── skills/                  # canonical tracked skills
 │   ├── hsd-time-log/        # Homeschool-Dashboard-compatible lesson time logging skill
 │   ├── hsd-book-log/        # Homeschool-Dashboard-compatible book logging skill
+│   ├── hsd-records-read/    # Read-only workbook query skill
+│   ├── hsd-dashboard-show/  # Visual dashboard generation skill
 │   ├── field-trip-planner/  # pedagogy-grounded field trip planning skill
 │   ├── materials-builder/   # Charlotte Mason material creation skill
 │   ├── mindfeast-weekly-slides/ # weekly MindFeast slide generation from time logs

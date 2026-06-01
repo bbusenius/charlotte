@@ -13,6 +13,8 @@ Charlotte skills assume a small set of runtime capabilities. Runtime adapters ca
 | SVG to PDF/PNG | `mason-print-design`, `materials-builder` | System `inkscape` |
 | Browser automation | Lexile lookup | Playwright plus `tools.chrome_path` in `runtime.yaml` |
 | Spreadsheet append | `hsd-time-log`, `hsd-book-log` | `xlsx-append` from `pyproject.toml` |
+| Spreadsheet read | `hsd-records-read`, `mindfeast-weekly-slides` | `openpyxl` from `pyproject.toml` plus mounted workbook paths |
+| Dashboard HTML generation | `hsd-dashboard-show` | `homeschool_dashboard` from `pyproject.toml` plus mounted workbook paths |
 | Signal message state | `hsd-time-log`, `hsd-book-log` | `signal-sieve` CLI plus configured Signal capture state |
 | MindFeast remote control | `mindfeast-slide-sync`, `mindfeast-slide-trigger`, `mindfeast-weekly-slides` | HTTP POST from the runtime network |
 

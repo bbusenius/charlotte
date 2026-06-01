@@ -13,6 +13,7 @@ dependencies = [
     "qrcode[pil]>=7.4",
     "signal-sieve @ git+https://github.com/bbusenius/signal-sieve.git@master",
     "xlsx-append @ git+https://github.com/bbusenius/xlsx-append.git@master",
+    "homeschool_dashboard @ git+https://github.com/bbusenius/Homeschool-Dashboard.git@master",
 ]
 
 [project.optional-dependencies]
