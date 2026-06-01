@@ -30,6 +30,11 @@ students:
     mindfeast:
       remote_url: http://192.168.1.5:8787
       remote_token: ""
+      unlock_requirement:
+        default: 1
+        no_tablet:
+          days: [sunday]
+          count: 50
     curricula_dir: curricula/third-party
     curricula:
       level-4-language-arts/Level-4-Language-Arts.md:
