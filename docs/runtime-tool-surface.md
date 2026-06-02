@@ -8,7 +8,7 @@ Charlotte skills assume a small set of runtime capabilities. Runtime adapters ca
 | --- | --- | --- |
 | Workspace file read/write | All generation skills | Runtime filesystem access to the repo and ignored content roots |
 | Python project CLIs | Logging, slides, sync, image routing | `.venv` installed from `pyproject.toml` |
-| Image generation | Materials, tablet slides, standalone image requests | `scripts/charlotte_image.py` plus `runtime.yaml` routes |
+| Image generation | Materials, tablet slides, standalone image requests | `scripts/charlotte_image.py` plus `image-generation.yaml` routes |
 | HTML to PDF | `mason-print-design`, `materials-builder` | WeasyPrint from `pyproject.toml` |
 | SVG to PDF/PNG | `mason-print-design`, `materials-builder` | System `inkscape` |
 | Browser automation | Lexile lookup | Playwright plus `tools.chrome_path` in `runtime.yaml` |
@@ -36,7 +36,7 @@ The single-container Hermes adapter currently provisions the local CLI/toolchain
 
 - Installs Charlotte Python dependencies from `pyproject.toml`.
 - Installs `inkscape` in the image.
-- Mounts `.env`, `runtime.yaml`, `students.yaml`, and ignored content roots at runtime.
+- Mounts `.env`, `runtime.yaml`, `image-generation.yaml`, `students.yaml`, and ignored content roots at runtime.
 - Supports configurable `~/...` host data mounts through `CHARLOTTE_HOME_MOUNTS`.
 - Can consume host-owned `signal-sieve` state when the Signal config/database/attachments are mounted.
 

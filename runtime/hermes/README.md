@@ -15,6 +15,7 @@ Run all commands from the repo root.
 cp .env.example .env
 chmod 600 .env
 cp runtime.yaml.example runtime.yaml
+cp image-generation.yaml.example image-generation.yaml
 
 # Build or rebuild the Docker image
 docker build -f runtime/hermes/Dockerfile -t charlotte-hermes:local .
@@ -28,18 +29,29 @@ runtime/hermes/run.sh gateway run
 # Check that the rebuilt image can see Charlotte scripts
 runtime/hermes/run.sh .venv/bin/python scripts/charlotte_image.py --help
 
+# Inspect the resolved route and final provider prompt without generating
+runtime/hermes/run.sh .venv/bin/python scripts/charlotte_image.py \
+  --prompt "simple watercolor oak leaf, no text, no labels" \
+  --out /tmp/charlotte-image-test.png \
+  --kind illustration \
+  --route quality \
+  --dry-run \
+  --json
+
 # Test image routing locally, outside Docker
 .venv/bin/python scripts/charlotte_image.py \
   --prompt "simple watercolor oak leaf, no text, no labels" \
   --out /tmp/charlotte-image-test.png \
-  --preference gemini \
+  --kind illustration \
+  --route quality \
   --json
 
 # Test image routing inside Docker
 runtime/hermes/run.sh .venv/bin/python scripts/charlotte_image.py \
   --prompt "simple watercolor oak leaf, no text, no labels" \
   --out /tmp/charlotte-image-test.png \
-  --preference gemini \
+  --kind illustration \
+  --route quality \
   --json
 ```
 
@@ -51,7 +63,7 @@ docker build -f runtime/hermes/Dockerfile -t charlotte-hermes:local .
 runtime/hermes/run.sh gateway run
 ```
 
-Files copied into the image include `skills/`, `scripts/`, `README.md`, `AGENTS.md`, `pyproject.toml`, and runtime adapter files. Local ignored files such as `.env`, `runtime.yaml`, `students.yaml`, and generated content roots are mounted or passed at runtime.
+Files copied into the image include `skills/`, `scripts/`, `README.md`, `AGENTS.md`, `pyproject.toml`, and runtime adapter files. Local ignored files such as `.env`, `runtime.yaml`, `image-generation.yaml`, `students.yaml`, and generated content roots are mounted or passed at runtime.
 
 Standalone image requests should save under `generated-images/`. Tablet slide packages belong under `tablet-slides/`.
 
@@ -95,7 +107,7 @@ The default Hermes config uses NanoGPT's subscription API with MiniMax M2.7 as t
 NANOGPT_API_KEY=
 ```
 
-Charlotte image generation is routed by `scripts/charlotte_image.py` using `runtime.yaml`. Useful `.env` keys:
+Charlotte image generation is routed by `scripts/charlotte_image.py` using `image-generation.yaml`. Useful `.env` keys:
 
 ```env
 NANOGPT_IMAGE_MODEL_SUBSCRIPTION=
@@ -109,7 +121,7 @@ GOOGLE_MAPS_API_KEY=
 
 NanoGPT subscription chat uses `https://nano-gpt.com/api/subscription/v1`. NanoGPT subscription images use `https://nano-gpt.com/api/generate-image` with models from the subscription image model list. NanoGPT's OpenAI-compatible `/v1/images/generations` endpoint may require separate USD balance.
 
-For quality-first image generation, keep direct Gemini first and direct Grok second in local `runtime.yaml`; use NanoGPT subscription images as a lower-cost fallback. Standalone Telegram image requests should pass the user's requested subject plainly to `--prompt` and use `--mason-aesthetics`; that flag reads the compact image-router summary from `skills/mason-aesthetics/SKILL.md`.
+For quality-first image generation, keep the local `quality` route pointed at your strongest configured image model. Use the `fast` route for fast/cheap/simple generation. Standalone Telegram image requests should pass the user's requested subject plainly to `--prompt`; the router applies full Mason prompt context for non-`fast` routes and the compact image-router summary for route `fast`.
 
 `GOOGLE_MAPS_API_KEY` is for Maps-capable MCP/runtime tools. It is separate from Gemini image-generation keys and is only useful when the active Hermes toolset exposes a Google Maps capability.
 
@@ -230,7 +242,7 @@ runtime/hermes/run.sh chat
 
 With no arguments, the wrapper runs `hermes chat`.
 
-The wrapper passes `HERMES_UID` and `HERMES_GID` so files written through mounted volumes are owned by the host user. It mounts `~/.hermes-charlotte` to `/opt/data`, mounts `students.yaml` and local `runtime.yaml` read-only when present, mounts the ignored Charlotte data roots to `/workspace`, and mounts any configured `CHARLOTTE_HOME_MOUNTS` entries into both `/opt/data/home` and `/opt/data`.
+The wrapper passes `HERMES_UID` and `HERMES_GID` so files written through mounted volumes are owned by the host user. It mounts `~/.hermes-charlotte` to `/opt/data`, mounts `students.yaml` and local `runtime.yaml` / `image-generation.yaml` read-only when present, mounts the ignored Charlotte data roots to `/workspace`, and mounts any configured `CHARLOTTE_HOME_MOUNTS` entries into both `/opt/data/home` and `/opt/data`.
 
 Override defaults with `CHARLOTTE_HERMES_IMAGE`, `CHARLOTTE_HERMES_HOME`, or `CHARLOTTE_HOME_MOUNTS`.
 

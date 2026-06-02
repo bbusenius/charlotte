@@ -281,6 +281,10 @@ if [ -f "$repo_root/runtime.yaml" ]; then
   base_docker_args+=(-v "$repo_root/runtime.yaml:/workspace/runtime.yaml:ro")
 fi
 
+if [ -f "$repo_root/image-generation.yaml" ]; then
+  base_docker_args+=(-v "$repo_root/image-generation.yaml:/workspace/image-generation.yaml:ro")
+fi
+
 if [ -n "$home_mounts" ]; then
   IFS=':' read -r -a home_mount_entries <<< "$home_mounts"
   for home_mount in "${home_mount_entries[@]}"; do

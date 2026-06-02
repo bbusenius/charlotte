@@ -72,8 +72,8 @@ Also a planning/creation skill rather than a Signal-driven pipeline. Given a pro
 1. Resolves the student (if any) via `students.yaml` and, if curriculum files are referenced, reads the relevant lessons from the paths `students.yaml` resolves them to
 2. Invokes `mason-aesthetics` (peer skill) for aesthetic direction — typography tradition, palette direction, illustration register, font-availability check
 3. Invokes `mason-print-design` (peer skill) for the rendering toolchain (WeasyPrint for HTML→PDF, Inkscape for SVG→PDF/PNG) and print-fidelity rules, including a lettering carve-out so hand-lettered or decorative text can be baked into the image when lettering *is* the art
-4. Generates illustrations through `scripts/charlotte_image.py`, using the image routes configured in local `runtime.yaml`. Gemini and Grok are model-family preferences; NanoGPT, direct provider keys, or runtime-native tools can supply those capabilities depending on the active runtime.
-5. Writes the finished material to the current working directory (or `--out PATH`), naming the image source and model in the final message
+4. Generates illustrations through `scripts/charlotte_image.py`, using the image routes configured in local `image-generation.yaml`
+5. Writes the finished material to the current working directory (or `--out PATH`), naming the image route, source, and model in the final message
 
 Material types include printable worksheets, copywork pages, flashcards, narration templates, picture-study cards, period maps, posters, and tablet-first illustrations. Grounded in the same Charlotte Mason wiki at `pedagogy/wiki/`, `mason-aesthetics` roots its guidance in [[concepts/children-are-born-persons]], [[concepts/education-is-atmosphere-discipline-life]], [[concepts/knowledge-as-food]], [[concepts/living-books]], [[concepts/science-of-relations]], and [[concepts/narration]].
 
@@ -178,6 +178,14 @@ tools:
 
 `scripts/lexile/lookup.py` uses `tools.chrome_path` for its Playwright browser executable. Leave `runtime.yaml` absent if the default path works.
 
+Image-generation route settings live in local `image-generation.yaml`, which is ignored. Copy the example and edit the route models/keys for your machine:
+
+```bash
+cp image-generation.yaml.example image-generation.yaml
+```
+
+The default route is `quality`. Route `fast` is reserved for fast/cheap/simple generation and receives a compact Mason image prompt; all other routes receive the full `mason-aesthetics` skill as image prompt context unless the caller overrides `--prompt-mode`.
+
 In the Hermes Docker runtime, `runtime/hermes/run.sh` also serves a small local Charlotte info page over plain HTTP (default port `8788`) and prints a scannable QR so a tablet on the same LAN can open it. The `charlotte-url` skill re-shares that URL and QR on demand.
 
 Secret local settings live in ignored `.env`. Copy the example and fill only the keys your local runtime needs:
@@ -187,13 +195,24 @@ cp .env.example .env
 chmod 600 .env
 ```
 
-Currently used keys can include direct provider keys such as `GEMINI_API_KEY` and `XAI_API_KEY`, plus runtime adapter keys such as `NANOGPT_API_KEY` when the active runtime uses NanoGPT. Image-generation source order is configured in ignored `runtime.yaml`, not hard-coded in the skills. `scripts/charlotte_image.py` reads repo-local `.env` for these route variables during local Claude/Codex use. Runtime adapters document their own setup in their runtime directories, including configurable Docker mounts for host files referenced from `students.yaml`.
+Currently used keys can include direct provider keys such as `GEMINI_API_KEY` and `XAI_API_KEY`, plus runtime adapter keys such as `NANOGPT_API_KEY` when the active runtime uses NanoGPT. Image-generation routes are configured in ignored `image-generation.yaml`, not hard-coded in the skills. `scripts/charlotte_image.py` reads repo-local `.env` for these route variables during local Claude/Codex use. Runtime adapters document their own setup in their runtime directories, including configurable Docker mounts for host files referenced from `students.yaml`.
 
 ### Image routing
 
-Standalone image requests and skill-generated illustrations go through `scripts/charlotte_image.py`. The router reads ignored `runtime.yaml` and tries image routes in the configured order. The example configuration prefers direct Gemini, then direct Grok, then lower-cost NanoGPT subscription images as fallback.
+Standalone image requests and skill-generated illustrations go through `scripts/charlotte_image.py`. The router reads ignored `image-generation.yaml`, selects the named route, builds the Charlotte prompt, and calls that route's configured source/model. The example configuration uses `quality` for the default high-quality route and `fast` for lower-cost/simple generation.
 
-When `--mason-aesthetics` is used, the router reads the compact `#### Image-router summary` from `skills/mason-aesthetics/SKILL.md` and wraps the user's plain subject with that visual direction. Agents should pass the user's requested subject and constraints plainly to `--prompt`; they should not invent style adjectives, lighting, camera language, scenery, props, or emotional tone unless the user asked for them. The script reports the actual saved path because providers may return a different image format than the requested file extension.
+Agents should pass the user's requested subject and constraints plainly to `--prompt`; they should not invent style adjectives, lighting, camera language, scenery, props, or emotional tone unless the user asked for them. By default, route `fast` receives the compact `#### Image-router summary` from `skills/mason-aesthetics/SKILL.md`; all other routes receive the full `mason-aesthetics` skill as prompt context. The script reports the actual saved path because providers may return a different image format than the requested file extension, and JSON includes the resolved `route`, `source`, `model`, and `prompt_mode`.
+
+Use `--dry-run` to inspect the resolved route and final provider prompt without calling an image provider or writing files:
+
+```bash
+.venv/bin/python scripts/charlotte_image.py \
+  --prompt "a monarch butterfly on milkweed, no text" \
+  --out generated-images/monarch.png \
+  --kind illustration \
+  --route quality \
+  --dry-run --json
+```
 
 ### Agent runtimes
 
@@ -211,7 +230,7 @@ The current `hsd-time-log` and `hsd-book-log` skills write to spreadsheet record
 
 `materials-builder` additionally relies on:
 
-- **Image capability routes** in ignored `runtime.yaml` when a material needs generated images. `scripts/charlotte_image.py` tries the configured routes in order; direct Gemini via `scripts/gemini_image.py` is one available backend, not a required default.
+- **Image routes** in ignored `image-generation.yaml` when a material needs generated images. `scripts/charlotte_image.py` uses the configured route; direct Google via `scripts/gemini_image.py` is one available backend, not a required default.
 - **WeasyPrint** — HTML → PDF rendering, invoked from `mason-print-design`. Installed by `.venv/bin/python -m pip install -e .`; system libraries such as `libpango` and `libcairo` may still be required depending on the platform.
 - **Inkscape** — SVG → PDF/PNG rendering. Install from your package manager (`apt install inkscape`).
 
@@ -235,7 +254,7 @@ These are separate, reusable tools that this project relies on:
 | [Homeschool-Dashboard](https://github.com/bbusenius/Homeschool-Dashboard) | Installed from Git URL in `pyproject.toml` | Generates visual dashboard HTML from time-tracking spreadsheets |
 | Vision/search-capable runtime tools | Configured in the active harness | Analyze screenshot and cover images; last-resort book lookups. Grok MCP is one supported implementation. |
 | Google Maps MCP | Configured in the active harness | Geocoding, places search, place details, and directions for field trip planning |
-| Image capability router | `scripts/charlotte_image.py` + ignored `runtime.yaml` | Routes image generation through configured sources such as NanoGPT, direct Google/Gemini, direct xAI/Grok, or runtime-native fallback |
+| Image capability router | `scripts/charlotte_image.py` + ignored `image-generation.yaml` | Routes image generation through configured sources such as direct Google/Gemini, direct xAI/Grok, or NanoGPT |
 | Gemini (`google-genai` SDK) | `scripts/gemini_image.py` | Direct Google/Gemini image backend used when configured as a route |
 | WeasyPrint | Installed from `pyproject.toml` | HTML → PDF rendering; invoked from `mason-print-design` |
 | Inkscape | system package | SVG → PDF/PNG rendering; invoked from `mason-print-design` |
@@ -369,7 +388,7 @@ Examples:
 | `scripts/get-sheet-name.py` | Resolves a sheet name by its positional index in an xlsx file |
 | `scripts/hsd_read.py` | Reads configured Homeschool-Dashboard-compatible time and reading-list spreadsheets as compact JSON |
 | `scripts/hsd_dashboard.py` | Generates visual Homeschool Dashboard HTML for a configured student |
-| `scripts/charlotte_image.py` | Routes image generation through configured sources in `runtime.yaml`; exits 2 when only runtime-native fallback remains |
+| `scripts/charlotte_image.py` | Routes image generation through configured sources in `image-generation.yaml`; supports `--dry-run` prompt inspection; exits 2 when no script-callable provider is available |
 | `scripts/gemini_image.py` | Direct Google/Gemini image backend used by `scripts/charlotte_image.py` when configured |
 | `skills/mindfeast-slide-sync/scripts/sync.py` | Syncs existing MindFeast tablet slides through the per-student remote endpoint in `students.yaml` |
 | `skills/mindfeast-slide-trigger/scripts/trigger.py` | Triggers a configured MindFeast tablet to show a slide through the per-student remote endpoint in `students.yaml` |
@@ -387,6 +406,7 @@ charlotte/
 ├── CLAUDE.md               # Claude adapter; points to AGENTS.md
 ├── pyproject.toml           # Python dependencies
 ├── students.yaml.example    # portable example registry; real students.yaml is local-only
+├── image-generation.yaml.example # portable example image route config; real image-generation.yaml is local-only
 ├── .venv/                   # project virtualenv, local-only
 ├── curricula/               # local-only content root
 │   └── third-party/         # third-party curricula, one subdirectory per curriculum

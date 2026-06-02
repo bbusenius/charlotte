@@ -211,9 +211,9 @@ Invoke the **materials-builder** skill to produce the hero image. Pass it a prom
 
 > Illustration for a homeschool lesson plan on `<lesson>`. Landscape 4:3. `<one sentence on subject matter>`. No text, no labels. Save to `curricula/<class-slug>/<unit-slug>/images/<lesson-slug>-hero.png`.
 
-Let materials-builder decide the image register (via `mason-aesthetics`) and the provider. Do not second-guess those choices here. Record the returned provider name — it goes in the delivery message.
+Let materials-builder decide the image register and configured image route. Do not second-guess those choices here. Record the returned route/source/model — it goes in the delivery message.
 
-**Aspect ratio note.** Gemini/Imagen only supports `1:1`, `9:16`, `16:9`, `4:3`, `3:4`. Use `4:3` as the default landscape for hero images. Use `3:4` only when the subject clearly needs portrait. Do not request `3:2` — the API will reject it.
+**Aspect ratio note.** The shared image router is configured around common provider-supported ratios: `1:1`, `9:16`, `16:9`, `4:3`, `3:4`. Use `4:3` as the default landscape for hero images. Use `3:4` only when the subject clearly needs portrait. Do not request `3:2` unless the configured route explicitly supports it.
 
 ### Step 5 — Generate other materials (only if the lesson uses them)
 
@@ -333,7 +333,7 @@ Never "What are the three things that…?">
 Print a short summary to the console:
 
 - Path of the lesson file.
-- Paths of all generated materials, with the provider that produced any images (as materials-builder reports it).
+- Paths of all generated materials, with route/source/model for any images (as materials-builder reports them).
 - A single one-line note if anything about the request sits in real tension with the pedagogy — offered as an alternative, never as a correction, never more than once.
 
 ## Rules (hard)

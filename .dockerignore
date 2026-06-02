@@ -8,6 +8,7 @@ __pycache__/
 !.env.example
 
 runtime.yaml
+image-generation.yaml
 students.yaml
 
 curricula/

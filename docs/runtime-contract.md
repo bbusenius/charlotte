@@ -9,6 +9,7 @@ The canonical project surface is:
 - `.agents/skills/*` and `.claude/skills/*` as harness adapters back to `skills/`.
 - `students.yaml` for local family/student configuration.
 - `runtime.yaml` for non-secret machine/tool paths.
+- `image-generation.yaml` for local image route configuration.
 - ignored local content roots: `curricula/`, `tablet-slides/`, `generated-images/`, `field-trips/`, `.backups/`, and `.logs/`.
 
 Runtime adapters must not fork the skill instructions unless a runtime truly requires a shim. Prefer symlinks, external skill directories, or runtime config that points at the canonical skill tree.
@@ -28,7 +29,7 @@ Any supported runtime should provide:
 - Skill discovery for `SKILL.md` folders without duplicating canonical skills.
 - A project workspace rooted at this repo.
 - Writable access to ignored local content roots when requested by a skill.
-- Read access to `students.yaml`, `runtime.yaml`, scripts, and `pedagogy/wiki/`.
+- Read access to `students.yaml`, `runtime.yaml`, `image-generation.yaml`, scripts, and `pedagogy/wiki/`.
 - Environment or ignored-file secret loading without committing credentials.
 - MCP or equivalent external tool access for Grok, Google Maps, and future integrations.
 - A sub-agent mechanism for orchestrator skills.
@@ -43,7 +44,7 @@ Runtime adapters should start conservative, but normal Charlotte workflows shoul
 - Ordinary conversation and read-only planning can run without special approval.
 - Writing generated artifacts under `curricula/`, `tablet-slides/`, `generated-images/`, `field-trips/`, `.logs/`, or another user-specified output path is allowed when requested.
 - Creating new ad-hoc files, including new spreadsheets or reports, is allowed when requested.
-- Updating canonical records is more sensitive. This includes time-tracking spreadsheets, reading-list spreadsheets, `students.yaml`, `runtime.yaml`, and any future durable learner/profile state.
+- Updating canonical records is more sensitive. This includes time-tracking spreadsheets, reading-list spreadsheets, `students.yaml`, `runtime.yaml`, `image-generation.yaml`, and any future durable learner/profile state.
 - Canonical record updates are allowed when they are the expected action of an explicitly invoked workflow, such as `hsd-time-log` or `hsd-book-log`.
 - `signal-sieve mark-processed` is allowed only after the corresponding Signal messages have been successfully processed by an invoked logging workflow.
 - Remote device syncs, including MindFeast slide sync, are allowed when directly requested, whether as part of a skill workflow or as a standalone action.

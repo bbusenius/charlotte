@@ -122,6 +122,8 @@ def validate(slide_dir: Path) -> tuple[list[str], list[str]]:
             accept_norm = {str(item).strip().casefold() for item in accept}
             if answer and answer not in normalized and not accept_norm.intersection(normalized):
                 warnings.append("choices does not include the answer or an accepted variant")
+            if orientation == "landscape" and len(choices) >= 4:
+                warnings.append("four or more choices may fit better in portrait")
 
     if slide_type in {"essay", "informational"} and data.get("answer"):
         warnings.append(f"{slide_type} slides ignore answer")
@@ -131,6 +133,12 @@ def validate(slide_dir: Path) -> tuple[list[str], list[str]]:
     elif paragraphs and len(paragraphs[0]) > 140:
         label = "text" if slide_type == "informational" else "question"
         warnings.append(f"{label} is long for the lock-screen panel")
+    if slide_type == "informational" and orientation == "landscape" and paragraphs:
+        if len(paragraphs[0]) > 90:
+            warnings.append("dense informational text may fit better in portrait")
+    if slide_type == "essay" and orientation == "landscape" and paragraphs:
+        if len(paragraphs[0]) > 110:
+            warnings.append("long essay prompts may fit better in portrait")
     if slide_type == "question" and len(paragraphs) > 1 and len(paragraphs[1]) > 180:
         warnings.append("hint is long for the lock-screen panel")
     if slide_type == "essay" and len(paragraphs) > 1:

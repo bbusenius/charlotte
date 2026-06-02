@@ -10,13 +10,14 @@ Plain requests to make an image, picture, illustration, drawing, or visual asset
 .venv/bin/python /workspace/scripts/charlotte_image.py \
   --prompt "<image prompt>" \
   --out /workspace/generated-images/<short-slug>.png \
-  --mason-aesthetics \
+  --kind illustration \
+  --route quality \
   --json
 ```
 
 Use the JSON `path` value exactly when delivering the image with `MEDIA:<path>`; providers may save a different extension than the requested output path. Do not use Hermes creative skills such as ComfyUI, p5js, or hand-written SVG as the first path for ordinary image requests. Do not save standalone images under `tablet-slides/`; that tree is only for valid tablet slide packages.
 
-For standalone image requests, preserve the user's requested subject and constraints. Do not invent style adjectives, settings, lighting, camera language, emotional tone, species, props, scenery, or composition details unless the user explicitly asks for them. The `--mason-aesthetics` flag owns the default visual register; pass the user's request plainly to `--prompt`.
+For standalone image requests, preserve the user's requested subject and constraints. Do not invent style adjectives, settings, lighting, camera language, emotional tone, species, props, scenery, or composition details unless the user explicitly asks for them. The image router owns the default visual register for the selected route; pass the user's request plainly to `--prompt`.
 
 Plain requests to sync slides, push slides, update the tablet, or refresh MindFeast should route to `mindfeast-slide-sync`. Do not invoke `mindfeast-weekly-slides` unless the user also asks to create slides from time logs.
 

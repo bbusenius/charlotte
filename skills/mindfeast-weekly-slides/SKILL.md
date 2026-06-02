@@ -98,7 +98,7 @@ Write for the student's `grade` and reading level. Keep question text short enou
 
 Use `tablet-slide-builder` as the source of truth for the slide package contract, image policy, validation, and delivery fields.
 
-For planned slides that need images and have no provided image, let `tablet-slide-builder` generate calm, specific, full-bleed images using its normal Gemini/Grok policy. Do not generate images for slides that can be effective with existing media or audio, and do not invent copyrighted audio.
+For planned slides that need images and have no provided image, let `tablet-slide-builder` generate calm, specific, full-bleed images using its normal configured image route. Do not generate images for slides that can be effective with existing media or audio, and do not invent copyrighted audio.
 
 For painter or known-work-of-art slides, use the actual artwork image rather than a generated image. Prefer Wikimedia Commons (`https://commons.wikimedia.org/`) because most covered artists and paintings are public domain. Choose a mid-large rendition around 2,500 x 2,000 pixels when available; avoid tiny thumbnails and avoid the largest archival files when Commons offers extremely large versions. Save the image into the slide package through `tablet-slide-builder` as provided media, and keep the artwork title/artist in slide text and metadata rather than baking labels into the image.
 

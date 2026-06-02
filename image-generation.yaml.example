@@ -1,0 +1,35 @@
+# Local image generation configuration.
+# Copy to image-generation.yaml and adjust for your machine.
+# image-generation.yaml is ignored.
+
+image_generation:
+  # Normal Charlotte image generation favors aesthetic quality and instruction
+  # following. Use route `fast` explicitly when speed/cost matters more.
+  default_route: quality
+
+  routes:
+    # High-quality default for Charlotte materials, slides, and illustrations.
+    # Non-fast routes receive the full mason-aesthetics skill as prompt context.
+    quality:
+      source: google
+      api_key_env: GEMINI_API_KEY
+      model: gemini-3-pro-image-preview
+      api: generate-content
+
+    # Fast/cheap route for simple image generation.
+    # The route name `fast` receives only the compact Image-router summary.
+    fast:
+      source: google
+      api_key_env: GEMINI_API_KEY
+      model: imagen-4.0-generate-001
+      api: generate-images
+
+    # Optional Grok route through xAI's OpenAI-compatible image endpoint.
+    grok:
+      source: xai
+      api_key_env: XAI_API_KEY
+      base_url: https://api.x.ai/v1
+      model_env: XAI_IMAGE_MODEL
+
+    # Optional: if you want NanoGPT as the compact route, replace `fast`
+    # above with source/api settings for your NanoGPT image endpoint.

@@ -1,7 +1,7 @@
 ---
 name: tablet-slide-builder
 description: Use for any request to make a slide, tablet slide, lock-screen slide, unlock question, MindFeast slide, or Homeschool Screen Lock app package. Generates Android lock-screen question, essay, or informational slides; resolves the output directory per-student from students.yaml (`tablet_slides_dir`); creates `<dir>/<id>/` folders containing slide.md plus optional image/audio media; validates the app-specific YAML/frontmatter contract; uses provided prompt images when available; and can generate Mason-shaped images when none are provided. Do not route slide requests through materials-builder or mason-print-design unless the user separately asks for a printable/PDF material.
-argument-hint: <slide request in prose, optionally referencing a student, lesson, provided image, or media> [--out PATH] [--id SLUG] [--image gemini|grok|provided] [--difficulty easy|medium|hard] [--type question|essay|informational] [--subject SUBJECT]
+argument-hint: <slide request in prose, optionally referencing a student, lesson, provided image, or media> [--out PATH] [--id SLUG] [--image quality|fast|provided] [--difficulty easy|medium|hard] [--type question|essay|informational] [--subject SUBJECT]
 ---
 
 # Tablet Slide Builder
@@ -121,7 +121,7 @@ Optional fields:
 - `accept` — alternate free-text answers for question slides. Include spelling/plain-ASCII variants when names include accents.
 - `choices` — multiple-choice options for question slides. If present, the app shows buttons instead of free text.
 - `difficulty` — `easy`, `medium`, or `hard`; default to `easy`.
-- `orientation` — `landscape` or `portrait`; default to `landscape`.
+- `orientation` — `landscape` or `portrait`. Choose deliberately for both the image composition and the bottom-panel UI load; do not rely on the script default.
 
 Markdown body:
 
@@ -136,7 +136,7 @@ Markdown body:
 1. Parse the prompt for slide type, subject, student, lesson reference, requested slide count, image/audio input, answer style, and difficulty.
 2. Read `students.yaml` and resolve the output directory per *Output resolution* above. Bind it to `<out>` for the rest of the workflow. If a student or lesson is referenced, also read the lesson content before writing the challenge.
 3. If an image is provided in the prompt, use that image as the slide media. Copy it into the slide folder with a slugged filename and preserve the extension when practical.
-4. If no image is provided and the slide is not audio-only, generate one using the image generation rules below. Prompt for no text, no labels, no captions.
+4. If no image is provided and the slide is not audio-only, choose `orientation` from the image composition and expected UI load before generating the image, then generate one using the image generation rules below. Prompt for no text, no labels, no captions.
 5. If the request is for music/listening, prefer audio when the user provides an audio file. Do not invent or download copyrighted audio.
 6. Choose a stable `id` slug from the subject unless `--id` is given. Use lowercase ASCII letters, digits, and hyphens only.
 7. Write `slide.md` and media into `<out>/<id>/`. Prefer the skill-local scaffold script for ordinary single-slide packages — pass the resolved `<out>` as `--out`:
@@ -166,6 +166,7 @@ For informational slides:
   --type informational \
   --subject <subject> \
   --image path/to/image.png \
+  --orientation landscape \
   --text "..."
 ```
 
@@ -199,6 +200,7 @@ The lock-screen challenge should make the student retrieve or notice one meaning
 - Put accepted variants in `accept`.
 - Use `choices` when spelling, accents, or young-reader typing would get in the way.
 - For multiple-choice slides, put `choices` in their final display order and deliberately vary the correct answer's position across a set. Do not default to putting the correct answer first; when making several slides, spread correct answers among first, middle, and last positions.
+- Prefer `orientation: portrait` for multiple-choice slides with four or more choices, or when the choices are long enough that button height matters.
 - Use free text when recall matters and the answer is short.
 - Avoid trick questions, vague wording, and overly long answers.
 - Hints should reopen attention to the material, not give the answer away.
@@ -212,6 +214,7 @@ Good slide subjects include `painting`, `composer`, `geography`, `science`, `mat
 Use `type: informational` when the slide should simply show context, a reminder, a quote, a label-free observation prompt, or a transition between challenge slides. Informational slides are dismissible and do not include `answer`, `accept`, `choices`, or hint text.
 
 - Prefer one concise body paragraph.
+- Prefer `orientation: portrait` for informational slides with a quote, several facts, or a paragraph long enough that the bottom panel becomes the main object of attention.
 - Let the image or audio carry most of the slide when possible.
 - Do not create fake questions with obvious answers just to fit the question format.
 - A media-only informational slide is valid when the requested experience is just looking or listening.
@@ -229,11 +232,10 @@ Use `type: essay` when the student should respond in their own words. Essay slid
 
 ## Image Generation
 
-Use the same provider policy as `materials-builder`, but with slide-specific aspect ratios and output paths.
+Use the same image route policy as `materials-builder`, but with slide-specific aspect ratios and output paths.
 
-Image generation for this skill is a capability-routed workflow. This skill expresses a model-family preference; `runtime.yaml` decides which source supplies that capability.
+Image generation for this skill is route-based. Use the normal `quality` route unless the user explicitly asks for a fast/cheap slide image; `image-generation.yaml` decides which provider/model supplies that route.
 
-- Gemini and Grok are preferences, not hard requirements for direct `GEMINI_API_KEY` or `XAI_API_KEY` use.
 - Use the repo-local router below, invoked from the project root through `.venv/bin/python`.
 - If the router exits `2`, no configured script-callable image provider is available. At that point, use a runtime-native image tool if the active harness exposes one. If no runtime image tool exists, report that image generation is unavailable.
 - If the router exits `3`, stop. That is a policy/safety rejection; do not try another provider.
@@ -242,9 +244,9 @@ Image generation for this skill is a capability-routed workflow. This skill expr
 
 If the user attaches or names an image, use it. Do not generate a replacement unless the user asks for one. Copy it into the slide folder and set `image:` to the copied filename.
 
-### Default preference: Gemini
+### Default route: quality
 
-When no image is provided and an image slide is needed, use the shared image router from the repo root:
+When no image is provided and an image slide is needed, first choose the slide orientation, then use the shared image router from the repo root. Use landscape when the visual composition needs width: broad scenes, maps, diagrams, groups, or side-by-side relationships.
 
 ```bash
 .venv/bin/python scripts/charlotte_image.py \
@@ -252,13 +254,29 @@ When no image is provided and an image slide is needed, use the shared image rou
   --out "<out>/<slide-id>/<slide-id>.png" \
   --size 1K \
   --aspect-ratio 16:9 \
-  --preference gemini \
+  --kind slide-background \
+  --route quality \
   --json
 ```
 
 Use `--aspect-ratio 16:9` for `orientation: landscape`. Use `--aspect-ratio 3:4` for `orientation: portrait`.
 
-The router reads `capabilities.image_generation.routes` from `runtime.yaml`. It tries routes in configured order. Use the JSON `path` in the result as the actual media file path; some providers return `.jpg` even when the requested path ended in `.png`.
+Use portrait when the visual composition or the slide UI needs vertical room: single people, portraits, book-page-like images, tall objects, composer/author/painter likenesses, artwork/document study, dense informational text, longer essay prompts, or multiple-choice slides with four or more choices.
+
+```bash
+.venv/bin/python scripts/charlotte_image.py \
+  --prompt "..." \
+  --out "<out>/<slide-id>/<slide-id>.png" \
+  --size 1K \
+  --aspect-ratio 3:4 \
+  --kind slide-background \
+  --route quality \
+  --json
+```
+
+The router reads `image-generation.yaml`. Use the JSON `path` in the result as the actual media file path; some providers return `.jpg` even when the requested path ended in `.png`. Use the JSON `route`, `source`, `model`, and `prompt_mode` fields when naming what generated the image.
+
+Use `--dry-run --json` on the same command to inspect the resolved route and final provider prompt without calling an image provider or writing files.
 
 Exit codes:
 
@@ -267,9 +285,9 @@ Exit codes:
 - `2` no script-callable provider is configured or available. Use a runtime-native image tool if available.
 - `3` policy/safety rejection. Stop.
 
-### Explicit provider preference
+### Fast route
 
-If the user explicitly passes `--image gemini` or `--image grok`, pass `--strict-preference` to the router:
+If the user explicitly asks for a fast/cheap/simple generated image, use `--route fast`:
 
 ```bash
 .venv/bin/python scripts/charlotte_image.py \
@@ -277,12 +295,12 @@ If the user explicitly passes `--image gemini` or `--image grok`, pass `--strict
   --out "<out>/<slide-id>/<slide-id>.png" \
   --size 1K \
   --aspect-ratio 16:9 \
-  --preference grok \
-  --strict-preference \
+  --kind slide-background \
+  --route fast \
   --json
 ```
 
-When strict preference is set, do not silently switch to another model family.
+The route named `fast` receives the compact Mason image summary. Other routes receive the full `mason-aesthetics` skill as image prompt context unless `--prompt-mode` is explicitly overridden.
 
 ### Prompt rules
 
@@ -298,8 +316,8 @@ When strict preference is set, do not silently switch to another model family.
 
 Images:
 
-- Prefer `.jpg` for photos/art reproductions and `.png` for generated illustrations or diagrams.
-- Use `orientation: portrait` for tall portraits or book-page-like images; otherwise use `landscape`.
+- Prefer `.jpg` for photos/art reproductions and provider-returned JPEGs; prefer `.png` for generated diagrams when the provider actually returns PNG.
+- Use `orientation: portrait` when the image composition or bottom-panel UI needs vertical room: single people, portraits, book-page-like images, tall objects, composer/author/painter likenesses, artwork/document study, dense informational text, longer essay prompts, or multiple-choice slides with four or more choices. Use `landscape` when the visual composition needs width: broad scenes, maps, diagrams, groups, or side-by-side relationships.
 - The app crops landscape images full-screen and fills height for portrait images, so the important subject should be centered.
 
 Audio:

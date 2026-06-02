@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Generate an image through routes configured in runtime.yaml.
+"""Generate an image through routes configured in image-generation.yaml.
 
-The script is intentionally policy-light: skills express a model-family
-preference such as "gemini" or "grok", while runtime.yaml decides which
-sources to try and in what order.
+Skills describe the image job and this router resolves the configured route,
+builds the Charlotte prompt, and calls the configured provider.
 
 Exit codes:
   0  success
@@ -61,14 +60,21 @@ def load_dotenv() -> None:
         os.environ[key] = value
 
 
-def load_runtime_config() -> dict[str, Any]:
-    path = repo_root() / "runtime.yaml"
+def load_image_config() -> dict[str, Any]:
+    configured = os.environ.get("CHARLOTTE_IMAGE_CONFIG")
+    path = (
+        Path(configured).expanduser()
+        if configured
+        else repo_root() / "image-generation.yaml"
+    )
+    if not path.is_absolute():
+        path = repo_root() / path
     if not path.exists():
-        return {}
+        raise ProviderUnavailable(f"image generation config not found: {path}")
     with path.open("r", encoding="utf-8") as fh:
         loaded = yaml.safe_load(fh) or {}
     if not isinstance(loaded, dict):
-        raise ProviderUnavailable("runtime.yaml must contain a YAML mapping")
+        raise ProviderUnavailable(f"{path} must contain a YAML mapping")
     return loaded
 
 
@@ -82,30 +88,28 @@ def env_value(route: dict[str, Any], key: str) -> str | None:
     return None
 
 
-def image_routes(
-    config: dict[str, Any], preference: str, strict: bool, only_source: str | None
-) -> list[dict[str, Any]]:
-    routes = (
-        config.get("capabilities", {})
-        .get("image_generation", {})
-        .get("routes", [])
-    )
-    if not isinstance(routes, list):
-        raise ProviderUnavailable("capabilities.image_generation.routes must be a list")
+def configured_route(
+    config: dict[str, Any], route_name: str | None, only_source: str | None
+) -> tuple[str, dict[str, Any]]:
+    image_config = config.get("image_generation", {})
+    if not isinstance(image_config, dict):
+        raise ProviderUnavailable("image_generation must be a YAML mapping")
 
-    selected: list[dict[str, Any]] = []
-    for route in routes:
-        if not isinstance(route, dict):
-            continue
-        if only_source and str(route.get("source", "")).strip() != only_source:
-            continue
-        route_preference = str(route.get("preference", "")).strip()
-        if strict:
-            if route_preference == preference:
-                selected.append(route)
-        else:
-            selected.append(route)
-    return selected
+    routes = image_config.get("routes", {})
+    if not isinstance(routes, dict):
+        raise ProviderUnavailable("image_generation.routes must be a YAML mapping")
+
+    selected_name = route_name or str(image_config.get("default_route", "")).strip()
+    if not selected_name:
+        raise ProviderUnavailable("image_generation.default_route is not configured")
+    route = routes.get(selected_name)
+    if not isinstance(route, dict):
+        raise ProviderUnavailable(f"image route {selected_name!r} is not configured")
+    if only_source and str(route.get("source", "")).strip() != only_source:
+        raise ProviderUnavailable(
+            f"image route {selected_name!r} does not use source {only_source!r}"
+        )
+    return selected_name, dict(route)
 
 
 def output_path(path: str) -> Path:
@@ -189,22 +193,67 @@ def markdown_section(text: str, heading: str) -> str:
     return "\n".join(lines[start:end]).strip()
 
 
-def mason_illustration_guidance() -> str:
+def mason_aesthetics_path() -> Path:
     path = repo_root() / "skills" / "mason-aesthetics" / "SKILL.md"
     if not path.exists():
         raise ProviderUnavailable("skills/mason-aesthetics/SKILL.md is not available")
-    text = path.read_text(encoding="utf-8")
+    return path
+
+
+def mason_compact_guidance() -> str:
+    text = mason_aesthetics_path().read_text(encoding="utf-8")
     section = markdown_section(text, "#### Image-router summary")
     return "\n".join(section.splitlines()[1:]).strip()
 
 
-def prompt_with_mason_aesthetics(prompt: str) -> str:
-    guidance = mason_illustration_guidance()
+def mason_full_guidance() -> str:
+    text = mason_aesthetics_path().read_text(encoding="utf-8")
+    lines = text.splitlines()
+    if lines and lines[0].strip() == "---":
+        for index in range(1, len(lines)):
+            if lines[index].strip() == "---":
+                return "\n".join(lines[index + 1 :]).strip()
+    return text.strip()
+
+
+def prompt_mode_for_route(route_name: str, override: str) -> str:
+    if override != "auto":
+        return override
+    if route_name == "fast":
+        return "compact"
+    return "full"
+
+
+def prompt_with_mason_aesthetics(prompt: str, kind: str, mode: str) -> str:
+    if mode == "none":
+        return prompt
+    if mode == "compact":
+        guidance = mason_compact_guidance()
+    elif mode == "full":
+        guidance = mason_full_guidance()
+    else:
+        raise ProviderUnavailable(f"unknown prompt mode: {mode}")
     return (
-        f"Primary subject, must be followed exactly: {prompt}\n\n"
-        f"{guidance}\n\n"
-        f"Render this exact subject: {prompt}"
+        f"Image request kind: {kind}\n\n"
+        f"Primary request, must be followed exactly:\n{prompt}\n\n"
+        f"Charlotte aesthetic profile:\n{guidance}\n\n"
+        f"Render this exact request:\n{prompt}"
     )
+
+
+def result_base(
+    route_name: str,
+    route: dict[str, Any],
+    kind: str,
+    prompt_mode: str,
+) -> dict[str, str]:
+    return {
+        "route": route_name,
+        "kind": kind,
+        "prompt_mode": prompt_mode,
+        "source": str(route.get("source", "")),
+        "model": env_value(route, "model") or "",
+    }
 
 
 def write_image_response(data: dict[str, Any], out: Path) -> Path:
@@ -224,7 +273,9 @@ def write_image_response(data: dict[str, Any], out: Path) -> Path:
     raise ProviderFailed("response did not include b64_json or url")
 
 
-def run_openai_image(route: dict[str, Any], prompt: str, out: Path, size: str, aspect_ratio: str) -> dict[str, str]:
+def run_openai_image(
+    route: dict[str, Any], prompt: str, out: Path, size: str, aspect_ratio: str
+) -> dict[str, str]:
     api_key = env_value(route, "api_key")
     if not api_key:
         raise ProviderUnavailable("API key is not configured")
@@ -314,10 +365,15 @@ def run_nanogpt_subscription_image(
     return {"source": str(route.get("source")), "model": model, "path": str(actual_out)}
 
 
-def run_google(route: dict[str, Any], prompt: str, out: Path, size: str, aspect_ratio: str) -> dict[str, str]:
+def run_google(
+    route: dict[str, Any], prompt: str, out: Path, size: str, aspect_ratio: str
+) -> dict[str, str]:
     api_key = os.environ.get(str(route.get("api_key_env", "GEMINI_API_KEY")))
     if not api_key:
         raise ProviderUnavailable("GEMINI_API_KEY is not set")
+    model = env_value(route, "model")
+    if not model:
+        raise ProviderUnavailable("model is not configured")
 
     cmd = [
         sys.executable,
@@ -330,17 +386,20 @@ def run_google(route: dict[str, Any], prompt: str, out: Path, size: str, aspect_
         size,
         "--aspect-ratio",
         aspect_ratio,
+        "--model",
+        model,
     ]
-    model = env_value(route, "model")
-    if model:
-        cmd.extend(["--model", model])
+    api = env_value(route, "api")
+    if api:
+        cmd.extend(["--api", api])
 
     result = subprocess.run(cmd, cwd=repo_root(), text=True, capture_output=True)
     if result.returncode == 0:
+        actual_path = (result.stdout or "").strip().splitlines()[-1:] or [str(out)]
         return {
             "source": "google",
-            "model": model or ("gemini-3-pro-image-preview" if size == "4K" else "imagen-4.0-generate-001"),
-            "path": str(out),
+            "model": model,
+            "path": actual_path[0],
         }
 
     message = (result.stderr or result.stdout or "").strip()
@@ -351,7 +410,9 @@ def run_google(route: dict[str, Any], prompt: str, out: Path, size: str, aspect_
     raise ProviderFailed(message or f"Google/Gemini backend exited {result.returncode}")
 
 
-def run_route(route: dict[str, Any], prompt: str, out: Path, size: str, aspect_ratio: str) -> dict[str, str]:
+def run_route(
+    route: dict[str, Any], prompt: str, out: Path, size: str, aspect_ratio: str
+) -> dict[str, str]:
     source = str(route.get("source", "")).strip()
     api_mode = str(route.get("api_mode", "")).strip()
     if source == "nanogpt" and api_mode == "subscription_images":
@@ -361,7 +422,9 @@ def run_route(route: dict[str, Any], prompt: str, out: Path, size: str, aspect_r
     if source == "google":
         return run_google(route, prompt, out, size, aspect_ratio)
     if source in {"agent", "runtime"}:
-        raise ProviderUnavailable("runtime-native image tools are not callable from this script")
+        raise ProviderUnavailable(
+            "runtime-native image tools are not callable from this script"
+        )
     raise ProviderUnavailable(f"unknown image source: {source or '<missing>'}")
 
 
@@ -371,16 +434,26 @@ def main() -> int:
     parser.add_argument("--out", required=True)
     parser.add_argument("--size", default="1K", choices=["1K", "2K", "4K"])
     parser.add_argument("--aspect-ratio", default="1:1")
-    parser.add_argument("--preference", default="gemini")
     parser.add_argument(
-        "--mason-aesthetics",
-        action="store_true",
-        help="Read illustration guidance from skills/mason-aesthetics/SKILL.md and apply it to the prompt.",
+        "--route",
+        default=None,
+        help="Named route from image-generation.yaml. Defaults to image_generation.default_route.",
     )
     parser.add_argument(
-        "--strict-preference",
+        "--kind",
+        default="illustration",
+        help="Image job kind, e.g. illustration, slide-background, diagram, or image-with-text.",
+    )
+    parser.add_argument(
+        "--prompt-mode",
+        choices=["auto", "full", "compact", "none"],
+        default="auto",
+        help="Mason prompt profile. Auto uses compact for the fast route and full otherwise.",
+    )
+    parser.add_argument(
+        "--dry-run",
         action="store_true",
-        help="Use when the user explicitly requested this provider family.",
+        help="Resolve the route and print the final provider prompt without calling a provider or writing files.",
     )
     parser.add_argument("--json", action="store_true")
     parser.add_argument(
@@ -392,45 +465,62 @@ def main() -> int:
     load_dotenv()
 
     try:
-        config = load_runtime_config()
-        routes = image_routes(
-            config, args.preference, args.strict_preference, args.only_source
-        )
+        config = load_image_config()
+        route_name, route = configured_route(config, args.route, args.only_source)
+        prompt_mode = prompt_mode_for_route(route_name, args.prompt_mode)
     except ProviderUnavailable as exc:
         print(str(exc), file=sys.stderr)
         return 2
 
+    try:
+        prompt = prompt_with_mason_aesthetics(args.prompt, args.kind, prompt_mode)
+    except ProviderUnavailable as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    if args.dry_run:
+        result = result_base(route_name, route, args.kind, prompt_mode)
+        result.update(
+            dry_run=True,
+            requested_path=args.out,
+            size=args.size,
+            aspect_ratio=args.aspect_ratio,
+            prompt_length=len(prompt),
+            prompt=prompt,
+        )
+        if args.json:
+            print(json.dumps(result, ensure_ascii=True))
+        else:
+            print(
+                f"dry_run=true route={result['route']} source={result['source']} "
+                f"model={result['model']} prompt_mode={result['prompt_mode']} "
+                f"kind={result['kind']} size={result['size']} aspect_ratio={result['aspect_ratio']}"
+            )
+            print()
+            print(prompt)
+        return 0
+
     out = output_path(args.out)
-    prompt = args.prompt
-    if args.mason_aesthetics:
-        try:
-            prompt = prompt_with_mason_aesthetics(prompt)
-        except ProviderUnavailable as exc:
-            print(str(exc), file=sys.stderr)
-            return 2
     unavailable: list[str] = []
     failed: list[str] = []
 
-    for route in routes:
-        label = f"{route.get('preference', '<any>')}/{route.get('source', '<missing>')}"
-        try:
-            metadata = run_route(route, prompt, out, args.size, args.aspect_ratio)
-        except ProviderUnavailable as exc:
-            unavailable.append(f"{label}: {exc}")
-            continue
-        except PolicyRejected as exc:
-            print(f"Image prompt rejected by provider policy: {exc}", file=sys.stderr)
-            return 3
-        except Exception as exc:
-            failed.append(f"{label}: {exc}")
-            continue
-
-        result = {
-            "path": metadata.get("path", str(out)),
-            "preference": str(route.get("preference", args.preference)),
-            "source": metadata["source"],
-            "model": metadata["model"],
-        }
+    label = f"{route_name}/{route.get('source', '<missing>')}"
+    try:
+        metadata = run_route(route, prompt, out, args.size, args.aspect_ratio)
+    except ProviderUnavailable as exc:
+        unavailable.append(f"{label}: {exc}")
+    except PolicyRejected as exc:
+        print(f"Image prompt rejected by provider policy: {exc}", file=sys.stderr)
+        return 3
+    except Exception as exc:
+        failed.append(f"{label}: {exc}")
+    else:
+        result = result_base(route_name, route, args.kind, prompt_mode)
+        result.update(
+            path=metadata.get("path", str(out)),
+            source=metadata["source"],
+            model=metadata["model"],
+        )
         if args.json:
             result["unavailable"] = unavailable
             result["failed"] = failed
@@ -439,7 +529,7 @@ def main() -> int:
         else:
             print(result["path"])
             print(
-                f"provider={result['source']} preference={result['preference']} model={result['model']}"
+                f"provider={result['source']} route={result['route']} model={result['model']} prompt_mode={result['prompt_mode']}"
             )
         return 0
 
@@ -456,7 +546,10 @@ def main() -> int:
     print("No configured script-callable image provider is available.", file=sys.stderr)
     for item in unavailable:
         print(f"- {item}", file=sys.stderr)
-    print("If the active agent runtime exposes an image tool, use it as the runtime fallback.", file=sys.stderr)
+    print(
+        "If the active agent runtime exposes an image tool, use it as the runtime fallback.",
+        file=sys.stderr,
+    )
     return 2
 
 

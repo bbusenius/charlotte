@@ -1,7 +1,7 @@
 ---
 name: materials-builder
-description: Build printable or standalone homeschool materials — maps, timelines, flashcards, copywork sheets, nature-notebook pages, narration templates, picture-study and composer cards, vocabulary and memory-verse cards, math/phonics/handwriting practice, PDFs, SVGs, PNG illustrations, and similar resources — grounded in the project's pedagogy wiki. Invokes mason-aesthetics for visual direction and mason-print-design for rendering. Generates images through the configured Charlotte image router, using Gemini/Grok as model-family preferences when requested. Do not use for Android lock-screen slides, MindFeast slides, unlock questions, or Homeschool Screen Lock app packages; use tablet-slide-builder for those.
-argument-hint: <material description in prose, optionally referencing a student or lesson> [--out PATH] [--image gemini|grok] [--format pdf|html|svg|png|md] [--size 1K|2K|4K]
+description: Build printable or standalone homeschool materials — maps, timelines, flashcards, copywork sheets, nature-notebook pages, narration templates, picture-study and composer cards, vocabulary and memory-verse cards, math/phonics/handwriting practice, PDFs, SVGs, PNG illustrations, and similar resources — grounded in the project's pedagogy wiki. Invokes mason-aesthetics for visual direction and mason-print-design for rendering. Generates images through the configured Charlotte image router. Do not use for Android lock-screen slides, MindFeast slides, unlock questions, or Homeschool Screen Lock app packages; use tablet-slide-builder for those.
+argument-hint: <material description in prose, optionally referencing a student or lesson> [--out PATH] [--image quality|fast] [--format pdf|html|svg|png|md] [--size 1K|2K|4K]
 ---
 
 # Materials Builder
@@ -29,7 +29,7 @@ For Android Homeschool Screen Lock challenge slides synced from `tablet-slides/`
 ### Flags
 
 - `--out PATH` — directory (or file path for single outputs) to write to. Default: current working directory. The future lesson-plan-builder will set this explicitly; for now the user is in control.
-- `--image gemini|grok` — image model-family preference. Default: `gemini`. See "Image generation" below for fallback behavior.
+- `--image quality|fast` — image route. Default: `quality`. See "Image generation" below for route behavior.
 - `--format pdf|html|svg|png|md` — output format. If omitted, pick the sensible default for the material type (see below).
 - `--size 1K|2K|4K` — when generating images through the image router. Default: `1K` unless the material is a wall card / large-format poster, in which case `2K`.
 
@@ -101,28 +101,30 @@ When the prompt implies a material not in the table, pick the closest analogue a
 
 ## Image generation
 
-Image generation for this skill is a capability-routed workflow. This skill expresses a model-family preference; `runtime.yaml` decides which source supplies that capability.
+Image generation for this skill is route-based. This skill asks for the normal `quality` route unless the user explicitly asks for a fast/cheap image; `image-generation.yaml` decides which provider/model supplies that route.
 
-- Keep using `mason-aesthetics` and `mason-print-design` before image generation. The router only chooses the provider/source; it does not replace Mason aesthetic direction or print-design constraints.
-- Gemini and Grok are preferences, not hard requirements for direct `GEMINI_API_KEY` or `XAI_API_KEY` use.
+- Keep using `mason-aesthetics` and `mason-print-design` before image generation. The router applies the Charlotte image prompt profile for the selected route; it does not replace material design or print-design constraints.
 - Use the repo-local router below, invoked from the project root through `.venv/bin/python`.
 - If the router exits `2`, no configured script-callable image provider is available. At that point, use a runtime-native image tool if the active harness exposes one. If no runtime image tool exists, report that image generation is unavailable.
 - If the router exits `3`, stop. That is a policy/safety rejection; do not try another provider.
 
-### Default preference: Gemini
+### Default route: quality
 
-Use the router with `--preference gemini`:
+Use the router with `--route quality`:
 
 ```bash
 .venv/bin/python scripts/charlotte_image.py \
   --prompt "…" --out path/to/file.png \
   --size 1K --aspect-ratio 4:3 \
-  --preference gemini --json
+  --kind illustration \
+  --route quality --json
 ```
 
 Run from the project root. The `--out` path can be relative to the project root or absolute.
 
-The router reads `capabilities.image_generation.routes` from `runtime.yaml`. It tries routes in configured order. Use the JSON `path` in the result as the actual media file path; some providers return `.jpg` even when the requested path ended in `.png`.
+The router reads `image-generation.yaml`. Use the JSON `path` in the result as the actual media file path; some providers return `.jpg` even when the requested path ended in `.png`. Use the JSON `route`, `source`, `model`, and `prompt_mode` fields when naming what generated the image.
+
+Use `--dry-run --json` on the same command to inspect the resolved route and final provider prompt without calling an image provider or writing files.
 
 Exit codes:
 
@@ -131,22 +133,23 @@ Exit codes:
 - `2` no script-callable provider is configured or available. Use a runtime-native image tool if available.
 - `3` policy/safety rejection. Stop.
 
-### Explicit provider preference
+### Fast route
 
-If the user explicitly passes `--image gemini` or `--image grok`, pass `--strict-preference` to the router:
+If the user explicitly asks for a fast/cheap/simple image, use `--route fast`:
 
 ```bash
 .venv/bin/python scripts/charlotte_image.py \
   --prompt "…" --out path/to/file.png \
   --size 1K --aspect-ratio 4:3 \
-  --preference grok --strict-preference --json
+  --kind illustration \
+  --route fast --json
 ```
 
-When strict preference is set, do not silently switch to another model family.
+The route named `fast` receives the compact Mason image summary. Other routes receive the full `mason-aesthetics` skill as image prompt context unless `--prompt-mode` is explicitly overridden.
 
-### Naming the provider in the delivery
+### Naming the image route in the delivery
 
-The delivery message always names which source/model generated any images included in the material. A short line is enough: *"Illustration generated via NanoGPT using `<model>`"* or *"Illustration generated via Google using Imagen 4, 1K"*.
+The delivery message always names which route/source/model generated any images included in the material. A short line is enough: *"Illustration generated via route `quality`, Google, `<model>`"* or *"Illustration generated via route `fast`, Google, Imagen 4, 1K"*.
 
 ### Illustration prompt rules
 
@@ -209,7 +212,7 @@ Specific rules this skill adds on top of the two peer skills:
 
 ### Step 7 — Generate any illustrations
 
-Use `scripts/charlotte_image.py` with the selected model-family preference. Place the image in the final composition via `<img>` (HTML) or `<image>` (SVG); text stays vector unless the lettering carve-out applies.
+Use `scripts/charlotte_image.py` with the selected route. Place the image in the final composition via `<img>` (HTML) or `<image>` (SVG); text stays vector unless the lettering carve-out applies.
 
 ### Step 8 — Save
 
@@ -250,7 +253,7 @@ Example:
 - **Living-book and curriculum sources beat generic content.** When a passage, word, or problem can come from a real source the student has been working in, it comes from there.
 - **Image prompts state the register.** Never a vague prompt. Always "no text, no labels" unless the lettering carve-out applies.
 - **Image source/model is named in delivery.** Always.
-- **Automatic fallback is capability-routed.** Follow the configured `runtime.yaml` route order unless the user explicitly passed `--image gemini` or `--image grok`; explicit provider-family choices use `--strict-preference`.
+- **Image route is explicit.** Use the configured `quality` route by default. Use `fast` only when the user explicitly asks for fast/cheap/simple image generation.
 - **No twaddle in language.** The material's copy addresses a person.
 - **Date.** Use today's date from the env. Never guess.
 - **No hallucinated sources.** If a passage, title, author, or historical fact goes on the page, it's real and correctly attributed. Don't invent a quote; open the book (or the curriculum file) and use a real passage, or ask the user to supply one.

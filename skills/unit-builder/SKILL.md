@@ -170,7 +170,7 @@ Pass it this prompt:
 
 > Illustration for a homeschool unit on `<unit theme>`. Landscape 4:3. `<one sentence on visual subject>`. No text, no labels. Save to `curricula/<class-slug>/<unit-slug>/images/<unit-slug>-hero.png`.
 
-Let materials-builder decide the register (via `mason-aesthetics`) and the provider. Record the provider name for the delivery message.
+Let materials-builder decide the register and configured image route. Record the returned route/source/model for the delivery message.
 
 The unit hero is **unique** — it is not reused for any lesson. Each lesson generates its own hero under lesson-plan-builder.
 
@@ -271,9 +271,9 @@ field_trips: [<../../../field-trips/<filename>.md>, ...]   # absent if no trips
 >
 > <If parent curriculum exists:> This unit is part of the <curriculum human name> curriculum at `../curriculum.md` (relative to the unit). From the lesson, the curriculum also sits at `../curriculum.md`. Add a "Part of curriculum:" continuation line. Pedagogy refs from a lesson are three-deep, `../../../pedagogy/...`.
 >
-> Use --auto. Return the saved lesson path and the hero image's provider name.
+> Use --auto. Return the saved lesson path and the hero image's route/source/model.
 
-Each spawn returns a summary that includes the saved lesson path and the hero provider. Record both for the Step 9 verification and the Step 10 delivery.
+Each spawn returns a summary that includes the saved lesson path and the hero image's route/source/model. Record both for the Step 9 verification and the Step 10 delivery.
 
 ### Step 9 — Stitch navigation
 
@@ -290,7 +290,7 @@ If any lesson file is missing a link it should have, add it directly with the Ed
 Print a short summary:
 
 - Path of `unit.md`.
-- Path of the unit hero image and its provider.
+- Path of the unit hero image and its route/source/model.
 - Paths of all generated lesson files.
 - Paths of all field-trip files (if any).
 - A single one-line note if anything about the request sits in real tension with the pedagogy — offered as an alternative, never as a correction, never more than once.

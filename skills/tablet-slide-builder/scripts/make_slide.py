@@ -83,7 +83,7 @@ def main() -> int:
     parser.add_argument("--accept", action="append", default=[])
     parser.add_argument("--choice", action="append", default=[])
     parser.add_argument("--difficulty", default="easy")
-    parser.add_argument("--orientation", default="landscape")
+    parser.add_argument("--orientation", required=True)
     parser.add_argument("--question")
     parser.add_argument("--text", help="Display text for informational slides; aliases --question")
     parser.add_argument("--hint")
