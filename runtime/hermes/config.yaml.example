@@ -10,6 +10,12 @@ custom_providers:
     model: "minimax/minimax-m2.7"
     api_mode: "chat_completions"
 
+# Optional: route delegated subagents through direct xAI/Grok instead of the
+# main NanoGPT-backed model. Requires XAI_API_KEY in the repo-local .env.
+# delegation:
+#   provider: "xai"
+#   model: "grok-4.3"
+
 stt:
   enabled: true
   provider: "local"
@@ -58,9 +64,9 @@ skills:
     - /workspace/skills
 
 platform_toolsets:
-  cli: [hermes-cli]
-  telegram: [terminal, file, web, vision, skills, todo, cronjob]
-  discord: [hermes-discord, terminal, file, web, vision, skills, todo, cronjob]
+  cli: [hermes-cli, delegation]
+  telegram: [terminal, file, web, vision, skills, todo, cronjob, delegation]
+  discord: [hermes-discord, terminal, file, web, vision, skills, todo, cronjob, delegation]
 
 discord:
   require_mention: false
