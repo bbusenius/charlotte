@@ -163,7 +163,7 @@ Run from the project root.
 
 Start with the specific theme (e.g. `"ancient Maya jade"`). If fewer than 5 results come back, run a second pass with a broader query (e.g. `"ancient Maya civilization"`). Deduplicate by title across passes.
 
-The script returns a `type` field for each result: `picture_book`, `chapter_book`, `middle_grade`, `young_adult`, `adult`. Use these to split into two buckets — don't filter by Lexile, and don't add a Lexile annotation. The parent knows the child.
+The script returns a `type` field for each result: `picture_book`, `chapter_book`, `middle_grade`, `young_adult`, `adult`. Use these to split into two buckets — don't filter by Lexile, and don't add a Lexile annotation. The parent knows the child. The script also returns a `url` field — the book's Open Library page; **keep it: every book you recommend is linked to that URL in the plan** (see Step 7 and the Rules).
 
 - **Independent reading bucket:** `picture_book` and `chapter_book` results. Pick 2–3 that are most directly on-theme.
 - **Read-aloud bucket:** `middle_grade`, `young_adult`, and `adult` results. Pick 1–2 strong narrative (living-book quality) candidates. Avoid reference books, encyclopedias, and committee-written surveys — these cannot be narrated.
@@ -217,22 +217,22 @@ concepts: [science-of-relations, narration, ...]
 
 ### Optional enrichment (possibilities, not requirements)
 
-None of this is required. All titles and URLs come from Step 7a — never from model memory.
+None of this is required. All titles and URLs come from Step 7a — never from model memory. **Every recommended resource is rendered as a link:** a book title links to its Open Library `url`; a poem, article, artwork, or video links to its verified source URL. A recommendation with no link is incomplete — either supply the URL or drop the item.
 
 #### Books to read aloud
-<From Step 7a read-aloud bucket (middle_grade / young_adult / adult). 1–2 titles. For each: author, one sentence on why it opens a relation to the theme, and the type label so the parent can calibrate. Prefer narrative, single-author books over reference works — see `[[concepts/living-books]]`. If the bucket was empty, write "none found via Open Library for this topic.">
+<From Step 7a read-aloud bucket (middle_grade / young_adult / adult). 1–2 titles. Render each as `**[Title](Open Library url)** by Author (type) — one sentence on why it opens a relation to the theme`; the linked title and the type label let the parent calibrate. Prefer narrative, single-author books over reference works — see `[[concepts/living-books]]`. If the bucket was empty, write "none found via Open Library for this topic.">
 
 #### Books for independent reading
-<From Step 7a independent bucket (picture_book / chapter_book). 2–3 titles. For each: author, type label, one sentence on theme relevance. Do not add a Lexile number. If the bucket was empty, write "none found via Open Library for this topic.">
+<From Step 7a independent bucket (picture_book / chapter_book). 2–3 titles. Render each as `**[Title](Open Library url)** by Author (type) — one sentence on theme relevance`. Do not add a Lexile number. If the bucket was empty, write "none found via Open Library for this topic.">
 
 #### Short readings & poems
-<From Step 7a WebSearch pass. 0–3 items with title/source and verified URL. Omit this subsection entirely if nothing useful was found.>
+<From Step 7a WebSearch pass. 0–3 items, each rendered as a link to its verified URL (e.g. `**[Poem title](url)**` or `[Article title](url) — source`). Omit this subsection entirely if nothing useful was found.>
 
 #### Artwork
-<From Step 7a WebSearch pass. One picture-study candidate — artist name, work title, and a verified URL to a reproduction. Omit if nothing relevant was found.>
+<From Step 7a WebSearch pass. One picture-study candidate — artist name and work title, with the work title linked to a verified reproduction URL. Omit if nothing relevant was found.>
 
 #### Video
-<From Step 7a WebSearch pass. One short clip (5–15 min) with title, source, and verified URL. Always note: "parent to preview before showing." Omit if nothing useful was found.>
+<From Step 7a WebSearch pass. One short clip (5–15 min), title linked to its verified URL, with the source named. Always note: "parent to preview before showing." Omit if nothing useful was found.>
 
 Any reading is read attentively once — see `[[concepts/single-reading]]`. Not drilled, not quizzed.
 
@@ -299,6 +299,7 @@ Mason's canonical patterns:
 ## Rules (hard)
 
 - **Links are mandatory.** Every venue named in the plan must have a Google Maps link (named place ID preferred; lat/lng `https://www.google.com/maps/?q=<lat>,<lng>` is acceptable for unsearchable outdoor locations). Every venue must also have a website or a social-media page — for outdoor venues, the managing agency's page (state DNR, NPS, land trust, etc.) counts. If neither a website nor a social/agency page exists, say so explicitly — never fabricate.
+- **Every recommended resource is linked.** Anything the plan recommends — a book, poem, article, artwork, or video — must be a clickable link to a verifiable source: books to their Open Library `url` (returned by `subject_search.py`), everything else to the verified URL found in Step 7a. Render a book as `**[Title](url)** by Author (type)`. The only resource that may appear without a link is an artwork or object studied first-hand on site (e.g. a sculpture at the venue) — and even then, link any online reference you cite for it. A resource with no findable link is dropped, not listed bare.
 - **Outdoor venues are first-class.** Do not bias toward indoor, for-profit, or heavily-reviewed venues. Trout streams, prairie remnants, trailheads, birding hotspots, and public fishing access points are valid field-trip destinations when the theme admits them. Supplement Google Maps with WebSearch for this category.
 - **Every activity must be Mason-faithful, but not necessarily canonical.** The four named patterns (nature study, picture study, music appreciation, handicraft observation) are defaults — use them when they fit the venue. A venue-specific creative activity is equally welcome, provided it rests on first-hand experience, sustained attention, and post-activity narration. What's not acceptable is a generic "walk around and look" or a right-answer scavenger hunt.
 - **No hallucinated facts.** Hours, prices, addresses, and book titles come from the MCP, a verified website, or a source you can cite. If you don't know, write "unknown" — do not guess.
