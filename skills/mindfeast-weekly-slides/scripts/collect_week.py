@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Collect one student's logged lessons for a calendar week."""
+"""Collect one student's logged lessons for a seven-day period."""
 
 from __future__ import annotations
 
@@ -76,9 +76,9 @@ def find_column(headers: list[str], accepted: set[str]) -> int | None:
     return None
 
 
-def current_week_start(today: date) -> date:
-    """Return the Monday of the week containing today."""
-    return today - timedelta(days=today.weekday())
+def rolling_week_start(today: date, days: int = 7) -> date:
+    """Return the first day of an inclusive rolling window ending today."""
+    return today - timedelta(days=days - 1)
 
 
 def resolve_student(students: dict[str, Any], query: str) -> tuple[str, dict[str, Any]]:
@@ -173,23 +173,23 @@ def main() -> int:
     parser.add_argument("--student", required=True)
     parser.add_argument(
         "--week-start",
-        help="Monday/start date in YYYY-MM-DD format; defaults to current week",
+        help="Start date in YYYY-MM-DD format; defaults to the last seven days",
     )
     parser.add_argument("--days", type=int, default=7)
     args = parser.parse_args()
+    if args.days < 1:
+        parser.error("--days must be at least 1")
 
     registry = yaml.safe_load(args.students_yaml.read_text(encoding="utf-8")) or {}
     slug, student = resolve_student(registry.get("students", {}), args.student)
 
-    start = (
-        datetime.strptime(args.week_start, "%Y-%m-%d").date()
-        if args.week_start
-        else current_week_start(date.today())
-    )
-    end = start + timedelta(days=args.days - 1)
     today = date.today()
-    if end > today:
+    if args.week_start:
+        start = datetime.strptime(args.week_start, "%Y-%m-%d").date()
+        end = min(start + timedelta(days=args.days - 1), today)
+    else:
         end = today
+        start = rolling_week_start(today, args.days)
 
     spreadsheet_value = student.get("time_tracking_spreadsheet")
     if not spreadsheet_value:

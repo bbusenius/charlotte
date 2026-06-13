@@ -42,7 +42,7 @@ If MindFeast config is missing, still generate slides when appropriate, but skip
 
 ## Workflow
 
-1. Parse the prompt for student, week/range, sync preference, and any explicitly requested subject focus. Normally infer subject weighting from the time-log rows themselves rather than asking for or assuming a subject focus. If no week is specified, use the current calendar week Monday through Sunday, but only include logged rows up to today.
+1. Parse the prompt for student, week/range, sync preference, and any explicitly requested subject focus. Normally infer subject weighting from the time-log rows themselves rather than asking for or assuming a subject focus. If no range is specified, review the seven calendar days ending today, inclusive.
 2. Run the bundled helper from the repo root to collect relevant rows:
 
 ```bash
@@ -51,7 +51,7 @@ If MindFeast config is missing, still generate slides when appropriate, but skip
   --week-start YYYY-MM-DD
 ```
 
-Omit `--week-start` to use the current week. The helper outputs JSON grouped from the student's time-tracking workbook, including optional `Notes`/`Note` column values when present.
+Omit `--week-start` to use the seven-day period ending today. The helper outputs JSON grouped from the student's time-tracking workbook, including optional `Notes`/`Note` column values when present.
 
 3. When a row references a configured curriculum lesson, use the student's `curricula_dir` and `curricula` map the same way `hsd-time-log` does: find the curriculum whose configured `subject` matches the row's subject, locate the lesson with `lesson_header_pattern`, and read the full matched lesson or covered section when it is available. Do this even when the time-log description is already useful; the curriculum or source material gives better context for choosing and writing slides. If the configured regex misses, do a targeted search in the curriculum file using the lesson number and any distinctive terms from the row. Also read any other lesson material explicitly named in the row when it is available. Skip material lookup only when the curriculum/source is unavailable or the lookup remains ambiguous.
 4. Read the enriched rows as a whole week. Consider subject, lesson description, recovered curriculum material, time spent, notes, and repetition across the week.
