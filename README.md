@@ -145,12 +145,12 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e .
 ```
 
-This installs the Python dependencies from `pyproject.toml`, including `signal-sieve`, `xlsx-append`, and `weasyprint` into `.venv/bin/`. Playwright uses the system `google-chrome-stable` by default, so no separate browser download is needed on systems where that executable exists.
+This installs the Python dependencies from `pyproject.toml`, including `signal-sieve`, `xlsx-append`, `faster-whisper`, and `weasyprint` into `.venv/bin/`. Playwright uses the system `google-chrome-stable` by default, so no separate browser download is needed on systems where that executable exists. Audiobook transcription uses `ffmpeg`/`ffprobe`.
 
 Install non-Python rendering/browser tools with your system package manager:
 
 ```bash
-sudo apt install inkscape
+sudo apt install ffmpeg inkscape
 ```
 
 ### Signal capture setup

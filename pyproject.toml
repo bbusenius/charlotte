@@ -8,6 +8,7 @@ dependencies = [
     "requests>=2.32",
     "openpyxl>=3.1",
     "google-genai>=0.3",
+    "faster-whisper>=1.0",
     "PyYAML>=6.0",
     "weasyprint>=62",
     "qrcode[pil]>=7.4",
