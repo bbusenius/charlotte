@@ -9,6 +9,7 @@ RUN set -eux; \
     if command -v apt-get >/dev/null 2>&1; then \
       apt-get update; \
       DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        chromium \
         ffmpeg \
         git \
         inkscape \

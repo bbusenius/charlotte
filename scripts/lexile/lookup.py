@@ -10,14 +10,23 @@ Usage:
 
 import argparse
 import json
+import os
 import re
+import shutil
 import sys
 from pathlib import Path
 
 import yaml
 from playwright.sync_api import sync_playwright
 
-CHROMIUM_PATH = "/usr/bin/google-chrome-stable"
+DEFAULT_CHROME_PATH = "/usr/bin/google-chrome-stable"
+CHROME_ENV_VARS = ("CHARLOTTE_CHROME_PATH", "CHROME_PATH")
+CHROME_EXECUTABLES = (
+    "google-chrome-stable",
+    "google-chrome",
+    "chromium",
+    "chromium-browser",
+)
 RUNTIME_CONFIG = "runtime.yaml"
 PAGE_URL = "https://hub.lexile.com/find-a-book/"
 API_URL = "https://atlas-fab.lexile.com/free/search"
@@ -46,23 +55,54 @@ def pick_best(results: list, query: str) -> tuple[dict | None, bool]:
     return (results[0] if results else None), False
 
 
-def chrome_path() -> str:
+def _existing_executable(path_or_name: str | None) -> str | None:
+    if not path_or_name:
+        return None
+    expanded = os.path.expanduser(path_or_name)
+    if os.path.sep in expanded:
+        return (
+            expanded
+            if os.path.isfile(expanded) and os.access(expanded, os.X_OK)
+            else None
+        )
+    return shutil.which(expanded)
+
+
+def configured_chrome_path() -> str | None:
     config_path = Path(RUNTIME_CONFIG)
     if not config_path.exists():
-        return CHROMIUM_PATH
+        return None
     try:
         config = yaml.safe_load(config_path.read_text()) or {}
     except Exception:
-        return CHROMIUM_PATH
-    return (
-        config.get("tools", {}).get("chrome_path")
-        or CHROMIUM_PATH
-    )
+        return None
+    return config.get("tools", {}).get("chrome_path")
+
+
+def chrome_path() -> str | None:
+    candidates = [
+        configured_chrome_path(),
+        *(os.environ.get(name) for name in CHROME_ENV_VARS),
+        DEFAULT_CHROME_PATH,
+        *CHROME_EXECUTABLES,
+    ]
+    for candidate in candidates:
+        resolved = _existing_executable(candidate)
+        if resolved:
+            return resolved
+    return None
 
 
 def search(query: str, language: str) -> dict | None:
     with sync_playwright() as p:
-        browser = p.chromium.launch(executable_path=chrome_path(), headless=True)
+        launch_options = {
+            "headless": True,
+            "args": ["--no-sandbox", "--disable-dev-shm-usage"],
+        }
+        resolved_chrome_path = chrome_path()
+        if resolved_chrome_path:
+            launch_options["executable_path"] = resolved_chrome_path
+        browser = p.chromium.launch(**launch_options)
         ctx = browser.new_context()
         page = ctx.new_page()
 

@@ -2,8 +2,8 @@
 # Copy to runtime.yaml and adjust for your machine. runtime.yaml is ignored.
 
 tools:
-  # Used by scripts/lexile/lookup.py. In Docker or on non-Debian systems,
-  # set this to the Chrome/Chromium executable available in that runtime.
+  # Used by scripts/lexile/lookup.py. Optional; if absent or not executable,
+  # Charlotte searches common Chrome/Chromium executable names in the runtime.
   chrome_path: /usr/bin/google-chrome-stable
 
 qr:

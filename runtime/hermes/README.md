@@ -6,6 +6,8 @@ Do not bind-mount the whole repo over `/workspace` for the normal runtime path. 
 
 Hermes runs from its own internal Python environment. Charlotte project scripts should be invoked through `/workspace/.venv/bin/...` or repo-relative `.venv/bin/...` so they use the dependencies installed from `pyproject.toml`.
 
+The image installs Chromium for the Lexile lookup used by book logging. A host `runtime.yaml` can still set `tools.chrome_path`, but `scripts/lexile/lookup.py` will ignore that path inside Hermes if it does not exist and fall back to the container's Chromium executable.
+
 ## Command Sheet
 
 Run all commands from the repo root.

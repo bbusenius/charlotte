@@ -145,12 +145,12 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e .
 ```
 
-This installs the Python dependencies from `pyproject.toml`, including `signal-sieve`, `xlsx-append`, `faster-whisper`, and `weasyprint` into `.venv/bin/`. Playwright uses the system `google-chrome-stable` by default, so no separate browser download is needed on systems where that executable exists. Audiobook transcription uses `ffmpeg`/`ffprobe`.
+This installs the Python dependencies from `pyproject.toml`, including `signal-sieve`, `xlsx-append`, `faster-whisper`, and `weasyprint` into `.venv/bin/`. The Lexile lookup uses Playwright with a system Chrome/Chromium executable, and audiobook transcription uses `ffmpeg`/`ffprobe`.
 
 Install non-Python rendering/browser tools with your system package manager:
 
 ```bash
-sudo apt install ffmpeg inkscape
+sudo apt install chromium ffmpeg inkscape
 ```
 
 ### Signal capture setup
@@ -177,6 +177,7 @@ tools:
 ```
 
 `scripts/lexile/lookup.py` uses `tools.chrome_path` for its Playwright browser executable. Leave `runtime.yaml` absent if the default path works.
+If `tools.chrome_path` is absent or points at a path that does not exist in the current runtime, the script searches common Chrome/Chromium executable names such as `google-chrome-stable` and `chromium`.
 
 Image-generation route settings live in local `image-generation.yaml`, which is ignored. Copy the example and edit the route models/keys for your machine:
 
