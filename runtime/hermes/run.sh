@@ -167,6 +167,8 @@ start_info_page() {
     --name "$container_name"
     --restart unless-stopped
     -p "$info_port:$info_port"
+    --user "$(id -u):$(id -g)"
+    -e "HOME=/opt/data"
     -e "HERMES_UID=$(id -u)"
     -e "HERMES_GID=$(id -g)"
     -v "$repo_root/apps/charlotte:/workspace/apps/charlotte:ro"
@@ -174,8 +176,10 @@ start_info_page() {
   )
 
   docker rm -f "$container_name" >/dev/null 2>&1 || true
-  if ! docker run "${page_args[@]}" "$image" \
-    .venv/bin/python apps/charlotte/server.py \
+  if ! docker run "${page_args[@]}" \
+    --entrypoint /workspace/.venv/bin/python \
+    "$image" \
+      apps/charlotte/server.py \
       --host 0.0.0.0 \
       --port "$info_port" \
       --static-root apps/charlotte/static \
@@ -202,8 +206,12 @@ provision_dashboards() {
   local log_dir="$repo_root/.logs/hsd-dashboard"
 
   mkdir -p "$log_dir"
-  if ! docker run "${base_docker_args[@]}" "$image" \
-    .venv/bin/python scripts/hsd_provision_dashboards.py \
+  if ! docker run "${base_docker_args[@]}" \
+    --user "$(id -u):$(id -g)" \
+    -e "HOME=/opt/data" \
+    --entrypoint /workspace/.venv/bin/python \
+    "$image" \
+      scripts/hsd_provision_dashboards.py \
       --log-dir .logs/hsd-dashboard; then
     echo "Dashboard provisioning failed; continuing. See $log_dir for details." >&2
   fi
@@ -216,6 +224,8 @@ env_info_page="$(read_env_value CHARLOTTE_INFO_PAGE "$env_file")"
 env_info_host="$(read_env_value CHARLOTTE_INFO_HOST "$env_file")"
 env_info_port="$(read_env_value CHARLOTTE_INFO_PORT "$env_file")"
 env_tz="$(read_env_value CHARLOTTE_TZ "$env_file")"
+env_s6_verbosity="$(read_env_value CHARLOTTE_HERMES_S6_VERBOSITY "$env_file")"
+env_s6_logging="$(read_env_value CHARLOTTE_HERMES_S6_LOGGING "$env_file")"
 
 image="${CHARLOTTE_HERMES_IMAGE:-${env_image:-charlotte-hermes:local}}"
 hermes_home="${CHARLOTTE_HERMES_HOME:-${env_hermes_home:-$HOME/.hermes-charlotte}}"
@@ -223,6 +233,8 @@ home_mounts="${CHARLOTTE_HOME_MOUNTS:-${env_home_mounts:-}}"
 info_page="${CHARLOTTE_INFO_PAGE:-${env_info_page:-1}}"
 info_host="${CHARLOTTE_INFO_HOST:-${env_info_host:-}}"
 info_port="${CHARLOTTE_INFO_PORT:-${env_info_port:-8788}}"
+s6_verbosity="${CHARLOTTE_HERMES_S6_VERBOSITY:-${env_s6_verbosity:-0}}"
+s6_logging="${CHARLOTTE_HERMES_S6_LOGGING:-${env_s6_logging:-0}}"
 tz="${CHARLOTTE_TZ:-${env_tz:-}}"
 if [ -z "$tz" ]; then
   tz="$(detect_timezone || true)"
@@ -256,6 +268,8 @@ fi
 base_docker_args+=(
   -e "HERMES_UID=$(id -u)"
   -e "HERMES_GID=$(id -g)"
+  -e "S6_VERBOSITY=$s6_verbosity"
+  -e "S6_LOGGING=$s6_logging"
 )
 
 if [ -n "$tz" ]; then

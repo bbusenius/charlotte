@@ -255,6 +255,8 @@ With no arguments, the wrapper runs `hermes chat`.
 
 The wrapper passes `HERMES_UID` and `HERMES_GID` so files written through mounted volumes are owned by the host user. It mounts `~/.hermes-charlotte` to `/opt/data`, mounts `students.yaml` and local `runtime.yaml` / `image-generation.yaml` read-only when present, mounts the ignored Charlotte data roots to `/workspace`, and mounts any configured `CHARLOTTE_HOME_MOUNTS` entries into both `/opt/data/home` and `/opt/data`.
 
+The wrapper quiets s6 supervisor chatter by default with `S6_VERBOSITY=0` and `S6_LOGGING=0`. To debug container boot, set `CHARLOTTE_HERMES_S6_VERBOSITY=1` or `CHARLOTTE_HERMES_S6_LOGGING=1` in the shell or `.env` before running `runtime/hermes/run.sh`.
+
 Override defaults with `CHARLOTTE_HERMES_IMAGE`, `CHARLOTTE_HERMES_HOME`, or `CHARLOTTE_HOME_MOUNTS`.
 
 ## Telegram Gateway
