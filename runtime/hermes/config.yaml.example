@@ -10,6 +10,16 @@ custom_providers:
     model: "minimax/minimax-m2.7"
     api_mode: "chat_completions"
 
+# Keep image understanding off the main NanoGPT text route. `vision_analyze`
+# uses this auxiliary route and reads GEMINI_API_KEY/GOOGLE_API_KEY from the
+# runtime environment without exposing the secret to terminal subprocesses.
+auxiliary:
+  vision:
+    provider: "gemini"
+    model: "gemini-2.5-flash"
+    timeout: 120
+    download_timeout: 30
+
 # Optional: route delegated subagents through direct xAI/Grok instead of the
 # main NanoGPT-backed model. Requires XAI_API_KEY in the repo-local .env.
 # delegation:

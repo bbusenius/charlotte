@@ -44,7 +44,7 @@ If there are no unprocessed messages, tell the user and stop.
 For each message, you need: **title**, and optionally **author** and a **language hint**.
 
 - **Text-only message**: the text is typically just the book title. It may occasionally include author ("Frog and Toad Are Friends by Arnold Lobel"), language cues ("this is a Spanish book"), or context flags — parse these out.
-- **Image attachment**: use a vision-capable runtime tool to read the cover. Grok Vision MCP is the preferred implementation when available, but an equivalent runtime vision tool is acceptable. Prompt it to extract **title, author, and apparent language** from the cover — and note if the image shows an audiobook/app UI (Audible, Libby, etc.) rather than a physical book. Include in the prompt that the image may be rotated; try all orientations.
+- **Image attachment**: use a vision-capable runtime tool to read the cover. Grok Vision MCP is the preferred implementation when available, but an equivalent runtime vision tool is acceptable. Prompt it to extract **title, author, and apparent language** from the cover — and note if the image shows an audiobook/app UI (Audible, Libby, etc.) rather than a physical book. Include in the prompt that the image may be rotated; try all orientations. If trusted runtime vision is unavailable or fails, do **not** load ad-hoc fallback skills, call subscription chat APIs directly, or ask a generic multimodal model to guess from the image. Skip that message and leave it unprocessed so it can be retried later.
 - **Text + image**: combine. Text context (e.g. "this was an audiobook") overlays flags onto whatever the image identifies.
 
 Cover text beats API data when both are present — the cover is ground truth for that specific edition.

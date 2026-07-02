@@ -109,6 +109,15 @@ The default Hermes config uses NanoGPT's subscription API with MiniMax M2.7 as t
 NANOGPT_API_KEY=
 ```
 
+The default auxiliary vision route is Gemini, so `vision_analyze` needs one of the Gemini key variables in `.env`:
+
+```env
+GEMINI_API_KEY=
+# or GOOGLE_API_KEY=
+```
+
+This is intentionally separate from `terminal.env_passthrough`: Hermes may scrub provider credentials from terminal subprocesses while still using them for provider-backed tools such as `vision_analyze`.
+
 Charlotte image generation is routed by `scripts/charlotte_image.py` using `image-generation.yaml`. Useful `.env` keys:
 
 ```env
