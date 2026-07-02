@@ -1,28 +1,28 @@
 ---
-name: curriculum-builder
-description: Build a Mason-shaped curriculum — a paced sequence of thematic units on one subject — grounded in the project's pedagogy wiki. Produces a curriculum manifest with a hero illustration, zero or more overarching spine books (each covering a span of weeks), N unit directories (each built via unit-builder), and — only when asked — a set of field trips. Owns pacing in weeks / sessions-per-week / minutes-per-session. Never dates.
+name: mason-curriculum-builder
+description: Build a Mason-shaped curriculum — a paced sequence of thematic units on one subject — grounded in the project's pedagogy wiki. Produces a curriculum manifest with a hero illustration, zero or more overarching spine books (each covering a span of weeks), N unit directories (each built via mason-unit-builder), and — only when asked — a set of field trips. Owns pacing in weeks / sessions-per-week / minutes-per-session. Never dates.
 argument-hint: "<curriculum description in prose: subject, student or grade, pace, optional weekly themes> [--auto] [--weeks N] [--sessions-per-week M] [--minutes L] [--field-trip weekly|culminating|none] [--no-units] [--save PATH]"
 ---
 
 # Curriculum Builder
 
-Produce one curriculum — a paced sequence of thematic units on one subject — from a free-form prose prompt. Every curriculum is grounded in the Charlotte Mason pedagogy wiki at `pedagogy/wiki/` for **how** it is made, regardless of subject. A curriculum built by this skill spans many sessions across many weeks (typically a term, a semester, or a school year) and comprises several units, each of which comprises several lessons.
+Produce one curriculum — a paced sequence of thematic units on one subject — from a free-form prose prompt. Every curriculum is grounded in the Charlotte Mason pedagogy wiki at `pedagogies/charlotte-mason/wiki/` for **how** it is made, regardless of subject. A curriculum built by this skill spans many sessions across many weeks (typically a term, a semester, or a school year) and comprises several units, each of which comprises several lessons.
 
-This skill owns the *pace and the arc across units* — how many weeks, how many sessions per week, how long each session runs, what each week is about, and how weekly themes group into units. It does not own unit design (unit-builder does), does not own individual lesson design (lesson-plan-builder does), does not own rendering (materials-builder does), and does not plan field trips (field-trip-planner does).
+This skill owns the *pace and the arc across units* — how many weeks, how many sessions per week, how long each session runs, what each week is about, and how weekly themes group into units. It does not own unit design (mason-unit-builder does), does not own individual lesson design (mason-lesson-plan-builder does), does not own rendering (mason-materials-builder does), and does not plan field trips (mason-field-trip-planner does).
 
 It also owns the **overarching spine(s)** (if any) — zero or more living books, each running underneath a defined span of weeks above the per-unit spines. Mason's "form book" pattern, scaled up.
 
 ## Usage
 
-- `/curriculum-builder A 12-week Spanish curriculum for Alice — 3 sessions/week, 45 min each, weekly themes: greetings, family, food, the home, the city, the market, the kitchen, the calendar, weather, animals, the body, review --auto`
-- `/curriculum-builder A one-semester (16 weeks) 3rd-grade science curriculum on living systems — 2 sessions/week, 30 min each --auto`
-- `/curriculum-builder A year-long Guatemalan history curriculum for a 3rd grader, 3 sessions/week, 40 min, anchored by Peter Lourie's "Jungle Journey" as the overarching spine`
-- `/curriculum-builder A 6-week handicraft curriculum for Charlie — one session/week, 20 min, weekly themes: running stitch, cross stitch, buttons, hems, patches, mending --field-trip culminating`
-- `/curriculum-builder Extend the existing 3rd-grade-science curriculum with a 4-week unit on weather --no-units`
+- `/mason-curriculum-builder A 12-week Spanish curriculum for Alice — 3 sessions/week, 45 min each, weekly themes: greetings, family, food, the home, the city, the market, the kitchen, the calendar, weather, animals, the body, review --auto`
+- `/mason-curriculum-builder A one-semester (16 weeks) 3rd-grade science curriculum on living systems — 2 sessions/week, 30 min each --auto`
+- `/mason-curriculum-builder A year-long Guatemalan history curriculum for a 3rd grader, 3 sessions/week, 40 min, anchored by Peter Lourie's "Jungle Journey" as the overarching spine`
+- `/mason-curriculum-builder A 6-week handicraft curriculum for Charlie — one session/week, 20 min, weekly themes: running stitch, cross stitch, buttons, hems, patches, mending --field-trip culminating`
+- `/mason-curriculum-builder Extend the existing 3rd-grade-science curriculum with a 4-week unit on weather --no-units`
 
 ### Flags
 
-- `--auto` — skip any clarifying questions; take defaults and write the curriculum. Every unit-builder invocation inherits this flag.
+- `--auto` — skip any clarifying questions; take defaults and write the curriculum. Every mason-unit-builder invocation inherits this flag.
 - `--weeks N` — override any prose. Number of weeks the curriculum runs.
 - `--sessions-per-week M` — override any prose. Typical sessions per week.
 - `--minutes L` — override any prose. Minutes per session.
@@ -34,11 +34,11 @@ It also owns the **overarching spine(s)** (if any) — zero or more living books
 
 The prompt is free-form prose. Extract:
 
-1. **Class / subject** (required, usually inferable). Same rules as lesson-plan-builder and unit-builder. "3rd-grade science" → `3rd-grade-science`. "Spanish for a 3rd grader" → `3rd-grade-spanish`. "Handicraft for Alice" → lookup Alice's grade in `students.yaml`, then `<grade>-grade-handicraft`. Lowercase kebab-case.
+1. **Class / subject** (required, usually inferable). Same rules as mason-lesson-plan-builder and mason-unit-builder. "3rd-grade science" → `3rd-grade-science`. "Spanish for a 3rd grader" → `3rd-grade-spanish`. "Handicraft for Alice" → lookup Alice's grade in `students.yaml`, then `<grade>-grade-handicraft`. Lowercase kebab-case.
 2. **Curriculum theme or name** (optional) — if the user names the curriculum in its own terms (e.g. "Guatemalan History", "Living Systems"), use that as the curriculum slug. If they don't, the curriculum slug equals the class slug — i.e., the curriculum *is* the class at this grade level.
-3. **Student** (optional) — matched against `students.yaml` by slug + aliases, the same way unit-builder matches. Used for length defaults, register, and to resolve an unspecified grade. Not used for subject authoring.
+3. **Student** (optional) — matched against `students.yaml` by slug + aliases, the same way mason-unit-builder matches. Used for length defaults, register, and to resolve an unspecified grade. Not used for subject authoring.
 4. **Pace** (required) — weeks, sessions per week, minutes per session. From flags if given, otherwise from prose ("12-week", "3 sessions/week", "45 min each"), otherwise from grade defaults: preschool/K → 2×/week, 15–20 min; 1st–4th → 3×/week, 30–45 min; 5th+ → 4–5×/week, 45–60 min. Weeks cannot be inferred from a grade default — if neither flag nor prose names a week count and the prompt isn't under `--auto`, ask once.
-5. **Weekly themes** (optional, but common) — an ordered list naming what each week is about. If present, they drive unit grouping in Step 4. If absent, unit-builder will be handed the broader theme and asked to decompose it internally across a suggested number of units.
+5. **Weekly themes** (optional, but common) — an ordered list naming what each week is about. If present, they drive unit grouping in Step 4. If absent, mason-unit-builder will be handed the broader theme and asked to decompose it internally across a suggested number of units.
 6. **Overarching spine wish** (optional) — if the user names a book as the spine of the whole curriculum, use it. Otherwise, decide in Step 3 whether to pick one (see "Overarching spine" below).
 7. **Field-trip wish** (optional) — from `--field-trip` or prose ("with a weekly field trip", "culminating trip to the market"). Default is `none`.
 
@@ -46,9 +46,9 @@ If anything required is genuinely ambiguous and not under `--auto`, ask once and
 
 ## Student configuration
 
-Student metadata lives in `students.yaml` at the repo root. Curriculum-builder uses: `display_name`, `grade`, and `aliases`. It does **not** use `subjects`, `curricula_dir`, or `curricula` — those point at paid third-party curricula this skill is not authoring against.
+Student metadata lives in `students.yaml` at the repo root. mason-curriculum-builder uses: `display_name`, `grade`, and `aliases`. It does **not** use `subjects`, `curricula_dir`, or `curricula` — those point at paid third-party curricula this skill is not authoring against.
 
-Resolution procedure is the same as lesson-plan-builder and unit-builder: read `students.yaml`, lowercase-match prompt name references against each student's slug and `aliases` list, record `display_name` and `grade` on a hit. On no hit with a grade in the prompt, proceed on grade alone. On no hit and no grade, design for mid-elementary. Never hard-code student names, aliases, or grades.
+Resolution procedure is the same as mason-lesson-plan-builder and mason-unit-builder: read `students.yaml`, lowercase-match prompt name references against each student's slug and `aliases` list, record `display_name` and `grade` on a hit. On no hit with a grade in the prompt, proceed on grade alone. On no hit and no grade, design for mid-elementary. Never hard-code student names, aliases, or grades.
 
 For a multi-student curriculum ("a Spanish curriculum for Alice and Charlie"), resolve both. Record them in frontmatter as a list and design it family-style: a common spine and common relations, with differentiated narration expectations by age, not parallel siblings running separate tracks.
 
@@ -56,11 +56,11 @@ For a multi-student curriculum ("a Spanish curriculum for Alice and Charlie"), r
 
 Re-read any of these wiki pages whose language you are about to use. The vocabulary is load-bearing and should not drift.
 
-All of unit-builder's required set applies (`science-of-relations`, `act-of-knowing`, `narration`, `living-books`, `single-reading`, `education-is-atmosphere-discipline-life`, `children-are-born-persons`, `knowledge-as-food`, `knowledge-of-god-man-universe` where observation-shaped), plus:
+All of mason-unit-builder's required set applies (`science-of-relations`, `act-of-knowing`, `narration`, `living-books`, `single-reading`, `education-is-atmosphere-discipline-life`, `children-are-born-persons`, `knowledge-as-food`, `knowledge-of-god-man-universe` where observation-shaped), plus:
 
 - `concepts/liberal-education-for-all.md` — consult when the subject mix tempts narrowing (e.g. a "math-only" curriculum for a struggling student). Mason's conviction is that every child has a right to a wide feast, not a remedial trench. Flag the tension if it surfaces; never override the user.
 
-Curriculum-builder writes a pilot-driven manifest: the teacher steers the curriculum, not a scope-and-sequence chart. The manifest must also be open and go: the teacher should be able to pick up any week's unit and know what to do without re-decoding. The frontmatter and the "Units" table are the teacher's dashboard.
+mason-curriculum-builder writes a pilot-driven manifest: the teacher steers the curriculum, not a scope-and-sequence chart. The manifest must also be open and go: the teacher should be able to pick up any week's unit and know what to do without re-decoding. The frontmatter and the "Units" table are the teacher's dashboard.
 
 ## Pacing: the contract
 
@@ -91,7 +91,7 @@ If the prompt supplied an ordered list of weekly themes, decide — in one pass 
 - **Several consecutive weeks share a unit** when themes are facets of one arc (e.g. weeks 1–3 = "Maya origins," weeks 4–6 = "Classic period," weeks 7–8 = "Post-conquest"). Each multi-week block is one unit; the unit gets `weeks × sessions-per-week` lessons.
 - **Mixed** is allowed and common (a unit that's 1 week and another that's 3 weeks). State the decision in one line at the top of the `curriculum.md` body so the teacher sees it immediately: `This curriculum is 8 units across 12 weeks (units 2 and 5 are 3 weeks each; the rest are 1 week).`
 
-If themes weren't supplied, hand unit-builder the broader theme plus a suggested unit count (roughly `weeks / 2` for adjacency-heavy subjects like language; `weeks / 3` for arc-heavy subjects like history or science). Unit-builder will decompose internally.
+If themes weren't supplied, hand mason-unit-builder the broader theme plus a suggested unit count (roughly `weeks / 2` for adjacency-heavy subjects like language; `weeks / 3` for arc-heavy subjects like history or science). mason-unit-builder will decompose internally.
 
 ### Pace budget passed to each unit
 
@@ -101,7 +101,7 @@ Each unit gets a slice of the pace budget in its invocation prose:
 - **Minutes per lesson** = the curriculum's `minutes_per_session`.
 - **Ordinal within curriculum** = 1..U.
 
-Unit-builder respects both: it produces exactly that many lesson files at that session length.
+mason-unit-builder respects both: it produces exactly that many lesson files at that session length.
 
 ## Overarching spine(s)
 
@@ -139,7 +139,7 @@ Each overarching spine has a `weeks_covered` span expressed in week ordinals —
 
 ### Passing the overarching spine(s) down
 
-When the curriculum has overarching spine(s), curriculum-builder passes the *applicable* spine to each unit-builder invocation in the prose prompt — based on which span the unit's weeks fall in. Unit-builder's rule is: if an overarching spine is passed, use that spine for the unit (don't pick a different one). The per-unit spine choice is overridden by the curriculum's choice. Lessons that don't genuinely touch the spine can still source a short supplementary reading — the spine is a default, not a cage.
+When the curriculum has overarching spine(s), mason-curriculum-builder passes the *applicable* spine to each mason-unit-builder invocation in the prose prompt — based on which span the unit's weeks fall in. mason-unit-builder's rule is: if an overarching spine is passed, use that spine for the unit (don't pick a different one). The per-unit spine choice is overridden by the curriculum's choice. Lessons that don't genuinely touch the spine can still source a short supplementary reading — the spine is a default, not a cage.
 
 When a unit's weeks fall in a gap between (or outside) any spine's span, no overarching spine is passed and the unit picks its own per-unit spine normally.
 
@@ -149,7 +149,7 @@ Every run produces:
 
 1. A curriculum manifest at `curricula/<curriculum-slug>/curriculum.md`.
 2. A **unique hero illustration** for the curriculum, embedded at the top of `curriculum.md`.
-3. U unit directories under `curricula/<curriculum-slug>/`, one per unit (unless `--no-units`), each generated by invoking `unit-builder --auto` with the curriculum's context passed in prose.
+3. U unit directories under `curricula/<curriculum-slug>/`, one per unit (unless `--no-units`), each generated by invoking `mason-unit-builder --auto` with the curriculum's context passed in prose.
 4. Zero or more field-trip files under `field-trips/` (only when the user asked for them via `--field-trip` or prose), cross-linked in the right unit and/or the curriculum manifest.
 
 Every generated markdown file is a node in a connected navigation graph (see "Navigation contract" below). Every material, image, book, and venue named anywhere in the curriculum has a link; nothing is referenced as a bare name.
@@ -165,7 +165,7 @@ curricula/
     images/
       <curriculum-slug>-hero.png                  # curriculum's unique hero (always)
     <unit-1-slug>/
-      unit.md                                     # written by unit-builder
+      unit.md                                     # written by mason-unit-builder
       images/
         <unit-1-slug>-hero.png                    # unit's unique hero
         <lesson-slug>-hero.png                    # each lesson's unique hero
@@ -199,7 +199,7 @@ The rule underneath all of this: **one `curriculum.md` per directory, never more
 
 ### Unit slugs
 
-Come from the weekly themes (when supplied) or are picked by unit-builder. Curriculum-builder determines unit slugs *before* invoking unit-builder — it needs them to populate the `curriculum.md` Units table. Pass each slug into the corresponding unit-builder invocation so the slug matches.
+Come from the weekly themes (when supplied) or are picked by mason-unit-builder. mason-curriculum-builder determines unit slugs *before* invoking mason-unit-builder — it needs them to populate the `curriculum.md` Units table. Pass each slug into the corresponding mason-unit-builder invocation so the slug matches.
 
 ### Retrofit (existing curricula)
 
@@ -225,13 +225,13 @@ Then run the **collision check** ("Curriculum slug" → "Collision check" above)
 
 ### Step 2 — Read the pedagogy pages that apply
 
-Read them this run, with the Read tool, before designing. Use unit-builder's required set. Add `liberal-education-for-all.md` if the subject mix feels narrow. This step is not satisfied by "I've read these before." Also apply the plain-language curriculum rules above: pilot-driven, open and go, and family-style when multiple students are named.
+Read them this run, with the Read tool, before designing. Use mason-unit-builder's required set. Add `liberal-education-for-all.md` if the subject mix feels narrow. This step is not satisfied by "I've read these before." Also apply the plain-language curriculum rules above: pilot-driven, open and go, and family-style when multiple students are named.
 
 If a sibling curriculum in the same class directory or a related curriculum already exists (e.g., an older `curriculum.md` elsewhere under `curricula/`), read one for tone reference *after* the pedagogy pages.
 
 ### Step 3 — Pick the overarching spine(s) (or decide not to)
 
-Follow "Overarching spine(s)" above. For each spine the curriculum gets, record title, author, ISBN/work URL, and `weeks_covered` span — you will cite each in `curriculum.md` frontmatter and pass the applicable one to each unit-builder invocation in Step 7 based on the unit's weeks. If the curriculum gets zero overarching spines, write one sentence in `curriculum.md`'s Spine section explaining why the curriculum uses a per-unit spine model instead.
+Follow "Overarching spine(s)" above. For each spine the curriculum gets, record title, author, ISBN/work URL, and `weeks_covered` span — you will cite each in `curriculum.md` frontmatter and pass the applicable one to each mason-unit-builder invocation in Step 7 based on the unit's weeks. If the curriculum gets zero overarching spines, write one sentence in `curriculum.md`'s Spine section explaining why the curriculum uses a per-unit spine model instead.
 
 ### Step 4 — Decide unit grouping and slugs
 
@@ -241,17 +241,17 @@ Using the rules in "Deciding how weekly themes group into units" above, compute:
 - **For each unit**: slug, human-readable name, the weeks it spans (e.g. "week 1" or "weeks 3–5"), and the resulting lesson count (`weeks_in_unit × sessions_per_week`).
 - **One-line summary** of the grouping, to appear at the top of `curriculum.md`'s body.
 
-Write this table mentally before anything hits disk — you'll need it for the manifest *and* for the unit-builder invocations.
+Write this table mentally before anything hits disk — you'll need it for the manifest *and* for the mason-unit-builder invocations.
 
 ### Step 5 — Generate the curriculum hero image (always)
 
-**Invoke `materials-builder` inline.** A single hero image is cheap; loading materials-builder's instructions into the current context and running them here is the right tradeoff. (See [`CLAUDE.md` § Sub-agent spawn convention](../../../CLAUDE.md#sub-agent-spawn-convention).)
+**Invoke `mason-materials-builder` inline.** A single hero image is cheap; loading mason-materials-builder's instructions into the current context and running them here is the right tradeoff. (See [`CLAUDE.md` § Sub-agent spawn convention](../../../CLAUDE.md#sub-agent-spawn-convention).)
 
 Pass it this prompt:
 
 > Illustration for a homeschool curriculum on `<curriculum theme>`. Landscape 4:3. `<one sentence on visual subject — an image that holds the whole arc, not one unit's worth>`. No text, no labels. Save to `curricula/<curriculum-slug>/images/<curriculum-slug>-hero.png`.
 
-Let materials-builder decide the register and configured image route. Record the returned route/source/model for the delivery message.
+Let mason-materials-builder decide the register and configured image route. Record the returned route/source/model for the delivery message.
 
 The curriculum hero is **unique** — not reused for any unit or lesson. Each unit will generate its own unit hero; each lesson its own lesson hero.
 
@@ -297,7 +297,7 @@ relations_opened: [<from: persons, nature, art, country, past, present, mathemat
 
 ## Arc
 
-<3–5 sentences on the curriculum's through-line. Which relations from [science-of-relations](../../pedagogy/wiki/concepts/science-of-relations.md) open across the whole curriculum, and how the units hang together as one arc. Not decoration — this is the curriculum's pedagogical rationale, the thing the teacher will come back to when a week feels off and she's trying to recover the shape of the whole.>
+<3–5 sentences on the curriculum's through-line. Which relations from [science-of-relations](../../pedagogies/charlotte-mason/wiki/concepts/science-of-relations.md) open across the whole curriculum, and how the units hang together as one arc. Not decoration — this is the curriculum's pedagogical rationale, the thing the teacher will come back to when a week feels off and she's trying to recover the shape of the whole.>
 
 ## Spine
 
@@ -314,7 +314,7 @@ relations_opened: [<from: persons, nature, art, country, past, present, mathemat
 | 2 | 2–3 | <Unit Name> | <N_2> | [<unit-2-slug>/unit.md](<unit-2-slug>/unit.md) |
 | ... |
 
-<If running with --no-units, add one sentence above the table noting that unit directories have not yet been generated; the links will be created when unit-builder runs.>
+<If running with --no-units, add one sentence above the table noting that unit directories have not yet been generated; the links will be created when mason-unit-builder runs.>
 
 ## Field trips
 
@@ -336,9 +336,9 @@ relations_opened: [<from: persons, nature, art, country, past, present, mathemat
 
 ### Step 7 — Generate the units (unless `--no-units`)
 
-**Spawn `unit-builder` once per unit** as a sub-agent. A unit is heavy own work that itself fans out into per-lesson spawns; a curriculum with U units cannot run end-to-end in this skill's context. Run spawns **serially, not in parallel** — units share the top-level `curricula/<curriculum-slug>/` directory and the `field-trips/` directory, and parallel spawns would race on directory creation, ordinal assignment across shared trips, and asset paths.
+**Spawn `mason-unit-builder` once per unit** as a sub-agent. A unit is heavy own work that itself fans out into per-lesson spawns; a curriculum with U units cannot run end-to-end in this skill's context. Run spawns **serially, not in parallel** — units share the top-level `curricula/<curriculum-slug>/` directory and the `field-trips/` directory, and parallel spawns would race on directory creation, ordinal assignment across shared trips, and asset paths.
 
-- **Skill:** `unit-builder`
+- **Skill:** `mason-unit-builder`
 - **Capability:** use a strong planning/writing model that can design a full unit arc, coordinate lesson generation, maintain navigation/link invariants, and synthesize the pedagogy wiki. Avoid lightweight worker models for this spawn.
 - **Prompt** (prose, self-contained — the spawn has no view of this skill's working memory; include every input it needs, plus `--auto` and `--lessons <count>` to lock the pace budget):
 
@@ -355,23 +355,23 @@ Each spawn returns a summary that includes the saved `unit.md` path, the N lesso
 - `unit.md` exists at `curricula/<curriculum-slug>/<unit-slug>/unit.md`.
 - The unit's `unit.md` frontmatter has `parent_curriculum: ../curriculum.md`.
 - The unit's `unit.md` body carries a "Part of: [<Curriculum Name>](../curriculum.md)" header line.
-- Each lesson file under the unit has UP-links to both `unit.md` and `../curriculum.md`. (Lesson-plan-builder writes these per its rules; verify post-hoc — this skill never watched the spawn write them.)
+- Each lesson file under the unit has UP-links to both `unit.md` and `../curriculum.md`. (mason-lesson-plan-builder writes these per its rules; verify post-hoc — this skill never watched the spawn write them.)
 
 Record route/source/model for each unit's hero image if different routes or providers were used.
 
 ### Step 8 — Generate field trips (only if requested)
 
-**Spawn `field-trip-planner` once per requested trip** as a sub-agent. Trip planning is heavy own work (Maps queries, candidate ranking, prose write-up). Run spawns serially.
+**Spawn `mason-field-trip-planner` once per requested trip** as a sub-agent. Trip planning is heavy own work (Maps queries, candidate ranking, prose write-up). Run spawns serially.
 
-- **Skill:** `field-trip-planner`
+- **Skill:** `mason-field-trip-planner`
 - **Capability:** use a model/tool context that can handle local pedagogy synthesis, Maps/place research, candidate ranking, and structured markdown generation.
 - **Prompt:** a self-contained prose block with `--auto`, the trip subject and location, the curriculum slug, and (for `weekly`) the unit slug it belongs to. Include the exact paths the trip file's frontmatter should back-reference and where the trip file should land.
 
 If `--field-trip weekly`: after Step 7 completes, walk every unit and spawn one trip per unit, in unit order. The trip file's `owning_unit` becomes `../curricula/<curriculum-slug>/<unit-slug>/unit.md` and `owning_curriculum` becomes `../curricula/<curriculum-slug>/curriculum.md`. After each spawn returns, patch the owning `unit.md`'s `field_trips` frontmatter list and its "Field trips" section to include the new trip — the patch is post-hoc, done by this skill with the Edit tool.
 
-If `--field-trip culminating`: after all units are generated, spawn `field-trip-planner` once with a prompt that spans the whole curriculum arc. The trip file's `owning_curriculum` becomes `../curricula/<curriculum-slug>/curriculum.md`; `owning_unit` is null (the trip belongs to the curriculum as a whole, not one unit). Patch `curriculum.md`'s `field_trips` frontmatter list and its "Field trips" section to include the trip.
+If `--field-trip culminating`: after all units are generated, spawn `mason-field-trip-planner` once with a prompt that spans the whole curriculum arc. The trip file's `owning_curriculum` becomes `../curricula/<curriculum-slug>/curriculum.md`; `owning_unit` is null (the trip belongs to the curriculum as a whole, not one unit). Patch `curriculum.md`'s `field_trips` frontmatter list and its "Field trips" section to include the trip.
 
-If the prose names specific trips (e.g. "a culminating trip to the jade market in Antigua"), pass the named location through in the spawn prompt. If it doesn't, field-trip-planner will need a location — ask once before spawning.
+If the prose names specific trips (e.g. "a culminating trip to the jade market in Antigua"), pass the named location through in the spawn prompt. If it doesn't, mason-field-trip-planner will need a location — ask once before spawning.
 
 If `--field-trip none` (the default), skip this step entirely. Do not pre-emptively plan trips the user didn't ask for.
 
@@ -407,23 +407,23 @@ Print a short summary:
 Every markdown file this skill produces — and every file it causes downstream skills to produce — is a node in a connected graph. At minimum:
 
 - **`curriculum.md`** links DOWN to every `unit.md` via its Units table; DOWN to any curriculum-level field-trip files via its Field trips section; OUT to the overarching spine book (OL URL) if any; OUT to pedagogy concept pages as real markdown links.
-- **Each `unit.md`** (generated by unit-builder under this skill's orchestration) links UP to `../curriculum.md` via `parent_curriculum` frontmatter and a "Part of:" header line; DOWN to every lesson in its sequence; DOWN to any trips it owns; OUT to spine and pedagogy. unit-builder owns writing these; curriculum-builder verifies on Step 9.
-- **Each lesson file** links UP to `unit.md` and `../curriculum.md`; sideways to prev/next when ordinaled; OUT to spine, pedagogy, materials, and books. lesson-plan-builder owns writing these.
-- **Each field-trip file** links UP to the owning unit and/or owning curriculum via its frontmatter (`owning_unit`, `owning_curriculum`) and a "Part of:" header line; OUT to venue Maps/website. field-trip-planner owns writing these.
+- **Each `unit.md`** (generated by mason-unit-builder under this skill's orchestration) links UP to `../curriculum.md` via `parent_curriculum` frontmatter and a "Part of:" header line; DOWN to every lesson in its sequence; DOWN to any trips it owns; OUT to spine and pedagogy. mason-unit-builder owns writing these; mason-curriculum-builder verifies on Step 9.
+- **Each lesson file** links UP to `unit.md` and `../curriculum.md`; sideways to prev/next when ordinaled; OUT to spine, pedagogy, materials, and books. mason-lesson-plan-builder owns writing these.
+- **Each field-trip file** links UP to the owning unit and/or owning curriculum via its frontmatter (`owning_unit`, `owning_curriculum`) and a "Part of:" header line; OUT to venue Maps/website. mason-field-trip-planner owns writing these.
 - **Every book** named anywhere has an Open Library URL (ISBN URL when available; work URL otherwise). No bare book names.
-- **Every venue** named in a trip file has a Google Maps URL + website (field-trip-planner already enforces this).
-- **Every pedagogy reference** is a real markdown link. From `curriculum.md` (two-deep) that looks like `[narration](../../pedagogy/wiki/concepts/narration.md)`. Never an Obsidian `[[wiki-link]]`.
+- **Every venue** named in a trip file has a Google Maps URL + website (mason-field-trip-planner already enforces this).
+- **Every pedagogy reference** is a real markdown link. From `curriculum.md` (two-deep) that looks like `[narration](../../pedagogies/charlotte-mason/wiki/concepts/narration.md)`. Never an Obsidian `[[wiki-link]]`.
 
 A teacher opening any file in this curriculum in Obsidian should be able to navigate to every other related file without leaving the editor. Test this mentally on every run.
 
 ## Rules (hard)
 
-- **Unique hero image on `curriculum.md`.** Generated by materials-builder, embedded at the top. Never reused as a unit hero or a lesson hero. Never reused across curricula.
-- **Each unit has its own unique hero; each lesson has its own unique hero.** Enforced downstream by unit-builder and lesson-plan-builder respectively. Hero images are identifiers.
+- **Unique hero image on `curriculum.md`.** Generated by mason-materials-builder, embedded at the top. Never reused as a unit hero or a lesson hero. Never reused across curricula.
+- **Each unit has its own unique hero; each lesson has its own unique hero.** Enforced downstream by mason-unit-builder and mason-lesson-plan-builder respectively. Hero images are identifiers.
 - **Pacing is weeks / sessions-per-week / minutes-per-session — always.** No calendar-anchor dates in any generated file (curriculum, unit, lesson, or trip): no specific years, months, terms, or "starting <date>" phrases. Frontmatter, body, and filenames all respect this. Date-portable by design. Venue opening hours from Maps and time-of-day qualifiers (morning / afternoon / evening / dusk / dawn) are fine when the activity genuinely depends on them — see the pacing contract above for the test.
 - **Unit grouping is decided once, at the top of the run, and stated in one line in the manifest.** The teacher needs to see the grouping decision before she sees the Units table.
-- **Zero, one, or more overarching spines per curriculum.** Each spine has a non-overlapping `weeks_covered` span. Named in frontmatter and prose; the spine applicable to a given unit's weeks is passed down in that unit-builder invocation. When no overarching spine covers a unit's weeks, per-unit spines fill the gap and the manifest says so.
-- **Unit-builder is invoked with `--auto` and with `--lessons <count>`.** The pace budget is the curriculum's to own; it is not negotiable by the unit.
+- **Zero, one, or more overarching spines per curriculum.** Each spine has a non-overlapping `weeks_covered` span. Named in frontmatter and prose; the spine applicable to a given unit's weeks is passed down in that mason-unit-builder invocation. When no overarching spine covers a unit's weeks, per-unit spines fill the gap and the manifest says so.
+- **mason-unit-builder is invoked with `--auto` and with `--lessons <count>`.** The pace budget is the curriculum's to own; it is not negotiable by the unit.
 - **Unit invocations run serially.** Parallel invocations race on shared directories.
 - **Retrofit is non-destructive.** Never rename or renumber existing unit directories, existing lesson files, or existing assets. Record mixed state in `curriculum.md`.
 - **Real markdown links for everything**, including pedagogy references. No `[[wiki-links]]` in generated files.
@@ -431,5 +431,5 @@ A teacher opening any file in this curriculum in Obsidian should be able to navi
 - **No fabricated sources.** Book titles, authors, URLs come from the Open Library helper or a user-supplied source. Never from memory.
 - **Student data comes from `students.yaml`.** No hard-coded names, aliases, or grades.
 - **Field trips only when asked.** Never auto-plan trips the user didn't request. `--field-trip none` is the default; `weekly` and `culminating` both require an explicit opt-in.
-- **materials-builder, mason-aesthetics, and mason-print-design are invoked only transitively.** Curriculum-builder calls materials-builder for the curriculum hero. It does not call mason-* directly; those are materials-builder's collaborators.
+- **mason-aesthetics and mason-print-design are never invoked directly.** mason-curriculum-builder calls mason-materials-builder for the curriculum hero and nothing else; mason-aesthetics and mason-print-design are mason-materials-builder's collaborators.
 - **No Wikipedia.** Open Library for books; Grokipedia or another verifiable source for short reference material if genuinely needed; no Wikipedia citations in generated files.

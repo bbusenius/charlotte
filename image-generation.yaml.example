@@ -9,7 +9,8 @@ image_generation:
 
   routes:
     # High-quality default for Charlotte materials, slides, and illustrations.
-    # Non-fast routes receive the full mason-aesthetics skill as prompt context.
+    # Non-fast routes receive the full configured aesthetics skill as prompt
+    # context (runtime.yaml `pedagogy.aesthetics`, default mason-aesthetics).
     quality:
       source: google
       api_key_env: GEMINI_API_KEY
@@ -17,7 +18,9 @@ image_generation:
       api: generate-content
 
     # Fast/cheap route for simple image generation.
-    # The route name `fast` receives only the compact Image-router summary.
+    # The route name `fast` receives the compact Image-router summary when
+    # the configured aesthetics skill provides that optional section, and
+    # the full skill text otherwise.
     fast:
       source: google
       api_key_env: GEMINI_API_KEY

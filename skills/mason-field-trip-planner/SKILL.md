@@ -1,22 +1,22 @@
 ---
-name: field-trip-planner
+name: mason-field-trip-planner
 description: Build a pedagogically grounded field trip plan for a given theme and location. Produces a ranked list of nearby venues (each with a Google Maps link and a website or social page) and a full markdown plan for the chosen option.
 argument-hint: <theme + location in prose, optionally referencing lessons> [--auto] [--save PATH]
 ---
 
 # Field Trip Planner
 
-Produce a field trip plan for a given theme and location, grounded in this project's Charlotte Mason pedagogy wiki at `pedagogy/wiki/`. Every venue mentioned MUST carry a Google Maps link and either a website or a social-media page — no exceptions, no invented URLs.
+Produce a field trip plan for a given theme and location, grounded in this project's Charlotte Mason pedagogy wiki at `pedagogies/charlotte-mason/wiki/`. Every venue mentioned MUST carry a Google Maps link and either a website or a social-media page — no exceptions, no invented URLs.
 
 ## Usage
 
-- `/field-trip-planner In our Guatemalan history class, we're studying how the Maya used jade. Let's plan a field trip in the Antigua, Guatemala area, no more than 30 miles from Antigua.`
-- `/field-trip-planner We've just finished Math-3 Lessons 40–45 (rounding and estimation). Plan a field trip in the Hyde Park / South Side area of Chicago.`
-- `/field-trip-planner Biology lesson on competition and resources. It's winter in Rochester, MN. --auto`
+- `/mason-field-trip-planner In our Guatemalan history class, we're studying how the Maya used jade. Let's plan a field trip in the Antigua, Guatemala area, no more than 30 miles from Antigua.`
+- `/mason-field-trip-planner We've just finished Math-3 Lessons 40–45 (rounding and estimation). Plan a field trip in the Hyde Park / South Side area of Chicago.`
+- `/mason-field-trip-planner Biology lesson on competition and resources. It's winter in Rochester, MN. --auto`
 
 ### Flags
 
-- `--auto` — skip the interactive ranked list; take the top-ranked option and produce the full plan directly. Intended for future curriculum-builder integration.
+- `--auto` — skip the interactive ranked list; take the top-ranked option and produce the full plan directly. Intended for future mason-curriculum-builder integration.
 - `--save PATH` — write the final plan to PATH instead of the default location.
 
 ## Inputs (parsed from the prompt)
@@ -71,7 +71,7 @@ If the actual tool names differ (some forks prefix differently), call ToolSearch
 
 Extract theme, location, bounds, flags, and any extra context. If the theme references a curriculum file or specific lesson numbers (`Math-3`, `Level-3-Language-Arts`, "Lessons 40–45", etc.), read those lessons from wherever `students.yaml` resolves them to, and pull out what was actually covered. Treat that content as **already studied**; the trip should extend, apply, or culminate it, not re-teach it.
 
-**Also extract owning-unit / owning-curriculum context if the prompt supplies it.** When unit-builder or curriculum-builder invokes this skill, the prose prompt names the owning unit (and, if present, curriculum) slug and path. Record both paths — they go into the trip file's frontmatter (`owning_unit`, `owning_curriculum`) and drive the "Part of:" header line, so a teacher opening the trip file can navigate back up to the unit that owns it.
+**Also extract owning-unit / owning-curriculum context if the prompt supplies it.** When mason-unit-builder or mason-curriculum-builder invokes this skill, the prose prompt names the owning unit (and, if present, curriculum) slug and path. Record both paths — they go into the trip file's frontmatter (`owning_unit`, `owning_curriculum`) and drive the "Part of:" header line, so a teacher opening the trip file can navigate back up to the unit that owns it.
 
 Also read `students.yaml` to identify the student(s) this trip is for. If the prompt names a child, match them by display name or alias. If no child is named, use the grade mentioned in the prompt, or fall back to all students. Record the matched student's `display_name` and `grade` — these inform observation prompt language and the enrichment book buckets in Step 7a. Do not hard-code any student names.
 
@@ -193,7 +193,7 @@ Print the following markdown to the console. **Also always save it to disk** —
 theme: "<theme>"
 location: "<city/region>"
 venue: "<venue name>"
-owning_unit: <relative path to ../curricula/<class>/<unit>/unit.md, or null>          # set when invoked by unit-builder or curriculum-builder
+owning_unit: <relative path to ../curricula/<class>/<unit>/unit.md, or null>          # set when invoked by mason-unit-builder or mason-curriculum-builder
 owning_curriculum: <relative path to ../curricula/<class>/curriculum.md, or null>    # set when the owning unit lives under a curriculum
 concepts: [science-of-relations, narration, ...]
 ---
@@ -285,7 +285,7 @@ Mason's canonical patterns:
 ## Post-trip
 
 - **Narration:** each child tells back what they saw and thought about, without prompts or leading questions — see `[[concepts/narration]]`. This is the assessment.
-- **Feeding forward:** what came up during narration can seed the next lesson — note 1–2 threads the trip might open up for future study. (Coordinating trips and lessons more tightly is the job of a future curriculum-builder skill; here we just flag the threads.)
+- **Feeding forward:** what came up during narration can seed the next lesson — note 1–2 threads the trip might open up for future study. (Coordinating trips and lessons more tightly is the job of a future mason-curriculum-builder skill; here we just flag the threads.)
 
 ## Logistics
 
@@ -310,5 +310,5 @@ Mason's canonical patterns:
 - **Treat prior lessons as done.** When the prompt references lessons already studied, the trip extends them; it does not re-teach them. Additional readings/books are presented as optional enrichment.
 - **Pedagogical framework is applied every time.** Science of relations, narration, single reading, and living books are not a menu to pick from by theme. Every trip opens relations; every trip ends in narration; any reading is single-reading of a living book.
 - **No Wikipedia.** Wikipedia is not a citation source for this skill's enrichment lists. Books go through Open Library; short encyclopedic articles come from sources the user names (e.g. Grokipedia) or are left out. Every citation already needs a verifiable URL; Wikipedia doesn't qualify.
-- **Back-link to the owning unit when invoked by unit-builder or curriculum-builder.** Set `owning_unit` and (if applicable) `owning_curriculum` in frontmatter. Render the "Part of: [<Unit>](<path>)" header line in the body. A trip file generated inside a unit context must be navigable from the unit's `unit.md` down, and from the trip file back up. When invoked standalone (a loose `/field-trip-planner` command with no parent context), both fields are null and the "Part of:" line is omitted.
+- **Back-link to the owning unit when invoked by mason-unit-builder or mason-curriculum-builder.** Set `owning_unit` and (if applicable) `owning_curriculum` in frontmatter. Render the "Part of: [<Unit>](<path>)" header line in the body. A trip file generated inside a unit context must be navigable from the unit's `unit.md` down, and from the trip file back up. When invoked standalone (a loose `/mason-field-trip-planner` command with no parent context), both fields are null and the "Part of:" line is omitted.
 - **No calendar-anchor dates anywhere — including in trip filenames or frontmatter.** Trip files are date-portable just like lessons, units, and curricula. The same trip should be reusable next year without renaming. Filenames are `<venue-slug>.md` (or `<venue-slug>-<theme-slug>.md` when a venue is used twice on different themes). Venue opening hours pulled from Google Maps render exactly as returned (e.g. "Tue–Sun 9am–5pm") in the Logistics section, and time-of-day qualifiers (morning, afternoon, evening, dusk, dawn) are fine when the activity genuinely depends on them — those are not calendar anchors.

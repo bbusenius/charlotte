@@ -1,6 +1,6 @@
 ---
 name: tablet-slide-builder
-description: Use for any request to make a slide, tablet slide, lock-screen slide, unlock question, MindFeast slide, or Homeschool Screen Lock app package. Generates Android lock-screen question, essay, or informational slides; resolves the output directory per-student from students.yaml (`tablet_slides_dir`); creates `<dir>/<id>/` folders containing slide.md plus optional image/audio media; validates the app-specific YAML/frontmatter contract; uses provided prompt images when available; and can generate Mason-shaped images when none are provided. Do not route slide requests through materials-builder or mason-print-design unless the user separately asks for a printable/PDF material.
+description: Use for any request to make a slide, tablet slide, lock-screen slide, unlock question, MindFeast slide, or Homeschool Screen Lock app package. Generates Android lock-screen question, essay, or informational slides; resolves the output directory per-student from students.yaml (`tablet_slides_dir`); creates `<dir>/<id>/` folders containing slide.md plus optional image/audio media; validates the app-specific YAML/frontmatter contract; uses provided prompt images when available; and can generate images in the configured aesthetic register when none are provided. Do not route slide requests through mason-materials-builder or mason-print-design unless the user separately asks for a printable/PDF material.
 argument-hint: <slide request in prose, optionally referencing a student, lesson, provided image, or media> [--out PATH] [--id SLUG] [--image quality|fast|provided] [--difficulty easy|medium|hard] [--type question|essay|informational] [--subject SUBJECT]
 ---
 
@@ -17,7 +17,7 @@ Each student in `students.yaml` declares a `tablet_slides_dir` (e.g. `tablet-sli
 Resolution order, highest priority first:
 
 1. `--out PATH` — explicit override on the skill invocation. Used as-is.
-2. **Student's `tablet_slides_dir`** — when the prompt names a student (by `display_name`, slug, or `aliases`) and that student has a `tablet_slides_dir` set. Match the same way `lesson-plan-builder` does: read `students.yaml`, lowercase-match the prompt against each student's slug and `aliases`.
+2. **Student's `tablet_slides_dir`** — when the prompt names a student (by `display_name`, slug, or `aliases`) and that student has a `tablet_slides_dir` set. Match the same way `mason-lesson-plan-builder` does: read `students.yaml`, lowercase-match the prompt against each student's slug and `aliases`.
 3. **Fallback** — repo-relative `tablet-slides/`. Used when no student is named and no `--out` is given. This is for ad-hoc one-offs not tied to a kid.
 
 If a student is named but has no `tablet_slides_dir` set, fall back to `tablet-slides/` and note this in delivery so the user can decide whether to add the field.
@@ -205,7 +205,7 @@ The lock-screen challenge should make the student retrieve or notice one meaning
 - Avoid trick questions, vague wording, and overly long answers.
 - Hints should reopen attention to the material, not give the answer away.
 - For image slides, the image should be the main object of attention. Do not bake question text into the image.
-- For generated images, follow `mason-aesthetics`: calm, specific, living-book register, no neon/novelty styling.
+- For generated images, follow the configured aesthetics skill (`pedagogy.aesthetics` in `runtime.yaml`, default `skills/mason-aesthetics`): calm, specific, no neon/novelty styling.
 
 Good slide subjects include `painting`, `composer`, `geography`, `science`, `math`, `vocabulary`, `history`, `scripture`, `poetry`, and `phonics`.
 
@@ -232,7 +232,7 @@ Use `type: essay` when the student should respond in their own words. Essay slid
 
 ## Image Generation
 
-Use the same image route policy as `materials-builder`, but with slide-specific aspect ratios and output paths.
+Use the same image route policy as `mason-materials-builder`, but with slide-specific aspect ratios and output paths.
 
 Image generation for this skill is route-based. Use the normal `quality` route unless the user explicitly asks for a fast/cheap slide image; `image-generation.yaml` decides which provider/model supplies that route.
 
@@ -300,7 +300,7 @@ If the user explicitly asks for a fast/cheap/simple generated image, use `--rout
   --json
 ```
 
-The route named `fast` receives the compact Mason image summary. Other routes receive the full `mason-aesthetics` skill as image prompt context unless `--prompt-mode` is explicitly overridden.
+The route named `fast` receives the configured aesthetics skill's compact image summary when the file provides one (the optional `#### Image-router summary` section), and the full skill text otherwise. Other routes always receive the full aesthetics skill text as image prompt context unless `--prompt-mode` is explicitly overridden. The aesthetics skill is set by `pedagogy.aesthetics` in `runtime.yaml` (default `skills/mason-aesthetics`).
 
 ### Prompt rules
 
@@ -309,7 +309,7 @@ The route named `fast` receives the compact Mason image summary. Other routes re
 - **Full-bleed for the Android lock screen.** The illustration must extend to all four edges with no borders, paper margin, vignette, frame, or blank rectangle. Affirm this in the prompt (e.g. *"the painted scene extends to every edge of the canvas"*) and include explicit negatives: *"no border, no paper margin, no vignette, no frame, no blank space at the edges."*
 - **Compose for the panel overlay, don't reserve space for it.** The app's translucent question panel overlays the lower portion of the image. Anchor the focal subject in the upper or center portion of the frame so the panel falls over painted-but-less-essential content (foreground, ground plane, table surface, grass) — keep that region painted, just not where the focal subject lives. **Do not** ask for "empty space," "room for text," or "a text panel" at the bottom — image models interpret that literally and paint a blank rectangle into the image.
 - Use enough contrast that the subject still reads once the panel overlays the bottom.
-- Prefer calm, specific, non-novelty imagery aligned with `mason-aesthetics`.
+- Prefer calm, specific, non-novelty imagery aligned with the configured aesthetics skill.
 - Name the image source/model in delivery, or say that the user provided the image.
 
 ## Media Rules
@@ -345,7 +345,7 @@ The bundled validator mirrors those checks and adds practical warnings for long 
 
 ## Relationship To Other Skills
 
-This skill owns the app-specific slide package. Use `materials-builder` only as a source of pedagogy, curriculum grounding, and image-generation procedure. Do not route this through `mason-print-design` unless the user separately asks for a printable/PDF version of the same material.
+This skill owns the app-specific slide package. Use `mason-materials-builder` only as a source of pedagogy, curriculum grounding, and image-generation procedure. Do not route this through `mason-print-design` unless the user separately asks for a printable/PDF version of the same material.
 
 ## Delivery
 

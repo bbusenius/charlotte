@@ -9,8 +9,8 @@ Charlotte skills assume a small set of runtime capabilities. Runtime adapters ca
 | Workspace file read/write | All generation skills | Runtime filesystem access to the repo and ignored content roots |
 | Python project CLIs | Logging, slides, sync, image routing | `.venv` installed from `pyproject.toml` |
 | Image generation | Materials, tablet slides, standalone image requests | `scripts/charlotte_image.py` plus `image-generation.yaml` routes |
-| HTML to PDF | `mason-print-design`, `materials-builder` | WeasyPrint from `pyproject.toml` |
-| SVG to PDF/PNG | `mason-print-design`, `materials-builder` | System `inkscape` |
+| HTML to PDF | `mason-print-design`, `mason-materials-builder` | WeasyPrint from `pyproject.toml` |
+| SVG to PDF/PNG | `mason-print-design`, `mason-materials-builder` | System `inkscape` |
 | Browser automation | Lexile lookup | Playwright plus `tools.chrome_path` in `runtime.yaml` |
 | Spreadsheet append | `hsd-time-log`, `hsd-book-log` | `xlsx-append` from `pyproject.toml` |
 | Spreadsheet read | `hsd-records-read`, `mindfeast-weekly-slides` | `openpyxl` from `pyproject.toml` plus mounted workbook paths |
@@ -22,11 +22,11 @@ Charlotte skills assume a small set of runtime capabilities. Runtime adapters ca
 
 | Capability | Used by | Required surface |
 | --- | --- | --- |
-| Google Maps places/geocoding/directions | `field-trip-planner` | Google Maps MCP or equivalent runtime tools |
-| Web search/fetch | `field-trip-planner`, book lookup fallback, general research | Runtime web tools or equivalent MCP |
+| Google Maps places/geocoding/directions | `mason-field-trip-planner` | Google Maps MCP or equivalent runtime tools |
+| Web search/fetch | `mason-field-trip-planner`, book lookup fallback, general research | Runtime web tools or equivalent MCP |
 | Vision over local images | `hsd-time-log`, `hsd-book-log` | Grok Vision MCP or equivalent vision-capable runtime tool |
 | Live search fallback | `hsd-book-log` | Grok live search MCP or equivalent search-capable runtime tool |
-| Runtime-native image fallback | `materials-builder`, `tablet-slide-builder` | Optional runtime image tool used only after `charlotte_image.py` exits `2` |
+| Runtime-native image fallback | `mason-materials-builder`, `tablet-slide-builder` | Optional runtime image tool used only after `charlotte_image.py` exits `2` |
 
 Skills should name the capability they need, not a host-specific installation path. Runtime adapters own the mapping from capability to tool names, MCP servers, environment variables, and permission policy.
 

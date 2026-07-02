@@ -1,26 +1,26 @@
 ---
-name: lesson-plan-builder
-description: Build a single Mason-shaped lesson plan, grounded in the project's pedagogy wiki, for a named theme and (optionally) a named student. Produces a markdown lesson file with a hero illustration and — when the lesson's activities actually need them — any embedded materials rendered via materials-builder. Unit-builder chains these into a unit; curriculum-builder chains units into a paced curriculum.
+name: mason-lesson-plan-builder
+description: Build a single Mason-shaped lesson plan, grounded in the project's pedagogy wiki, for a named theme and (optionally) a named student. Produces a markdown lesson file with a hero illustration and — when the lesson's activities actually need them — any embedded materials rendered via mason-materials-builder. mason-unit-builder chains these into a unit; mason-curriculum-builder chains units into a paced curriculum.
 argument-hint: <theme in prose, optionally referencing a student or grade> [--auto] [--save PATH] [--length short|standard|long]
 ---
 
 # Lesson Plan Builder
 
-Produce one lesson plan from a free-form prose prompt. Every plan is grounded in the Charlotte Mason pedagogy wiki at `pedagogy/wiki/` for **how** it is made, regardless of *what* subject is being taught. A lesson built by this skill is a single session (roughly 15–60 min depending on the child), not a unit or a week.
+Produce one lesson plan from a free-form prose prompt. Every plan is grounded in the Charlotte Mason pedagogy wiki at `pedagogies/charlotte-mason/wiki/` for **how** it is made, regardless of *what* subject is being taught. A lesson built by this skill is a single session (roughly 15–60 min depending on the child), not a unit or a week.
 
-This skill owns the *what* — theme, relations, spine of the session, narration, any materials the session literally uses. It does not own rendering (materials-builder does) and does not plan field trips (field-trip-planner does).
+This skill owns the *what* — theme, relations, spine of the session, narration, any materials the session literally uses. It does not own rendering (mason-materials-builder does) and does not plan field trips (mason-field-trip-planner does).
 
 ## Usage
 
-- `/lesson-plan-builder Spanish for Alice — greetings and introductions`
-- `/lesson-plan-builder A history lesson on how the Maya used jade for a 3rd grader`
-- `/lesson-plan-builder Picture study of a Sargent watercolor for Alice`
-- `/lesson-plan-builder Nature study — observing a single tree across the seasons (first session) for Alice`
-- `/lesson-plan-builder Handicraft for Charlie: simple running stitch on burlap --length short`
+- `/mason-lesson-plan-builder Spanish for Alice — greetings and introductions`
+- `/mason-lesson-plan-builder A history lesson on how the Maya used jade for a 3rd grader`
+- `/mason-lesson-plan-builder Picture study of a Sargent watercolor for Alice`
+- `/mason-lesson-plan-builder Nature study — observing a single tree across the seasons (first session) for Alice`
+- `/mason-lesson-plan-builder Handicraft for Charlie: simple running stitch on burlap --length short`
 
 ### Flags
 
-- `--auto` — skip any clarifying questions; take defaults and write the plan. Intended for curriculum-builder integration.
+- `--auto` — skip any clarifying questions; take defaults and write the plan. Intended for mason-curriculum-builder integration.
 - `--save PATH` — write the final plan to PATH (a directory or a full `.md` path) instead of the default location.
 - `--length short|standard|long` — override the age default. `short` ≈ 15–20 min, `standard` ≈ 30–45 min, `long` ≈ 45–60 min.
 
@@ -134,7 +134,7 @@ Resolve in this order:
 2. **Only the lesson is named** (the common case — e.g. "a 3rd-grade science lesson about symbiosis"):
    - Under `--auto`: **infer a reasonable parent unit** — one level of abstraction above the lesson topic, named as the user would plausibly name it. For `symbiosis` → `organism-relationships`. For `water-cycle` → `earth-systems` (not `science`, which is already the class). For `the-letter-b` → `beginning-phonics`. Keep the inferred unit narrow enough that sibling lessons actually belong in it — not so broad it becomes a catch-all. State the inferred unit name in one line at the top of the delivery so the user can rename it if they disagree.
    - Without `--auto`: **ask the user for the unit name**, proposing a sensible inference as a default. Stop and wait.
-3. **Curriculum-builder invocation** — curriculum-builder passes class, unit, and lesson slugs (and optionally an ordinal) in its prompt. Use them as given.
+3. **mason-curriculum-builder invocation** — mason-curriculum-builder passes class, unit, and lesson slugs (and optionally an ordinal) in its prompt. Use them as given.
 
 The inferred or provided unit name never overrides the user's stated lesson topic. If the user says the lesson is about symbiosis, the lesson slug is `symbiosis`, period.
 
@@ -142,7 +142,7 @@ The inferred or provided unit name never overrides the user's stated lesson topi
 
 - **Default: no ordinal** in the filename.
 - **Prompt explicitly names one** ("lesson 2 on symbiosis", "session 3", "the second lesson of this unit") → prefix the filename with `lesson-NN-`, zero-padded to two digits (e.g. `lesson-02-symbiosis.md`). The ordinal lives only in the markdown filename — never in the image or material filenames — so renumbering a lesson doesn't touch its assets.
-- **Unit-builder and curriculum-builder** may pass an ordinal in their prompt; respect it.
+- **mason-unit-builder and mason-curriculum-builder** may pass an ordinal in their prompt; respect it.
 - The skill never assigns an ordinal on its own.
 
 ### Cross-lesson asset reuse
@@ -153,9 +153,9 @@ Because `images/` and `materials/` are shared at the unit level, a later lesson 
 
 Create directories as needed. `--save PATH` overrides the lesson file path; if `--save` names a directory, the file lands there using the same base filename.
 
-### Spine book passed from unit-builder
+### Spine book passed from mason-unit-builder
 
-When unit-builder (or curriculum-builder through it) invokes this skill, the prose prompt includes the unit's **spine book** — title, author, Open Library URL, and the chapter/section for this specific lesson. The spine is the **main reading material** of the session when the session reads. Treat it as the meat of the lesson, not a suggestion to be casually replaced with something else the lesson-plan thinks fits better.
+When mason-unit-builder (or mason-curriculum-builder through it) invokes this skill, the prose prompt includes the unit's **spine book** — title, author, Open Library URL, and the chapter/section for this specific lesson. The spine is the **main reading material** of the session when the session reads. Treat it as the meat of the lesson, not a suggestion to be casually replaced with something else the lesson-plan thinks fits better.
 
 A lesson may add a **supplementary reading** alongside the spine — a poem, a one-page article, a short picture book, even a chapter from a different book — when the session genuinely calls for one. Query Open Library for the supplement the same way you would in a standalone run. The rule is: core reading = spine; supplements = whatever fits.
 
@@ -207,17 +207,17 @@ Only materials that answer "yes, the child interacts with this *during* the sess
 
 ### Step 4 — Generate the hero image (always)
 
-Invoke the **materials-builder** skill to produce the hero image. Pass it a prompt of the form:
+Invoke the **mason-materials-builder** skill to produce the hero image. Pass it a prompt of the form:
 
 > Illustration for a homeschool lesson plan on `<lesson>`. Landscape 4:3. `<one sentence on subject matter>`. No text, no labels. Save to `curricula/<class-slug>/<unit-slug>/images/<lesson-slug>-hero.png`.
 
-Let materials-builder decide the image register and configured image route. Do not second-guess those choices here. Record the returned route/source/model — it goes in the delivery message.
+Let mason-materials-builder decide the image register and configured image route. Do not second-guess those choices here. Record the returned route/source/model — it goes in the delivery message.
 
 **Aspect ratio note.** The shared image router is configured around common provider-supported ratios: `1:1`, `9:16`, `16:9`, `4:3`, `3:4`. Use `4:3` as the default landscape for hero images. Use `3:4` only when the subject clearly needs portrait. Do not request `3:2` unless the configured route explicitly supports it.
 
 ### Step 5 — Generate other materials (only if the lesson uses them)
 
-For each material the lesson's phases literally use, invoke materials-builder with a concrete prompt describing what the child will use in hand. Save paths follow the scheme above. Collect the resulting file paths.
+For each material the lesson's phases literally use, invoke mason-materials-builder with a concrete prompt describing what the child will use in hand. Save paths follow the scheme above. Collect the resulting file paths.
 
 If the lesson uses no additional materials, skip this step entirely.
 
@@ -225,7 +225,7 @@ If the lesson uses no additional materials, skip this step entirely.
 
 If the lesson reads from a living book, identify it via Open Library (above) or a source the user named. Record title, author, and the exact passage/chapter used in the session.
 
-If there is room for a short "Go further" list, run the Open Library helper once or twice and an optional WebSearch or two for a poem, an artwork, or a short video — same rules as field-trip-planner's enrichment pass (verified URLs only, omit categories that turn up nothing, never fabricate). This section is optional; a lesson plan is not required to carry an enrichment appendix.
+If there is room for a short "Go further" list, run the Open Library helper once or twice and an optional WebSearch or two for a poem, an artwork, or a short video — same rules as mason-field-trip-planner's enrichment pass (verified URLs only, omit categories that turn up nothing, never fabricate). This section is optional; a lesson plan is not required to carry an enrichment appendix.
 
 ### Step 7 — Write the lesson file
 
@@ -250,7 +250,7 @@ length: "<short|standard|long> (~<range> min)"
 concepts: [<wiki concept slugs touched, e.g. narration, science-of-relations, living-books>]
 relations_opened: [<from: persons, nature, art, country, past, present, mathematics, language, God>]
 activity_shape: <reading|observation|practice|hybrid>
-spine_book:                        # only when the lesson uses a unit-level spine book (passed in by unit-builder, or found in unit.md)
+spine_book:                        # only when the lesson uses a unit-level spine book (passed in by mason-unit-builder, or found in unit.md)
   title: "..."
   author: "..."
   url: "https://openlibrary.org/isbn/<isbn>"
@@ -267,7 +267,7 @@ spine_book:                        # only when the lesson uses a unit-level spin
 
 ## Relations this lesson opens
 
-<2–3 sentences naming concretely which of the relations in [science-of-relations](../../../pedagogy/wiki/concepts/science-of-relations.md) this lesson opens and how. The pedagogical rationale of the plan. Not decoration.>
+<2–3 sentences naming concretely which of the relations in [science-of-relations](../../../pedagogies/charlotte-mason/wiki/concepts/science-of-relations.md) this lesson opens and how. The pedagogical rationale of the plan. Not decoration.>
 
 ## Materials in hand
 
@@ -303,7 +303,7 @@ Never "What are the three things that…?">
 
 ## Feeding forward
 
-<1–2 threads this lesson opens. Seeds for future lessons or candidate field-trip hooks. Kept terse — unit-builder and curriculum-builder pick these up.>
+<1–2 threads this lesson opens. Seeds for future lessons or candidate field-trip hooks. Kept terse — mason-unit-builder and mason-curriculum-builder pick these up.>
 
 - <thread 1>
 - <thread 2>
@@ -320,7 +320,7 @@ Never "What are the three things that…?">
 
 ## Notes on method
 
-<One short paragraph (2–4 sentences) reminding the teacher of the method-specific rules that apply: single reading (if reading), silent sustained attention (if observation), narration without interruption (always). Phrased as reminders to a capable adult, not as instructions to a novice. Reference the wiki pages inline as real markdown links, e.g. [narration](../../../pedagogy/wiki/concepts/narration.md), [single-reading](../../../pedagogy/wiki/concepts/single-reading.md).>
+<One short paragraph (2–4 sentences) reminding the teacher of the method-specific rules that apply: single reading (if reading), silent sustained attention (if observation), narration without interruption (always). Phrased as reminders to a capable adult, not as instructions to a novice. Reference the wiki pages inline as real markdown links, e.g. [narration](../../../pedagogies/charlotte-mason/wiki/concepts/narration.md), [single-reading](../../../pedagogies/charlotte-mason/wiki/concepts/single-reading.md).>
 
 ---
 
@@ -333,18 +333,18 @@ Never "What are the three things that…?">
 Print a short summary to the console:
 
 - Path of the lesson file.
-- Paths of all generated materials, with route/source/model for any images (as materials-builder reports them).
+- Paths of all generated materials, with route/source/model for any images (as mason-materials-builder reports them).
 - A single one-line note if anything about the request sits in real tension with the pedagogy — offered as an alternative, never as a correction, never more than once.
 
 ## Rules (hard)
 
-- **Unique hero image every time.** Generated by materials-builder, embedded at the top of the markdown. Never reused across lessons, units, or curricula — hero images are visual identifiers as much as illustrations.
+- **Unique hero image every time.** Generated by mason-materials-builder, embedded at the top of the markdown. Never reused across lessons, units, or curricula — hero images are visual identifiers as much as illustrations.
 - **Other materials only when the session literally uses them.** No speculative worksheets. Printing is a cost.
 - **Everything generated is linked or embedded in the plan.** Images embed inline; PDFs/SVGs link by path.
 - **Everything the plan references carries a real link.** Every book has an Open Library URL (ISBN form when available; work URL otherwise). Every artwork has a source URL. Every venue (on a feeding-forward trip hook) has a Google Maps URL. No bare names.
 - **No Wikipedia.** Wikipedia is not a citation source in this project. Books go to Open Library; short reference articles go to sources the user names (e.g. Grokipedia) or are left out. If a fact needs a citation and no verifiable source surfaces, omit the fact.
 - **"Hero image" is an internal term.** It never appears in the lesson prose. In the plan, refer to it as "the main illustration" or "the illustration above" — the filename (`<lesson-slug>-hero.png`) keeps the internal designation.
-- **Pedagogy references are real markdown links, never Obsidian wiki-links.** Use `[narration](../../../pedagogy/wiki/concepts/narration.md)` from a lesson file, not `[[concepts/narration]]`. Wiki-link syntax does not resolve on GitHub. The three-deep `../../../` comes from the `curricula/<class>/<unit>/<lesson>.md` layout.
+- **Pedagogy references are real markdown links, never Obsidian wiki-links.** Use `[narration](../../../pedagogies/charlotte-mason/wiki/concepts/narration.md)` from a lesson file, not `[[concepts/narration]]`. Wiki-link syntax does not resolve on GitHub. The three-deep `../../../` comes from the `curricula/<class>/<unit>/<lesson>.md` layout.
 - **Navigation links up and across.** When `unit.md` exists, the lesson body starts with a "Part of: [<Unit>](unit.md)" line (append "· [<Curriculum>](../curriculum.md)" when that also exists). When the lesson has an ordinal and siblings, a prev/next navigation footer appears at the bottom. A lesson opened in Obsidian must offer a link back to its unit and to the lessons on either side.
 - **No dates anywhere in the lesson content.** No dates in filenames, no dates in frontmatter, no dates in prose. Lessons are date-portable by design — the same lesson should be reusable next year without edits.
 - **Pedagogy framework applies every time.** Relations are named. Narration closes the lesson, every lesson.
@@ -352,7 +352,7 @@ Print a short summary to the console:
 - **Subject is inferred from prompt + grade, not from `students.yaml` `subjects`.** That list is for time-tracking third-party curricula.
 - **Student data otherwise comes from `students.yaml`.** Never hard-code names, aliases, grades.
 - **No fabricated sources.** Book titles, authors, passages, quotes, URLs are real or absent. Open Library for books; WebSearch for other enrichment (never Wikipedia).
-- **Spine book from unit-builder is the core reading.** When unit-builder passes a spine book in the prose, it is the main reading material of the session, not a suggestion to be casually replaced. Supplementary readings are allowed alongside the spine when the session calls for them (including chapters from other books sourced via Open Library); replacing the spine with something else is allowed only when the spine genuinely cannot carry the session, and requires a one-sentence note in "Materials in hand".
+- **Spine book from mason-unit-builder is the core reading.** When mason-unit-builder passes a spine book in the prose, it is the main reading material of the session, not a suggestion to be casually replaced. Supplementary readings are allowed alongside the spine when the session calls for them (including chapters from other books sourced via Open Library); replacing the spine with something else is allowed only when the spine genuinely cannot carry the session, and requires a one-sentence note in "Materials in hand".
 - **No comprehension questions with right answers.** Narration replaces quizzing.
 - **No twaddle in the plan's own prose.** The plan addresses a capable adult teaching a person.
-- **Never auto-invoke field-trip-planner.** Trips are their own skill; note field-trip threads under "Feeding forward" at most. When invoked by unit-builder or curriculum-builder, trips are generated by those orchestrators, not from inside a lesson run.
+- **Never auto-invoke mason-field-trip-planner.** Trips are their own skill; note field-trip threads under "Feeding forward" at most. When invoked by mason-unit-builder or mason-curriculum-builder, trips are generated by those orchestrators, not from inside a lesson run.

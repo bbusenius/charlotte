@@ -13,12 +13,12 @@ The guidance below is direction, not prescription. Specific fonts and colors are
 
 Read these wiki pages when their language is about to be used in user-facing copy or in the material itself — the vocabulary is load-bearing and shouldn't be paraphrased loosely:
 
-- `pedagogy/wiki/concepts/education-is-atmosphere-discipline-life.md` — the home, including its materials, is the atmosphere. Materials are part of the environment a child lives in, not a supplement to "real" schoolwork.
-- `pedagogy/wiki/concepts/children-are-born-persons.md` — the material addresses a complete person, capable and curious, not a pupil to be drilled or a subject to be entertained.
-- `pedagogy/wiki/concepts/knowledge-as-food.md` — the material is nourishment. No filler, no empty calories, no twaddle.
-- `pedagogy/wiki/concepts/living-books.md` — any text, vocabulary, or illustration on the page draws on the register of living books: first-hand, narrative, the author's own voice. Not a textbook paraphrase.
-- `pedagogy/wiki/concepts/science-of-relations.md` — materials, where they can, open relations (invitations to notice, connect, wonder) rather than close them into a single right answer.
-- `pedagogy/wiki/concepts/narration.md` — the child's telling-back is the assessment. Materials support narration (blank pages, illustration frames, prompts phrased as invitations) rather than replace it with comprehension checks.
+- `pedagogies/charlotte-mason/wiki/concepts/education-is-atmosphere-discipline-life.md` — the home, including its materials, is the atmosphere. Materials are part of the environment a child lives in, not a supplement to "real" schoolwork.
+- `pedagogies/charlotte-mason/wiki/concepts/children-are-born-persons.md` — the material addresses a complete person, capable and curious, not a pupil to be drilled or a subject to be entertained.
+- `pedagogies/charlotte-mason/wiki/concepts/knowledge-as-food.md` — the material is nourishment. No filler, no empty calories, no twaddle.
+- `pedagogies/charlotte-mason/wiki/concepts/living-books.md` — any text, vocabulary, or illustration on the page draws on the register of living books: first-hand, narrative, the author's own voice. Not a textbook paraphrase.
+- `pedagogies/charlotte-mason/wiki/concepts/science-of-relations.md` — materials, where they can, open relations (invitations to notice, connect, wonder) rather than close them into a single right answer.
+- `pedagogies/charlotte-mason/wiki/concepts/narration.md` — the child's telling-back is the assessment. Materials support narration (blank pages, illustration frames, prompts phrased as invitations) rather than replace it with comprehension checks.
 
 You're not dogmatic about Mason — when a parent asks for a math-practice sheet, build a math-practice sheet. But apply the framework to *how* you build it: in the language, the illustrations, the address, and the restraint.
 
@@ -134,7 +134,7 @@ Restraint. An ornament earns its place on the page, or it goes.
 
 ### 7. Language on the page
 
-The copy on a material — instructions, prompts, captions, titles — is not neutral. It addresses a person (`pedagogy/wiki/concepts/children-are-born-persons.md`). Write it with care.
+The copy on a material — instructions, prompts, captions, titles — is not neutral. It addresses a person (`pedagogies/charlotte-mason/wiki/concepts/children-are-born-persons.md`). Write it with care.
 
 - **Direct, unpatronizing:** *"Copy this passage in your best hand."* Not: *"Let's practice our handwriting together!"*
 - **Real vocabulary:** words drawn from living books, not simplified substitutes. If the passage uses the word *dwelt*, the instruction does not have to say *lived*.

@@ -1,6 +1,35 @@
 # Local runtime/tool configuration.
 # Copy to runtime.yaml and adjust for your machine. runtime.yaml is ignored.
 
+pedagogy:
+  # The active pedagogy pack. A pack is a directory containing raw/ (source
+  # documents) and wiki/ (the LLM-maintained knowledge base) following the
+  # schema in pedagogies/AGENTS.md. Charlotte ships with a public-domain
+  # Charlotte Mason pack. To use your own: create pedagogies/<your-pack>/raw/,
+  # drop your source materials there (packs other than charlotte-mason are
+  # gitignored, so purchased/copyrighted texts stay local), point this key at
+  # the pack, and ask Charlotte to ingest the sources — the wiki is built for
+  # you. General pedagogical questions and pedagogy-aware skills read this
+  # pack's wiki.
+  #
+  # Note: the shipped mason-* skills (mason-lesson-plan-builder,
+  # mason-unit-builder, mason-curriculum-builder, mason-field-trip-planner,
+  # mason-materials-builder) are Charlotte Mason tools by design and always
+  # read the charlotte-mason pack, regardless of this setting.
+  path: pedagogies/charlotte-mason
+
+  # The aesthetics skill supplying the visual register for generated images
+  # and materials. A path to a skill directory containing SKILL.md (or
+  # directly to a markdown file). Any markdown file works as-is — swap in
+  # your own to change how every generated illustration looks.
+  # scripts/charlotte_image.py injects the full text into image prompts on
+  # every route. Optionally, a `#### Image-router summary` section provides
+  # a short profile used instead of the full text on the cheap `fast` route
+  # (helpful for weaker image models that follow long prompts poorly);
+  # without one, the fast route receives the full text like every other
+  # route. If fast-route results look off, add that section.
+  aesthetics: skills/mason-aesthetics
+
 tools:
   # Used by scripts/lexile/lookup.py. Optional; if absent or not executable,
   # Charlotte searches common Chrome/Chromium executable names in the runtime.

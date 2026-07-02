@@ -31,9 +31,11 @@ DEFAULT_TRIPS_DIR = ROOT / "field-trips"
 DEFAULT_CSS = DEFAULT_TRIPS_DIR / "offline-mobile.css"
 DEFAULT_OUT_DIR = DEFAULT_TRIPS_DIR / "offline"
 DEFAULT_PEDAGOGY_WIKI_URL = (
-    "https://github.com/bbusenius/charlotte/blob/master/pedagogy/wiki/"
+    "https://github.com/bbusenius/charlotte/blob/master/pedagogies/charlotte-mason/wiki/"
 )
-LOCAL_PEDAGOGY_LINK_RE = re.compile(r"(?P<prefix>(?:\.\./)+pedagogy/wiki/)")
+LOCAL_PEDAGOGY_LINK_RE = re.compile(
+    r"(?P<prefix>(?:\.\./)+(?:pedagogy|pedagogies/charlotte-mason)/wiki/)"
+)
 IMAGE_LINK_RE = re.compile(r"!\[(?P<alt>[^\]]*)]\((?P<target>[^)]+)\)")
 
 
@@ -94,7 +96,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--preserve-local-pedagogy-links",
         action="store_true",
-        help="Do not rewrite ../pedagogy/wiki links to GitHub URLs.",
+        help="Do not rewrite local pedagogy wiki links to GitHub URLs.",
     )
     parser.add_argument(
         "--image-max-pixels",

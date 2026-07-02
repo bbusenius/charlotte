@@ -1,12 +1,12 @@
 ---
-name: materials-builder
+name: mason-materials-builder
 description: Build printable or standalone homeschool materials — maps, timelines, flashcards, copywork sheets, nature-notebook pages, narration templates, picture-study and composer cards, vocabulary and memory-verse cards, math/phonics/handwriting practice, PDFs, SVGs, PNG illustrations, and similar resources — grounded in the project's pedagogy wiki. Invokes mason-aesthetics for visual direction and mason-print-design for rendering. Generates images through the configured Charlotte image router. Do not use for Android lock-screen slides, MindFeast slides, unlock questions, or Homeschool Screen Lock app packages; use tablet-slide-builder for those.
 argument-hint: <material description in prose, optionally referencing a student or lesson> [--out PATH] [--image quality|fast] [--format pdf|html|svg|png|md] [--size 1K|2K|4K]
 ---
 
 # Materials Builder
 
-Produce homeschool materials from a free-form prose prompt. Every material is grounded in the Charlotte Mason pedagogy wiki at `pedagogy/wiki/` for **how** it's made, regardless of *what* is being made. The skill never refuses a reasonable request — if a parent asks for a comprehension worksheet, it builds one, and offers a Mason-native alternative as a single closing note.
+Produce homeschool materials from a free-form prose prompt. Every material is grounded in the Charlotte Mason pedagogy wiki at `pedagogies/charlotte-mason/wiki/` for **how** it's made, regardless of *what* is being made. The skill never refuses a reasonable request — if a parent asks for a comprehension worksheet, it builds one, and offers a Mason-native alternative as a single closing note.
 
 This skill owns the *what* — material type, content, pedagogical framing, curriculum linkage. It does not own the *how* of aesthetics or rendering — those live in two peer skills that must be invoked:
 
@@ -19,16 +19,16 @@ For Android Homeschool Screen Lock challenge slides synced from `tablet-slides/`
 
 ## Usage
 
-- `/materials-builder A set of picture-study cards for four John Singer Sargent watercolors. Landscape orientation, PDF.`
-- `/materials-builder Copywork sheet from the Level-3-Language-Arts Lesson 40 passage — use the passage from that lesson. Half-ruled lines, cream background.`
-- `/materials-builder A map of Guatemala showing Antigua, Tikal, and Lake Atitlán — pen-and-ink style for a history lesson on Maya sites. SVG so I can overlay labels.`
-- `/materials-builder Ten math flash cards practicing two-digit by one-digit multiplication (Math-3 Lessons 42–43).`
-- `/materials-builder A blank narration page with a drawing frame and six lines for a pre-K reader after we read Blueberries for Sal.`
-- `/materials-builder An illustration of a monarch butterfly on milkweed, botanical plate style, no text.`
+- `/mason-materials-builder A set of picture-study cards for four John Singer Sargent watercolors. Landscape orientation, PDF.`
+- `/mason-materials-builder Copywork sheet from the Level-3-Language-Arts Lesson 40 passage — use the passage from that lesson. Half-ruled lines, cream background.`
+- `/mason-materials-builder A map of Guatemala showing Antigua, Tikal, and Lake Atitlán — pen-and-ink style for a history lesson on Maya sites. SVG so I can overlay labels.`
+- `/mason-materials-builder Ten math flash cards practicing two-digit by one-digit multiplication (Math-3 Lessons 42–43).`
+- `/mason-materials-builder A blank narration page with a drawing frame and six lines for a pre-K reader after we read Blueberries for Sal.`
+- `/mason-materials-builder An illustration of a monarch butterfly on milkweed, botanical plate style, no text.`
 
 ### Flags
 
-- `--out PATH` — directory (or file path for single outputs) to write to. Default: current working directory. The future lesson-plan-builder will set this explicitly; for now the user is in control.
+- `--out PATH` — directory (or file path for single outputs) to write to. Default: current working directory. The future mason-lesson-plan-builder will set this explicitly; for now the user is in control.
 - `--image quality|fast` — image route. Default: `quality`. See "Image generation" below for route behavior.
 - `--format pdf|html|svg|png|md` — output format. If omitted, pick the sensible default for the material type (see below).
 - `--size 1K|2K|4K` — when generating images through the image router. Default: `1K` unless the material is a wall card / large-format poster, in which case `2K`.
@@ -48,7 +48,7 @@ The prompt is free-form prose. Extract:
 
 Student metadata lives in `students.yaml` at the repo root. It is the single source of truth for every skill in this project that needs per-student info; this skill does not hard-code any student names. When a prompt references a student by name or alias, resolve them through the registry.
 
-The registry provides, per student: display name, aliases, grade, curricula directory, a map from curriculum filenames to subject and lesson-header pattern, subject list, and the time-tracking spreadsheet path. Materials-builder uses: display name and grade (for age-appropriate sizing and address), curricula directory + curricula map (for lesson lookups), and aliases (for matching prompt references).
+The registry provides, per student: display name, aliases, grade, curricula directory, a map from curriculum filenames to subject and lesson-header pattern, subject list, and the time-tracking spreadsheet path. mason-materials-builder uses: display name and grade (for age-appropriate sizing and address), curricula directory + curricula map (for lesson lookups), and aliases (for matching prompt references).
 
 **Resolution procedure** when the prompt mentions a name:
 
@@ -65,14 +65,14 @@ Before writing any material, invoke the `mason-aesthetics` skill to load the pro
 
 Read (or re-read) whichever of these pedagogy concept pages are load-bearing for the specific material:
 
-- `pedagogy/wiki/concepts/education-is-atmosphere-discipline-life.md` — applies to every material. The material is atmosphere.
-- `pedagogy/wiki/concepts/children-are-born-persons.md` — applies to every material. The copy addresses a person.
-- `pedagogy/wiki/concepts/living-books.md` — any textual content draws on living-book register.
-- `pedagogy/wiki/concepts/knowledge-as-food.md` — the material is nourishment, not busywork.
-- `pedagogy/wiki/concepts/science-of-relations.md` — where the material admits it, prompts open relations rather than close them.
-- `pedagogy/wiki/concepts/narration.md` — for anything that follows a reading, narration is the default response-format; comprehension quizzes are a fallback, not a default.
-- `pedagogy/wiki/concepts/single-reading.md` — associated reading is read attentively once, not drilled.
-- `pedagogy/wiki/concepts/knowledge-of-god-man-universe.md` — nature study, picture study, music appreciation, handicraft observation as load-bearing Mason practices.
+- `pedagogies/charlotte-mason/wiki/concepts/education-is-atmosphere-discipline-life.md` — applies to every material. The material is atmosphere.
+- `pedagogies/charlotte-mason/wiki/concepts/children-are-born-persons.md` — applies to every material. The copy addresses a person.
+- `pedagogies/charlotte-mason/wiki/concepts/living-books.md` — any textual content draws on living-book register.
+- `pedagogies/charlotte-mason/wiki/concepts/knowledge-as-food.md` — the material is nourishment, not busywork.
+- `pedagogies/charlotte-mason/wiki/concepts/science-of-relations.md` — where the material admits it, prompts open relations rather than close them.
+- `pedagogies/charlotte-mason/wiki/concepts/narration.md` — for anything that follows a reading, narration is the default response-format; comprehension quizzes are a fallback, not a default.
+- `pedagogies/charlotte-mason/wiki/concepts/single-reading.md` — associated reading is read attentively once, not drilled.
+- `pedagogies/charlotte-mason/wiki/concepts/knowledge-of-god-man-universe.md` — nature study, picture study, music appreciation, handicraft observation as load-bearing Mason practices.
 
 The wiki's vocabulary is load-bearing — don't paraphrase it loosely when you reference these concepts in explanatory copy or in offered alternatives.
 

@@ -78,6 +78,17 @@ def load_image_config() -> dict[str, Any]:
     return loaded
 
 
+def load_runtime_yaml() -> dict[str, Any]:
+    path = repo_root() / "runtime.yaml"
+    if not path.exists():
+        return {}
+    with path.open("r", encoding="utf-8") as fh:
+        loaded = yaml.safe_load(fh) or {}
+    if not isinstance(loaded, dict):
+        raise ProviderUnavailable(f"{path} must contain a YAML mapping")
+    return loaded
+
+
 def env_value(route: dict[str, Any], key: str) -> str | None:
     direct = route.get(key)
     if direct:
@@ -165,7 +176,7 @@ def write_image_bytes(image_bytes: bytes, out: Path) -> Path:
     return actual_out
 
 
-def markdown_section(text: str, heading: str) -> str:
+def markdown_section(text: str, heading: str) -> str | None:
     lines = text.splitlines()
     start: int | None = None
     heading_level = 0
@@ -178,7 +189,7 @@ def markdown_section(text: str, heading: str) -> str:
             break
 
     if start is None:
-        raise ProviderUnavailable(f"Could not find {heading!r} in mason-aesthetics")
+        return None
 
     end = len(lines)
     for index in range(start + 1, len(lines)):
@@ -193,21 +204,43 @@ def markdown_section(text: str, heading: str) -> str:
     return "\n".join(lines[start:end]).strip()
 
 
-def mason_aesthetics_path() -> Path:
-    path = repo_root() / "skills" / "mason-aesthetics" / "SKILL.md"
+DEFAULT_AESTHETICS_SKILL = "skills/mason-aesthetics"
+
+
+def aesthetics_path() -> Path:
+    """Resolve the aesthetics skill file supplying the image prompt register.
+
+    Configured by `pedagogy.aesthetics` in runtime.yaml — a path to a skill
+    directory containing SKILL.md, or directly to a markdown file. Defaults to
+    the shipped Charlotte Mason register. Any markdown file works as-is; an
+    optional `#### Image-router summary` section, when present, supplies a
+    shorter profile for the fast route. Without it, compact requests fall
+    back to the full text like every other route.
+    """
+    pedagogy = load_runtime_yaml().get("pedagogy") or {}
+    configured = ""
+    if isinstance(pedagogy, dict):
+        configured = str(pedagogy.get("aesthetics") or "").strip()
+    path = Path(configured or DEFAULT_AESTHETICS_SKILL).expanduser()
+    if not path.is_absolute():
+        path = repo_root() / path
+    if path.is_dir():
+        path = path / "SKILL.md"
     if not path.exists():
-        raise ProviderUnavailable("skills/mason-aesthetics/SKILL.md is not available")
+        raise ProviderUnavailable(f"aesthetics skill file not found: {path}")
     return path
 
 
-def mason_compact_guidance() -> str:
-    text = mason_aesthetics_path().read_text(encoding="utf-8")
+def aesthetics_compact_guidance() -> str | None:
+    text = aesthetics_path().read_text(encoding="utf-8")
     section = markdown_section(text, "#### Image-router summary")
+    if section is None:
+        return None
     return "\n".join(section.splitlines()[1:]).strip()
 
 
-def mason_full_guidance() -> str:
-    text = mason_aesthetics_path().read_text(encoding="utf-8")
+def aesthetics_full_guidance() -> str:
+    text = aesthetics_path().read_text(encoding="utf-8")
     lines = text.splitlines()
     if lines and lines[0].strip() == "---":
         for index in range(1, len(lines)):
@@ -224,13 +257,15 @@ def prompt_mode_for_route(route_name: str, override: str) -> str:
     return "full"
 
 
-def prompt_with_mason_aesthetics(prompt: str, kind: str, mode: str) -> str:
+def prompt_with_aesthetics(prompt: str, kind: str, mode: str) -> str:
     if mode == "none":
         return prompt
     if mode == "compact":
-        guidance = mason_compact_guidance()
+        guidance = aesthetics_compact_guidance()
+        if guidance is None:
+            guidance = aesthetics_full_guidance()
     elif mode == "full":
-        guidance = mason_full_guidance()
+        guidance = aesthetics_full_guidance()
     else:
         raise ProviderUnavailable(f"unknown prompt mode: {mode}")
     return (
@@ -448,7 +483,7 @@ def main() -> int:
         "--prompt-mode",
         choices=["auto", "full", "compact", "none"],
         default="auto",
-        help="Mason prompt profile. Auto uses compact for the fast route and full otherwise.",
+        help="Aesthetics prompt profile. Auto uses compact for the fast route and full otherwise.",
     )
     parser.add_argument(
         "--dry-run",
@@ -468,12 +503,14 @@ def main() -> int:
         config = load_image_config()
         route_name, route = configured_route(config, args.route, args.only_source)
         prompt_mode = prompt_mode_for_route(route_name, args.prompt_mode)
+        if prompt_mode == "compact" and aesthetics_compact_guidance() is None:
+            prompt_mode = "full"
     except ProviderUnavailable as exc:
         print(str(exc), file=sys.stderr)
         return 2
 
     try:
-        prompt = prompt_with_mason_aesthetics(args.prompt, args.kind, prompt_mode)
+        prompt = prompt_with_aesthetics(args.prompt, args.kind, prompt_mode)
     except ProviderUnavailable as exc:
         print(str(exc), file=sys.stderr)
         return 2

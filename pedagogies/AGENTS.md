@@ -1,21 +1,25 @@
-# Pedagogy Wiki — Schema & LLM Instructions
+# Pedagogy Packs — Schema & LLM Instructions
 
-This is a personal knowledge base about pedagogy, homeschooling, and educational theory. The LLM maintains all wiki files; the human curates sources and asks questions.
+Each directory under `pedagogies/` is a **pedagogy pack**: a personal knowledge base about one pedagogy, homeschooling approach, or purchased curriculum. The LLM maintains all wiki files; the human curates sources and asks questions. This file is the schema for every pack.
 
-## Directory Structure
+The project ships `pedagogies/charlotte-mason/` (public domain). Users may drop in their own packs alongside it — `pedagogies/<your-pack>/` is gitignored by default, so packs built from purchased or copyrighted materials stay local and are never committed. The active pack is selected by the `pedagogy.path` key in `runtime.yaml` (default: `pedagogies/charlotte-mason`).
+
+To create a pack from your own materials: make `pedagogies/<slug>/raw/`, drop your source documents there, point `pedagogy.path` at the pack, and ask the agent to ingest them (workflow below). The wiki is built for you.
+
+## Directory Structure (per pack)
 
 ```
-raw/            # Immutable source documents — never modify
-raw/assets/     # Downloaded images referenced by sources
-wiki/           # LLM-maintained knowledge base
-wiki/index.md   # Master catalog of all wiki pages
-wiki/log.md     # Append-only chronological activity log
-wiki/overview.md# High-level synthesis of the whole wiki
-wiki/entities/  # People, organizations, curricula, books (proper nouns)
-wiki/concepts/  # Theories, methods, ideas, frameworks
-wiki/sources/   # One summary page per ingested source
-wiki/queries/   # Filed answers to notable questions
-templates/      # Reference templates (do not modify)
+<pack>/raw/            # Immutable source documents — never modify
+<pack>/raw/assets/     # Downloaded images referenced by sources
+<pack>/wiki/           # LLM-maintained knowledge base
+<pack>/wiki/index.md   # Master catalog of all wiki pages
+<pack>/wiki/log.md     # Append-only chronological activity log
+<pack>/wiki/overview.md# High-level synthesis of the whole wiki
+<pack>/wiki/entities/  # People, organizations, curricula, books (proper nouns)
+<pack>/wiki/concepts/  # Theories, methods, ideas, frameworks
+<pack>/wiki/sources/   # One summary page per ingested source
+<pack>/wiki/queries/   # Filed answers to notable questions
+pedagogies/templates/  # Reference templates shared by all packs (do not modify)
 ```
 
 ## Page Types & Frontmatter

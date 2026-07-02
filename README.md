@@ -1,10 +1,10 @@
-# Charlotte Mason Homeschool Agent
+# Charlotte Homeschool Agent
 
-Charlotte is a Charlotte Mason homeschool agent system for automating [Homeschool Dashboard](https://github.com/bbusenius/Homeschool-Dashboard) compatible lesson time logging, Homeschool Dashboard compatible reading-list logging, pedagogically grounded field trip planning, curriculum and lesson authoring, material creation, and MindFeast slide generation. It coordinates Signal message capture, AI-assisted identification, spreadsheet logging, on-demand trip planning, weekly review Android tablet lock slide creation, and on-demand material generation — all against a local pedagogy wiki.
+Charlotte is a homeschool agent system — named for Charlotte Mason — for automating [Homeschool Dashboard](https://github.com/bbusenius/Homeschool-Dashboard) compatible lesson time logging, Homeschool Dashboard compatible reading-list logging, pedagogically grounded field trip planning, curriculum and lesson authoring, material creation, and MindFeast slide generation. It coordinates Signal message capture, AI-assisted identification, spreadsheet logging, on-demand trip planning, weekly review Android tablet lock slide creation, and on-demand material generation — all against a local pedagogy knowledge base. Pedagogical grounding is configurable (see [Pedagogy packs](#pedagogy-packs)); Charlotte ships with a public-domain Charlotte Mason pack as the default, plus a complete set of Charlotte Mason authoring skills.
 
 ## How it works
 
-Charlotte allows users to log time and books through [Signal](https://signal.org/) chats. It uses [signal-sieve](https://github.com/bbusenius/signal-sieve) to strip metadata and protect privacy. AI agents only receive the minimal amount of data they need to do their job, not the kitchen sink. Charlotte also comes with on-demand planning/creation skills (field trips, materials, MindFeast slides), all reading the local pedagogy wiki for framing. Per-student metadata lives in `students.yaml` at the repo root (see [Student registry](#student-registry)).
+Charlotte allows users to log time and books through [Signal](https://signal.org/) chats. It uses [signal-sieve](https://github.com/bbusenius/signal-sieve) to strip metadata and protect privacy. AI agents only receive the minimal amount of data they need to do their job, not the kitchen sink. Charlotte also comes with on-demand planning/creation skills (field trips, materials, MindFeast slides), all reading a local pedagogy wiki for framing. Per-student metadata lives in `students.yaml` at the repo root (see [Student registry](#student-registry)).
 
 Charlotte can be used in one of two ways:
 
@@ -54,20 +54,20 @@ Generates the visual [Homeschool Dashboard](https://github.com/bbusenius/Homesch
 
 This path is for visual dashboards. Conversational questions about logged records should use `/hsd-records-read`.
 
-### Field trip planning (`/field-trip-planner`)
+### Field trip planning (`/mason-field-trip-planner`)
 
-Distinct from the logging pipelines — a planning skill, not Signal-driven. Given a theme (often lessons already studied) and a location in the prompt, the `field-trip-planner` skill:
+Distinct from the logging pipelines — a planning skill, not Signal-driven. Given a theme (often lessons already studied) and a location in the prompt, the `mason-field-trip-planner` skill:
 
 1. Reads the theme and, if curriculum files are referenced, the specific lessons from wherever `students.yaml` points (third-party curricula live under `curricula/third-party/`)
 2. Queries the Google Maps MCP for candidate venues near the location, supplemented by WebSearch for natural / outdoor places that Google Maps undercounts (trout streams, prairie remnants, trailheads, birding hotspots, etc.)
 3. Ranks 3–5 options with Google Maps + website/social links
 4. On selection (or with `--auto`), produces a full markdown field trip plan
 
-Plans are grounded in the local pedagogy wiki at `pedagogy/wiki/` (Charlotte Mason) — every trip is framed around [[concepts/science-of-relations]], uses [[concepts/narration]] as post-trip assessment, and names Mason's canonical on-site activities (nature study, picture study, music appreciation, handicraft observation) where the venue admits them.
+Plans are grounded in the local pedagogy wiki at `pedagogies/charlotte-mason/wiki/` (Charlotte Mason) — every trip is framed around [[concepts/science-of-relations]], uses [[concepts/narration]] as post-trip assessment, and names Mason's canonical on-site activities (nature study, picture study, music appreciation, handicraft observation) where the venue admits them.
 
-### Material creation (`/materials-builder`)
+### Material creation (`/mason-materials-builder`)
 
-Also a planning/creation skill rather than a Signal-driven pipeline. Given a prose description (optionally referencing a student or specific lessons), the `materials-builder` skill:
+Also a planning/creation skill rather than a Signal-driven pipeline. Given a prose description (optionally referencing a student or specific lessons), the `mason-materials-builder` skill:
 
 1. Resolves the student (if any) via `students.yaml` and, if curriculum files are referenced, reads the relevant lessons from the paths `students.yaml` resolves them to
 2. Invokes `mason-aesthetics` (peer skill) for aesthetic direction — typography tradition, palette direction, illustration register, font-availability check
@@ -75,9 +75,9 @@ Also a planning/creation skill rather than a Signal-driven pipeline. Given a pro
 4. Generates illustrations through `scripts/charlotte_image.py`, using the image routes configured in local `image-generation.yaml`
 5. Writes the finished material to the current working directory (or `--out PATH`), naming the image route, source, and model in the final message
 
-Material types include printable worksheets, copywork pages, flashcards, narration templates, picture-study cards, period maps, posters, and tablet-first illustrations. Grounded in the same Charlotte Mason wiki at `pedagogy/wiki/`, `mason-aesthetics` roots its guidance in [[concepts/children-are-born-persons]], [[concepts/education-is-atmosphere-discipline-life]], [[concepts/knowledge-as-food]], [[concepts/living-books]], [[concepts/science-of-relations]], and [[concepts/narration]].
+Material types include printable worksheets, copywork pages, flashcards, narration templates, picture-study cards, period maps, posters, and tablet-first illustrations. Grounded in the same Charlotte Mason wiki at `pedagogies/charlotte-mason/wiki/`, `mason-aesthetics` roots its guidance in [[concepts/children-are-born-persons]], [[concepts/education-is-atmosphere-discipline-life]], [[concepts/knowledge-as-food]], [[concepts/living-books]], [[concepts/science-of-relations]], and [[concepts/narration]].
 
-`mason-aesthetics` and `mason-print-design` are internal peer skills — invoked *by* creation skills such as `materials-builder`, not directly by the user.
+`mason-aesthetics` and `mason-print-design` are internal peer skills — invoked *by* creation skills such as `mason-materials-builder`, not directly by the user.
 
 ### MindFeast weekly slides (`/mindfeast-weekly-slides`)
 
@@ -119,6 +119,20 @@ mindfeast:
 ```
 
 `remote_url` is the base URL for the tablet's MindFeast remote server. `remote_token` is the bearer token copied from MindFeast remote settings. Keep real tokens in local `students.yaml`, not in committed examples.
+
+## Pedagogy packs
+
+Pedagogical grounding is configurable. A **pedagogy pack** is a directory under `pedagogies/` containing `raw/` (immutable source documents) and `wiki/` (an LLM-maintained knowledge base built from them), following the schema in [pedagogies/AGENTS.md](pedagogies/AGENTS.md). The pack wiki implements Andrej Karpathy's [LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) pattern — instead of retrieving from raw documents at query time (RAG), the LLM ingests sources once into a persistent, cross-referenced "living wiki" and keeps it current as sources and questions accumulate. Charlotte ships with `pedagogies/charlotte-mason/` — built from Charlotte Mason's public-domain works — as the default.
+
+To use your own pedagogy or curriculum philosophy:
+
+1. Create `pedagogies/<your-pack>/raw/` and drop your source materials there. Every pack except `charlotte-mason` is gitignored, so purchased or copyrighted texts stay on your machine and cannot be committed by accident.
+2. Point `pedagogy.path` at the pack in local `runtime.yaml`.
+3. Ask Charlotte to ingest the sources — the wiki is built and maintained for you.
+
+General pedagogical questions and pedagogy-aware skills read the active pack's wiki. The visual register for generated images and materials is configured separately by `pedagogy.aesthetics` (default `skills/mason-aesthetics`) — swap in your own aesthetics file to change how every generated illustration looks without changing anything else.
+
+The `mason-*` skills (`mason-lesson-plan-builder`, `mason-unit-builder`, `mason-curriculum-builder`, `mason-field-trip-planner`, `mason-materials-builder`, `mason-aesthetics`, `mason-print-design`) are the exception: they are Charlotte Mason tools by design, with Mason's method built into their workflows, and always read the `charlotte-mason` pack. They ship as an optional authoring toolkit for families who want lessons, units, curricula, trips, and materials in Mason's method — most families working entirely from purchased curricula only need the logging, dashboard, and tablet skills, which are pedagogy-neutral. Authoring toolkits for other pedagogies are welcome as contributions.
 
 ## Local content roots
 
@@ -172,11 +186,15 @@ cp runtime.yaml.example runtime.yaml
 Currently supported:
 
 ```yaml
+pedagogy:
+  path: pedagogies/charlotte-mason    # active pedagogy pack
+  aesthetics: skills/mason-aesthetics # visual register for generated images/materials
+
 tools:
   chrome_path: /usr/bin/google-chrome-stable
 ```
 
-`scripts/lexile/lookup.py` uses `tools.chrome_path` for its Playwright browser executable. Leave `runtime.yaml` absent if the default path works.
+The `pedagogy` block selects the active pedagogy pack and aesthetics skill (see [Pedagogy packs](#pedagogy-packs)); when absent, the Charlotte Mason defaults apply. `scripts/lexile/lookup.py` uses `tools.chrome_path` for its Playwright browser executable. Leave `runtime.yaml` absent if the defaults work.
 If `tools.chrome_path` is absent or points at a path that does not exist in the current runtime, the script searches common Chrome/Chromium executable names such as `google-chrome-stable` and `chromium`.
 
 Image-generation route settings live in local `image-generation.yaml`, which is ignored. Copy the example and edit the route models/keys for your machine:
@@ -185,7 +203,7 @@ Image-generation route settings live in local `image-generation.yaml`, which is 
 cp image-generation.yaml.example image-generation.yaml
 ```
 
-The default route is `quality`. Route `fast` is reserved for fast/cheap/simple generation and receives a compact Mason image prompt; all other routes receive the full `mason-aesthetics` skill as image prompt context unless the caller overrides `--prompt-mode`.
+The default route is `quality`. Route `fast` is reserved for fast/cheap/simple generation and receives the configured aesthetics skill's compact image summary when the file provides one (the full text otherwise); all other routes receive the full aesthetics skill text as image prompt context unless the caller overrides `--prompt-mode`.
 
 In the Hermes Docker runtime, `runtime/hermes/run.sh` also serves a small local Charlotte info page over plain HTTP (default port `8788`) and prints a scannable QR so a tablet on the same LAN can open it. The `charlotte-url` skill re-shares that URL and QR on demand.
 
@@ -202,7 +220,7 @@ Currently used keys can include direct provider keys such as `GEMINI_API_KEY` an
 
 Standalone image requests and skill-generated illustrations go through `scripts/charlotte_image.py`. The router reads ignored `image-generation.yaml`, selects the named route, builds the Charlotte prompt, and calls that route's configured source/model. The example configuration uses `quality` for the default high-quality route and `fast` for lower-cost/simple generation.
 
-Agents should pass the user's requested subject and constraints plainly to `--prompt`; they should not invent style adjectives, lighting, camera language, scenery, props, or emotional tone unless the user asked for them. By default, route `fast` receives the compact `#### Image-router summary` from `skills/mason-aesthetics/SKILL.md`; all other routes receive the full `mason-aesthetics` skill as prompt context. The script reports the actual saved path because providers may return a different image format than the requested file extension, and JSON includes the resolved `route`, `source`, `model`, and `prompt_mode`.
+Agents should pass the user's requested subject and constraints plainly to `--prompt`; they should not invent style adjectives, lighting, camera language, scenery, props, or emotional tone unless the user asked for them. All non-fast routes receive the full text of the configured aesthetics skill (`pedagogy.aesthetics` in `runtime.yaml`, default `skills/mason-aesthetics/SKILL.md`) as prompt context — any markdown file works as-is. Route `fast` uses the aesthetics file's `#### Image-router summary` section when one exists (a short profile originally added for weaker image models that follow long prompts poorly); when the file has no such section, the fast route receives the full text like every other route. If fast-route results degrade with a ported aesthetics file, adding that section is the fix. The script reports the actual saved path because providers may return a different image format than the requested file extension, and JSON includes the resolved `route`, `source`, `model`, and `prompt_mode`.
 
 Use `--dry-run` to inspect the resolved route and final provider prompt without calling an image provider or writing files:
 
@@ -229,7 +247,7 @@ The current `hsd-time-log` and `hsd-book-log` skills write to spreadsheet record
 
 ### Material creation prerequisites
 
-`materials-builder` additionally relies on:
+`mason-materials-builder` additionally relies on:
 
 - **Image routes** in ignored `image-generation.yaml` when a material needs generated images. `scripts/charlotte_image.py` uses the configured route; direct Google via `scripts/gemini_image.py` is one available backend, not a required default.
 - **WeasyPrint** — HTML → PDF rendering, invoked from `mason-print-design`. Installed by `.venv/bin/python -m pip install -e .`; system libraries such as `libpango` and `libcairo` may still be required depending on the platform.
@@ -261,7 +279,7 @@ These are separate, reusable tools that this project relies on:
 | Inkscape | system package | SVG → PDF/PNG rendering; invoked from `mason-print-design` |
 | hub.lexile.com (free tier) | — | Primary source for book metadata + Lexile level |
 | openlibrary.org | — | Secondary source for title/author/ISBN when Lexile misses |
-| `pedagogy/wiki/` | This repo | Local pedagogy knowledge base (Charlotte Mason); read by the field trip planner and material-creation skills for framing |
+| `pedagogies/` | This repo | Pedagogy packs (see [Pedagogy packs](#pedagogy-packs)); the shipped `charlotte-mason` pack is read by the mason-* skills for framing, and the active pack (`pedagogy.path` in `runtime.yaml`) grounds general pedagogical help |
 
 See [Runtime Tool Surface](docs/runtime-tool-surface.md) for the support checklist runtime adapters should satisfy.
 
@@ -327,7 +345,7 @@ curricula/
 
 The child ↔ curriculum association lives in `students.yaml`, not in the directory layout.
 
-Curricula authored inside this repo (via `unit-builder` / `curriculum-builder`, when available) live elsewhere under `curricula/` — see each skill's documentation.
+Curricula authored inside this repo (via `mason-unit-builder` / `mason-curriculum-builder`) live elsewhere under `curricula/` — see each skill's documentation.
 
 ## Spreadsheets
 
@@ -347,15 +365,15 @@ From a skill-aware harness, while in the project directory:
 /hsd-book-log                # process both children's book messages
 /hsd-book-log <student>      # only one student's book messages
 
-/field-trip-planner <theme + location in prose>           # ranked list + interactive pick
-/field-trip-planner <...> --auto                          # skip the ranked list; take rank 1
-/field-trip-planner <...> --save path/to/plan.md          # override default save location
+/mason-field-trip-planner <theme + location in prose>           # ranked list + interactive pick
+/mason-field-trip-planner <...> --auto                          # skip the ranked list; take rank 1
+/mason-field-trip-planner <...> --save path/to/plan.md          # override default save location
 
-/materials-builder <material description in prose>        # generate a homeschool material
-/materials-builder <...> --out path/to/file               # override save location (default: CWD)
-/materials-builder <...> --image gemini|grok              # force model-family preference
-/materials-builder <...> --format pdf|html|svg|png|md     # override default format
-/materials-builder <...> --size 1K|2K|4K                  # override illustration resolution
+/mason-materials-builder <material description in prose>        # generate a homeschool material
+/mason-materials-builder <...> --out path/to/file               # override save location (default: CWD)
+/mason-materials-builder <...> --image gemini|grok              # force model-family preference
+/mason-materials-builder <...> --format pdf|html|svg|png|md     # override default format
+/mason-materials-builder <...> --size 1K|2K|4K                  # override illustration resolution
 
 /mindfeast-weekly-slides <student>                        # generate this week's MindFeast slides
 /mindfeast-weekly-slides <student> --week-start 2026-05-18 # generate from a specific week
@@ -372,9 +390,9 @@ From a skill-aware harness, while in the project directory:
 
 Examples:
 
-- `/field-trip-planner We've just finished Math-3 Lessons 40–45 (rounding and estimation). Plan a trip in Hyde Park, Chicago, within 5 miles.`
-- `/materials-builder A copywork page for a mid-elementary student on a Robert Louis Stevenson couplet, with a small pen-and-ink vignette at the top.`
-- `/materials-builder A set of six picture-study cards for monarch butterfly life stages, tablet-first, watercolor register.`
+- `/mason-field-trip-planner We've just finished Math-3 Lessons 40–45 (rounding and estimation). Plan a trip in Hyde Park, Chicago, within 5 miles.`
+- `/mason-materials-builder A copywork page for a mid-elementary student on a Robert Louis Stevenson couplet, with a small pen-and-ink vignette at the top.`
+- `/mason-materials-builder A set of six picture-study cards for monarch butterfly life stages, tablet-first, watercolor register.`
 - `/mindfeast-weekly-slides <student> for this week, but don't sync yet.`
 - `/mindfeast-slide-sync <student>`
 - `/mindfeast-slide-trigger <student>`
@@ -416,8 +434,11 @@ charlotte/
 │   ├── hsd-book-log/        # Homeschool-Dashboard-compatible book logging skill
 │   ├── hsd-records-read/    # Read-only workbook query skill
 │   ├── hsd-dashboard-show/  # Visual dashboard generation skill
-│   ├── field-trip-planner/  # pedagogy-grounded field trip planning skill
-│   ├── materials-builder/   # Charlotte Mason material creation skill
+│   ├── mason-lesson-plan-builder/ # Charlotte Mason lesson authoring skill
+│   ├── mason-unit-builder/  # Charlotte Mason unit authoring skill
+│   ├── mason-curriculum-builder/  # Charlotte Mason curriculum authoring skill
+│   ├── mason-field-trip-planner/  # Charlotte Mason field trip planning skill
+│   ├── mason-materials-builder/   # Charlotte Mason material creation skill
 │   ├── mindfeast-weekly-slides/ # weekly MindFeast slide generation from time logs
 │   ├── mindfeast-slide-sync/ # sync existing MindFeast slides to tablets
 │   ├── mindfeast-slide-trigger/ # trigger a MindFeast tablet slide remotely
@@ -429,9 +450,11 @@ charlotte/
 │   └── mason-print-design/  # peer skill: print-fidelity rules + rendering toolchain
 ├── .claude/skills/          # Claude adapter symlinks to skills/
 ├── .agents/skills/          # generic agent adapter symlinks to skills/
-├── pedagogy/                # pedagogy wiki (Charlotte Mason) read by field-trip-planner and material-creation skills
-│   ├── AGENTS.md            # canonical pedagogy wiki maintenance instructions
-│   └── CLAUDE.md            # Claude adapter; points to AGENTS.md
+├── pedagogies/              # pedagogy packs; user packs dropped here are gitignored
+│   ├── AGENTS.md            # pack schema + wiki maintenance instructions (all packs)
+│   ├── CLAUDE.md            # Claude adapter; points to AGENTS.md
+│   ├── templates/           # wiki page templates shared by all packs
+│   └── charlotte-mason/     # shipped public-domain Charlotte Mason pack (raw/ + wiki/)
 ├── scripts/
 │   ├── get-sheet-name.py
 │   ├── charlotte_image.py   # configured image capability router

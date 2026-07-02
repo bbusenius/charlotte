@@ -29,7 +29,7 @@ Any supported runtime should provide:
 - Skill discovery for `SKILL.md` folders without duplicating canonical skills.
 - A project workspace rooted at this repo.
 - Writable access to ignored local content roots when requested by a skill.
-- Read access to `students.yaml`, `runtime.yaml`, `image-generation.yaml`, scripts, and `pedagogy/wiki/`.
+- Read access to `students.yaml`, `runtime.yaml`, `image-generation.yaml`, scripts, and the pedagogy packs under `pedagogies/`.
 - Environment or ignored-file secret loading without committing credentials.
 - MCP or equivalent external tool access for Grok, Google Maps, and future integrations.
 - A sub-agent mechanism for orchestrator skills.
