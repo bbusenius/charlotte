@@ -1,0 +1,156 @@
+// Charlotte OpenClaw profile config (JSON5).
+//
+// runtime/openclaw/run.sh installs this file to
+// ~/.openclaw-charlotte/openclaw.json only when that file does not already
+// exist, so edit the installed copy for local changes. The installed copy is
+// outside the repo and never committed; numeric chat IDs may be listed there
+// directly. Secrets should stay in the repo-local .env — the run wrapper
+// passes .env to the gateway container, and any config string can reference
+// those variables as "${VAR_NAME}".
+//
+// Key names follow the OpenClaw configuration reference at the time of
+// writing. OpenClaw moves fast; if the gateway rejects a key at startup,
+// check https://docs.openclaw.ai/gateway/configuration-reference for your
+// installed version.
+{
+  gateway: {
+    // Local single-host gateway; the Docker adapter publishes the Control UI
+    // on the host loopback only. The gateway refuses to start without a mode.
+    mode: "local",
+    // Required. Generate one with: openssl rand -hex 32
+    // and set OPENCLAW_GATEWAY_TOKEN in the repo-local .env.
+    auth: { token: "${OPENCLAW_GATEWAY_TOKEN}" },
+  },
+
+  agents: {
+    defaults: {
+      // The Charlotte checkout baked into the image. Canonical skills are
+      // discovered from /workspace/skills; AGENTS.md is the operating
+      // contract; students.yaml, runtime.yaml, and the content roots are
+      // mounted by runtime/openclaw/run.sh.
+      workspace: "/workspace",
+
+      // Charlotte's orchestrator skills need one level of nesting:
+      // mason-curriculum-builder (main) -> mason-unit-builder (depth 1)
+      // -> mason-lesson-plan-builder (depth 2). The OpenClaw default of 1
+      // would break curriculum builds.
+      subagents: {
+        maxSpawnDepth: 2,
+      },
+
+      // Model selection is REQUIRED: with no model configured, OpenClaw
+      // falls back to a default provider you may have no key for, and
+      // replies fail with 401. AGENTS.md speaks in capability classes;
+      // map them to provider model IDs here. Examples:
+      // model: { primary: "anthropic/claude-sonnet-5" },
+      // model: { primary: "nanogpt/minimax/minimax-m2.7" },  // with the provider below
+    },
+  },
+
+  models: {
+    // Custom OpenAI-compatible providers work here. NanoGPT's subscription
+    // endpoint (the default driver for the Hermes adapter) is one worked
+    // example — uncomment, then set the matching agents.defaults.model above.
+    // mode: "merge",
+    // providers: {
+    //   nanogpt: {
+    //     baseUrl: "https://nano-gpt.com/api/subscription/v1",
+    //     apiKey: "${NANOGPT_API_KEY}",
+    //     api: "openai-completions",
+    //     models: [
+    //       {
+    //         id: "minimax/minimax-m2.7",
+    //         name: "MiniMax M2.7 (NanoGPT)",
+    //         reasoning: false,
+    //         input: ["text"],
+    //         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    //         contextWindow: 200000,
+    //         maxTokens: 16000,
+    //       },
+    //     ],
+    //   },
+    // },
+  },
+
+  tools: {
+    web: {
+      search: {
+        // Explicit key-free client-side search (same approach as the Hermes
+        // adapter's ddgs). Without an explicit provider, OpenClaw may route
+        // web search through the model provider; some providers bill that as
+        // a paid add-on — NanoGPT charges $0.01/request from the USD balance
+        // (402 "insufficient balance" when empty, even with a healthy
+        // subscription). Swap for "brave" etc. if you have an API key.
+        provider: "duckduckgo",
+      },
+    },
+    media: {
+      audio: {
+        // Inbound voice-note transcription: local Whisper via the repo's
+        // faster-whisper wrapper (free, private; the model downloads once
+        // into the mounted hf-cache). Add a cloud fallback entry if you
+        // have a key for one (google/xai/groq/openai/...).
+        enabled: true,
+        models: [
+          {
+            type: "cli",
+            command: "/workspace/.venv/bin/python",
+            args: ["/workspace/scripts/transcribe_media.py", "{{MediaPath}}"],
+            timeoutSeconds: 120,
+          },
+          // { provider: "google", model: "gemini-3-flash-preview" },
+        ],
+      },
+    },
+  },
+
+  messages: {
+    tts: {
+      // "tagged": the agent appends a [[tts:speed=1]] directive when
+      // replying to a voice note (rule in the workspace TOOLS.md), giving
+      // voice-for-voice behavior. The directive body is required — a bare
+      // [[tts:]] is ignored by the parser and leaks into the visible text. Don't use "inbound" with CLI transcription: the transcript
+      // replaces the audio placeholder before dispatch, OpenClaw stops
+      // treating the message as inbound audio (upstream issue #65951), and
+      // the reply delivery is skipped entirely. Other modes: "always", "off".
+      // Toggle per chat with /tts chat on|off|default.
+      auto: "tagged",
+      // "microsoft" is Edge TTS: free, keyless — the same service the
+      // Hermes adapter uses via edge-tts.
+      provider: "microsoft",
+      providers: {
+        microsoft: {
+          enabled: true,
+          speakerVoice: "en-US-AriaNeural",
+          lang: "en-US",
+        },
+      },
+    },
+  },
+
+  skills: {
+    load: {
+      // The repo's .agents/skills entries are symlinks back into the
+      // canonical /workspace/skills tree (adapters for other harnesses).
+      // Trusting that target stops per-message "symlink-escape" log spam;
+      // workspace-skills precedence dedupes the entries either way.
+      allowSymlinkTargets: ["/workspace/skills"],
+    },
+  },
+
+  channels: {
+    telegram: {
+      enabled: true,
+      botToken: "${TELEGRAM_BOT_TOKEN}",
+      // Family-use gateways must use explicit allowlists
+      // (docs/runtime-contract.md, Ingress Model). List numeric Telegram
+      // user IDs directly in the installed copy of this file.
+      dmPolicy: "allowlist",
+      allowFrom: [],
+    },
+
+    // Do NOT enable an OpenClaw Signal channel for the account that
+    // signal-sieve captures from. Signal stays the structured workflow
+    // queue owned by the host listener; see docs/runtime-contract.md.
+  },
+}

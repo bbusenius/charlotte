@@ -1,0 +1,23 @@
+{
+  "imports": [],
+  "mcpServers": {
+    "google_maps": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-google-maps"]
+    },
+    "grok": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/home/node/Documents/Code/MCP/Grok-MCP",
+        "python",
+        "-m",
+        "src.server"
+      ],
+      "env": {
+        "UV_PROJECT_ENVIRONMENT": "/home/node/.mcporter/grok-env"
+      }
+    }
+  }
+}
