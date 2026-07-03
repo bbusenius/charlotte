@@ -6,12 +6,13 @@ Charlotte is a homeschool agent system — named for Charlotte Mason — for aut
 
 Charlotte allows users to log time and books through [Signal](https://signal.org/) chats. It uses [signal-sieve](https://github.com/bbusenius/signal-sieve) to strip metadata and protect privacy. AI agents only receive the minimal amount of data they need to do their job, not the kitchen sink. Charlotte also comes with on-demand planning/creation skills (field trips, materials, MindFeast slides), all reading a local pedagogy wiki for framing. Per-student metadata lives in `students.yaml` at the repo root (see [Student registry](#student-registry)).
 
-Charlotte can be used in one of two ways:
+Charlotte is **runtime-neutral by design**: the repo itself is the agent — skills, operating instructions, pedagogy packs, and family records — and the harness that runs it is swappable. Use it in one of two ways:
 
-1. Use as a standalone tool with applications like Claude Code, Codex, or OpenCode.
+1. **As a standalone tool** inside a coding agent such as Claude Code, Codex, or OpenCode.
    - Just clone the repo and run skills in your coding agent of choice.
-2. Run as an always on [Hermes agent](https://github.com/nousresearch/hermes-agent) with a gateway of your choice (Telegram recommended).
-   - Tell the agent to run workglows or configure skills to run in `cron`.
+2. **As an always-on chat agent** on the harness of your choice — [Hermes](https://github.com/nousresearch/hermes-agent) ([runtime/hermes/](runtime/hermes/)) or [OpenClaw](https://openclaw.ai) ([runtime/openclaw/](runtime/openclaw/)) — with a chat gateway (Telegram recommended).
+   - Tell the agent to run workflows in chat, or schedule skills with the harness's `cron`.
+   - Both adapters run the identical skill set against the identical family data: switching harnesses is a matter of launching a different `runtime/<name>/run.sh`, and records logged under one runtime are fully visible to the other. The [runtime contract](docs/runtime-contract.md) defines what any new adapter must provide, so further harnesses can be added without touching the skills.
 
 ### Homeschool Dashboard lesson time logging (`/hsd-time-log`)
 
@@ -239,7 +240,7 @@ Charlotte's core scaffolding is runtime-neutral. `AGENTS.md`, `skills/`, `studen
 
 Signal remains the structured workflow queue through `signal-sieve`.
 
-Hermes Docker runtime support lives in [runtime/hermes/](runtime/hermes/).
+Hermes Docker runtime support lives in [runtime/hermes/](runtime/hermes/). Experimental OpenClaw Docker runtime support lives in [runtime/openclaw/](runtime/openclaw/).
 
 ### Homeschool-Dashboard-compatible records
 

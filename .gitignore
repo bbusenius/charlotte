@@ -15,6 +15,9 @@ dashboards/**
 .logs/
 .obsidian/
 
+# Agent scratch space for working copies (see AGENTS.md, Other notes)
+.scratch/
+
 # Pedagogy packs: only the schema files and the shipped Charlotte Mason pack
 # are tracked. Any other pack dropped under pedagogies/ is local-only by
 # default — user packs are often built from purchased, copyrighted materials

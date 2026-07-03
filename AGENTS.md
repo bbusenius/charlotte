@@ -10,7 +10,7 @@ The `mason-*` skills are the exception: they are Charlotte Mason tools by design
 
 Plain requests to make a slide, tablet slide, lock-screen slide, unlock question, or MindFeast slide should route to `tablet-slide-builder`. Do not start those requests with `mason-materials-builder`, `mason-aesthetics`, `mason-print-design`, WeasyPrint, or SVG/PDF rendering unless the user separately asks for a printable/static material.
 
-Plain requests to make an image, picture, illustration, drawing, or visual asset are standalone image requests unless the user explicitly asks for a slide, tablet slide, lock-screen slide, MindFeast slide, printable material, worksheet, PDF, curriculum artifact, or names a workflow-specific output. For standalone image requests, run the Charlotte image router from the project root and deliver the generated file. In the Hermes Docker runtime, use absolute `/workspace` paths:
+Plain requests to make an image, picture, illustration, drawing, or visual asset are standalone image requests unless the user explicitly asks for a slide, tablet slide, lock-screen slide, MindFeast slide, printable material, worksheet, PDF, curriculum artifact, or names a workflow-specific output. For standalone image requests, run the Charlotte image router from the project root and deliver the generated file. In the Docker runtimes (Hermes, OpenClaw), use absolute `/workspace` paths:
 
 ```bash
 .venv/bin/python /workspace/scripts/charlotte_image.py \
@@ -56,5 +56,6 @@ The skill text uses the abstract verb **"spawn"** rather than naming a specific 
 ## Other notes
 
 - Per-student paths and curricula come from `students.yaml`. Skills must read it at runtime — never hard-code student names, aliases, grades, or curriculum file paths.
+- Content roots hold finished artifacts only. Working copies of inbound files (Signal attachment photos, temporary conversions, scratch renders) never belong in `generated-images/`, `tablet-slides/`, `curricula/`, `field-trips/`, or `dashboards/`. Use the system temp directory or a `.scratch/` directory at the repo/workspace root, and delete the copy when the workflow finishes.
 - Generated content (lessons, units, curricula, trip files) is **date-portable by design**. No calendar-anchor dates anywhere — no `YYYY-MM-DD` filenames, no `date_planned` frontmatter, no "starting September" prose. Venue opening hours from Google Maps and time-of-day qualifiers (morning, afternoon, evening, dusk, dawn) are fine when the activity genuinely depends on them.
 - Pedagogy references in generated files are **real markdown links** using the correct relative path from the generated file (for example, `[narration](../../../pedagogies/charlotte-mason/wiki/concepts/narration.md)` from a lesson under `curricula/<class>/<unit>/`). Never use Obsidian `[[wiki-links]]` in generated curriculum content. The wiki itself uses `[[…]]` internally; that's the wiki's convention, separate from generated curriculum content.
