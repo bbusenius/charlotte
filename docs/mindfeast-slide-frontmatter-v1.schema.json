@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mindfeast-slide-frontmatter-v1.schema.json",
+  "title": "MindFeast Slide Frontmatter v1",
+  "description": "Schema for the YAML frontmatter mapping in a version 1 MindFeast slide package. Version 1 labels the specification; slide packages do not carry a format-version field.",
+  "type": "object",
+  "required": ["id", "type"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "type": {
+      "enum": ["question", "informational", "essay", "gratitude"]
+    },
+    "subject": {
+      "type": "string"
+    },
+    "image": {
+      "$ref": "#/$defs/filename"
+    },
+    "audio": {
+      "$ref": "#/$defs/filename"
+    },
+    "answer": {
+      "type": "string",
+      "minLength": 1
+    },
+    "accept": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "choices": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "difficulty": {
+      "type": "string",
+      "default": "easy"
+    },
+    "orientation": {
+      "enum": ["landscape", "portrait"],
+      "default": "landscape"
+    }
+  },
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "question"
+          }
+        },
+        "required": ["type"]
+      },
+      "then": {
+        "required": ["answer"],
+        "anyOf": [
+          {
+            "required": ["image"]
+          },
+          {
+            "required": ["audio"]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "enum": ["essay", "gratitude"]
+          }
+        },
+        "required": ["type"]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "required": ["image"]
+          },
+          {
+            "required": ["audio"]
+          }
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "filename": {
+      "type": "string",
+      "minLength": 1,
+      "description": "A basename for a file stored directly in the slide directory."
+    }
+  }
+}

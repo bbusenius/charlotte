@@ -1,14 +1,14 @@
 ---
-name: tablet-slide-builder
-description: Use for any request to make a slide, tablet slide, lock-screen slide, unlock question, MindFeast slide, or Homeschool Screen Lock app package. Generates Android lock-screen question, essay, or informational slides; resolves the output directory per-student from students.yaml (`tablet_slides_dir`); creates `<dir>/<id>/` folders containing slide.md plus optional image/audio media; validates the app-specific YAML/frontmatter contract; uses provided prompt images when available; and can generate images in the configured aesthetic register when none are provided. Do not route slide requests through mason-materials-builder or mason-print-design unless the user separately asks for a printable/PDF material.
-argument-hint: <slide request in prose, optionally referencing a student, lesson, provided image, or media> [--out PATH] [--id SLUG] [--image quality|fast|provided] [--difficulty easy|medium|hard] [--type question|essay|informational] [--subject SUBJECT]
+name: mindfeast-slide-builder
+description: Use for any request to make a slide, tablet slide, lock-screen slide, unlock question, or MindFeast slide package. Generates MindFeast question, essay, or informational slides and supports MindFeast's special gratitude package type; resolves the output directory per student from students.yaml (`tablet_slides_dir`); creates `<dir>/<id>/` folders containing slide.md plus optional image/audio media; validates the MindFeast package contract; uses provided prompt images when available; and can generate images in the configured aesthetic register when none are provided. Do not route slide requests through mason-materials-builder or mason-print-design unless the user separately asks for a printable/PDF material.
+argument-hint: <slide request in prose, optionally referencing a student, lesson, provided image, or media> [--out PATH] [--id SLUG] [--image quality|fast|provided] [--difficulty easy|medium|hard] [--type question|essay|gratitude|informational] [--subject SUBJECT]
 ---
 
-# Tablet Slide Builder
+# MindFeast Slide Builder
 
-Create one or more Android lock-screen question, essay, or informational slides for the Homeschool Screen Lock app. A slide is not a printable material; it is an app package synced from a Samba share. Output directory is resolved per-student from `students.yaml`; see *Output resolution* below.
+Create one or more MindFeast question, essay, or informational slides, with support for MindFeast's special gratitude package type. A slide is not a printable material; it is an app package synced from a configured slide directory. Output directory is resolved per student from `students.yaml`; see *Output resolution* below.
 
-Use this skill when the user asks for a slide, tablet slide, lock-screen slide, screen-lock challenge, unlock question, essay prompt, informational unlock slide, MindFeast slide, or slide for the Homeschool Screen Lock app. A bare request such as "make Eliana a slide about toads" means this skill.
+Use this skill when the user asks for a slide, tablet slide, lock-screen slide, screen-lock challenge, unlock question, essay prompt, informational unlock slide, or MindFeast slide. A bare request such as "make Alice a slide about toads" means this skill.
 
 ## Output resolution
 
@@ -34,7 +34,7 @@ Each slide lives in its own directory under the resolved output path:
   image.png | image.jpg | audio.mp3
 ```
 
-The folder name must exactly match the frontmatter `id`. The app imports only files directly inside each slide folder. Question and essay slides must declare at least one of `image` or `audio`; informational slides must include at least one of body text, `image`, or `audio`. Every declared media file must exist in that folder.
+The folder name must exactly match the frontmatter `id`. The app imports only files directly inside each slide folder. Question, essay, and gratitude slides must declare at least one of `image` or `audio`; informational slides must include at least one of body text, `image`, or `audio`. Every declared media file must exist in that folder.
 
 Question `slide.md` format:
 
@@ -112,12 +112,12 @@ orientation: landscape
 What do you notice first in this painting? Write two or three sentences.
 ```
 
-Required fields: `id`, `type`. Use `type: question` for answerable challenge slides, `type: essay` for free-response prompts that accept any non-blank student response, and `type: informational` for dismissible information slides. Use `subject` for category metadata such as `painting`, `composer`, `geography`, or `science`.
+Required fields: `id`, `type`. Use `type: question` for answerable challenge slides, `type: essay` for one-time free-response prompts that accept any non-blank student response, `type: gratitude` for recurring free-response prompts recorded in the gratitude journal, and `type: informational` for dismissible information slides. Use `subject` for category metadata such as `painting`, `composer`, `geography`, or `science`.
 
 Optional fields:
 
 - `subject` — content category metadata. The app currently ignores it, but keep it useful for humans and future tooling.
-- `answer` — required for question slides; omit for essay and informational slides.
+- `answer` — required for question slides; omit for essay, gratitude, and informational slides.
 - `accept` — alternate free-text answers for question slides. Include spelling/plain-ASCII variants when names include accents.
 - `choices` — multiple-choice options for question slides. If present, the app shows buttons instead of free text.
 - `difficulty` — `easy`, `medium`, or `hard`; default to `easy`.
@@ -128,6 +128,7 @@ Markdown body:
 - For question slides, the first paragraph is the question shown to the student.
 - For question slides, the second paragraph, if present, is the hint shown after an incorrect attempt.
 - For essay slides, the first paragraph is the question/prompt shown to the student. There is no answer, choices, accept list, or hint.
+- For gratitude slides, the first paragraph is the recurring prompt shown to the student. There is no answer, choices, accept list, or hint.
 - For informational slides, the first paragraph is optional display text. There is no answer, choices, or hint.
 - Keep visible text short enough for the bottom panel of a tablet lock screen.
 
@@ -142,7 +143,7 @@ Markdown body:
 7. Write `slide.md` and media into `<out>/<id>/`. Prefer the skill-local scaffold script for ordinary single-slide packages — pass the resolved `<out>` as `--out`:
 
 ```bash
-.venv/bin/python skills/tablet-slide-builder/scripts/make_slide.py \
+.venv/bin/python skills/mindfeast-slide-builder/scripts/make_slide.py \
   --out <out> \
   --id <slide-id> \
   --type question \
@@ -160,7 +161,7 @@ Markdown body:
 For informational slides:
 
 ```bash
-.venv/bin/python skills/tablet-slide-builder/scripts/make_slide.py \
+.venv/bin/python skills/mindfeast-slide-builder/scripts/make_slide.py \
   --out <out> \
   --id <slide-id> \
   --type informational \
@@ -173,7 +174,7 @@ For informational slides:
 For essay slides:
 
 ```bash
-.venv/bin/python skills/tablet-slide-builder/scripts/make_slide.py \
+.venv/bin/python skills/mindfeast-slide-builder/scripts/make_slide.py \
   --out <out> \
   --id <slide-id> \
   --type essay \
@@ -187,7 +188,7 @@ For essay slides:
 8. Run the bundled validator before delivery:
 
 ```bash
-.venv/bin/python skills/tablet-slide-builder/scripts/validate_slide.py <out>/<slide-id>
+.venv/bin/python skills/mindfeast-slide-builder/scripts/validate_slide.py <out>/<slide-id>
 ```
 
 For multiple slides, validate each folder.
@@ -229,6 +230,10 @@ Use `type: essay` when the student should respond in their own words. Essay slid
 - Prefer observation, narration, reflection, and short written-response prompts.
 - Keep the prompt specific enough that the student knows what to write, but open enough that many valid responses are possible.
 - A good essay prompt usually asks for one to three sentences, one observation plus one inference, or a short narration from memory.
+
+## Gratitude Packages
+
+MindFeast ships with a standard recurring gratitude starter slide. The `gratitude` type documents that special application feature and permits compatible variations. It uses the same package requirements and free-form submission behavior as `essay`, but remains active after submission and records responses in the MindFeast gratitude journal.
 
 ## Image Generation
 
@@ -332,9 +337,10 @@ The Android parser effectively enforces:
 
 - YAML frontmatter begins and ends with `---`.
 - `id` and `type` are present.
-- `type` is `question`, `essay`, or `informational`. Put category metadata in `subject`, not `type`.
+- `type` is `question`, `essay`, `gratitude`, or `informational`. Put category metadata in `subject`, not `type`.
 - Question slides include `answer` and at least one of `image` or `audio`.
 - Essay slides include a body prompt and at least one of `image` or `audio`; they do not use answer fields.
+- Gratitude slides include a body prompt and at least one of `image` or `audio`; they do not use answer fields.
 - Informational slides include at least one of body text, `image`, or `audio`.
 - Declared `image`/`audio` files exist in the same folder.
 - `orientation` is exactly `landscape` or `portrait` if present.
@@ -349,4 +355,4 @@ This skill owns the app-specific slide package. Use `mason-materials-builder` on
 
 ## Delivery
 
-Report the slide id, full path, type, subject if present, media filename, visible text/question, answer when present, whether choices were used, and validation result. For essay slides, note that the response is free-form and parent-visible in Stats after submission. Name the resolved student (or "no student / fallback") and which resolution rule applied (`--out`, student's `tablet_slides_dir`, or fallback). If an image was generated, name the image source/model.
+Report the slide id, full path, type, subject if present, media filename, visible text/question, answer when present, whether choices were used, and validation result. For essay slides, note that the response is free-form and parent-visible in Stats after submission. For gratitude slides, note that the response is free-form, recorded in the gratitude journal, and the slide remains active. Name the resolved student (or "no student / fallback") and which resolution rule applied (`--out`, student's `tablet_slides_dir`, or fallback). If an image was generated, name the image source/model.

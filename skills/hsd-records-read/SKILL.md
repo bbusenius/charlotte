@@ -12,8 +12,8 @@ Answer read-only questions from the student's configured Homeschool-Dashboard-co
 
 Use this skill for questions such as:
 
-- "What was the last thing Eliana did in Math?"
-- "What books has Isamaya read lately?"
+- "What was the last thing Alice did in Math?"
+- "What books has Charlie read lately?"
 - "How many Science rows were logged this month?"
 - "Did we log Frog and Toad?"
 

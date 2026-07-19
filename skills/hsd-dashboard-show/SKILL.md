@@ -25,7 +25,7 @@ Generate visual Homeschool-Dashboard HTML for a configured student.
 
 ## Notes
 
-- This skill is for visual dashboards, not compact question answering. Use `hsd-records-read` for questions such as "what did Eliana last do in Math?"
+- This skill is for visual dashboards, not compact question answering. Use `hsd-records-read` for questions such as "what did Alice last do in Math?"
 - `scripts/hsd_dashboard.py` depends on the `homeschool_dashboard` Python package from `pyproject.toml`. If missing, run the normal Charlotte install command and retry:
 
 ```bash

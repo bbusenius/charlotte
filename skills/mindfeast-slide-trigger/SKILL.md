@@ -1,14 +1,14 @@
 ---
 name: mindfeast-slide-trigger
-description: Trigger the MindFeast / Homeschool Screen Lock remote endpoint to show a slide now on a configured tablet. Use when the user asks to trigger a slide, show a slide, pop a slide, open MindFeast, or make the tablet show the next lock-screen slide without creating or syncing slides. Reads per-student mindfeast.remote_url and mindfeast.remote_token from students.yaml, POSTs to <remote_url>/api/trigger, and never prints the token.
+description: Trigger the MindFeast remote endpoint to show a slide now on a configured tablet. Use when the user asks to trigger a slide, show a slide, pop a slide, open MindFeast, or make the tablet show the next lock-screen slide without creating or syncing slides. Reads per-student mindfeast.remote_url and mindfeast.remote_token from students.yaml, POSTs to <remote_url>/api/trigger, and never prints the token.
 argument-hint: "[student name|slug|alias] [--all] [--dry-run] [--timeout SECONDS]"
 ---
 
 # MindFeast Slide Trigger
 
-Trigger a configured MindFeast / Homeschool Screen Lock tablet to show a slide now.
+Trigger a configured MindFeast tablet to show a slide now.
 
-Use this skill when the user asks to trigger a slide, show a slide, pop a slide, open MindFeast, or make the tablet show the next lock-screen slide. Do not create or sync slides in this skill. If the user asks to create slides first, use `tablet-slide-builder` or `mindfeast-weekly-slides`; if they ask to sync slides, use `mindfeast-slide-sync`.
+Use this skill when the user asks to trigger a slide, show a slide, pop a slide, open MindFeast, or make the tablet show the next lock-screen slide. Do not create or sync slides in this skill. If the user asks to create slides first, use `mindfeast-slide-builder` or `mindfeast-weekly-slides`; if they ask to sync slides, use `mindfeast-slide-sync`.
 
 ## Student Config
 
@@ -18,7 +18,7 @@ This skill expects:
 
 ```yaml
 mindfeast:
-  remote_url: http://192.168.1.23:8787
+  remote_url: http://192.0.2.10:8787
   remote_token: "token from MindFeast remote settings"
 ```
 

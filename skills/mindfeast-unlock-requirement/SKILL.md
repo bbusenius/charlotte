@@ -1,12 +1,12 @@
 ---
 name: mindfeast-unlock-requirement
-description: Set the MindFeast / Homeschool Screen Lock unlock requirement on a configured tablet. Use when the user asks to set, reset, raise, lower, apply, or schedule the number of slides required to unlock the tablet, including no-tablet day policies. Reads per-student mindfeast.remote_url, mindfeast.remote_token, and mindfeast.unlock_requirement from students.yaml, POSTs to <remote_url>/api/settings/unlock-requirement, and never prints the token.
+description: Set the MindFeast unlock requirement on a configured tablet. Use when the user asks to set, reset, raise, lower, apply, or schedule the number of slides required to unlock the tablet, including no-tablet day policies. Reads per-student mindfeast.remote_url, mindfeast.remote_token, and mindfeast.unlock_requirement from students.yaml, POSTs to <remote_url>/api/settings/unlock-requirement, and never prints the token.
 argument-hint: "[student name|slug|alias] [--all] [--count N|--default|--no-tablet|--today-policy] [--dry-run] [--timeout SECONDS]"
 ---
 
 # MindFeast Unlock Requirement
 
-Set the configured MindFeast / Homeschool Screen Lock tablet unlock requirement.
+Set the configured MindFeast tablet unlock requirement.
 
 Use this skill when the user asks to set, reset, raise, lower, apply, or schedule the number of slides required to unlock the tablet. This includes no-tablet day policies. Do not create, sync, or trigger slides in this skill.
 
@@ -18,7 +18,7 @@ This skill expects the normal MindFeast remote config plus optional unlock polic
 
 ```yaml
 mindfeast:
-  remote_url: http://192.168.1.23:8787
+  remote_url: http://192.0.2.10:8787
   remote_token: "token from MindFeast remote settings"
   unlock_requirement:
     default: 1

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a Homeschool Screen Lock slide folder from command-line fields."""
+"""Create a MindFeast slide folder from command-line fields."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from pathlib import Path
 
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 VALID_ORIENTATIONS = {"landscape", "portrait"}
-VALID_TYPES = {"question", "essay", "informational"}
+VALID_TYPES = {"question", "essay", "gratitude", "informational"}
 
 
 def yaml_quote(value: str) -> str:
@@ -102,13 +102,15 @@ def main() -> int:
             raise SystemExit("provide --answer")
         if not args.image and not args.audio:
             raise SystemExit("provide --image or --audio")
-    elif args.type == "essay":
+    elif args.type in {"essay", "gratitude"}:
         if not args.question:
             raise SystemExit("provide --question")
         if not args.image and not args.audio:
             raise SystemExit("provide --image or --audio")
         if args.answer or args.accept or args.choice or args.hint:
-            raise SystemExit("essay slides do not use --answer, --accept, --choice, or --hint")
+            raise SystemExit(
+                f"{args.type} slides do not use --answer, --accept, --choice, or --hint"
+            )
     else:
         if args.answer or args.accept or args.choice or args.hint:
             raise SystemExit("informational slides do not use --answer, --accept, --choice, or --hint")

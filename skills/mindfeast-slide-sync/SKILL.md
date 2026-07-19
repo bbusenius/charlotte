@@ -1,14 +1,14 @@
 ---
 name: mindfeast-slide-sync
-description: Sync already-created MindFeast / Homeschool Screen Lock tablet slides to a student's configured tablet remote endpoint. Use when the user asks to sync slides, push slides, update the tablet, refresh MindFeast, or run slide sync without asking to create new slides. Reads per-student mindfeast.remote_url and mindfeast.remote_token from students.yaml, POSTs to <remote_url>/api/sync, and never prints the token.
+description: Sync already-created MindFeast tablet slides to a student's configured tablet remote endpoint. Use when the user asks to sync slides, push slides, update the tablet, refresh MindFeast, or run slide sync without asking to create new slides. Reads per-student mindfeast.remote_url and mindfeast.remote_token from students.yaml, POSTs to <remote_url>/api/sync, and never prints the token.
 argument-hint: "[student name|slug|alias] [--all] [--dry-run] [--timeout SECONDS]"
 ---
 
 # MindFeast Slide Sync
 
-Sync already-created tablet slide packages to the MindFeast / Homeschool Screen Lock app.
+Sync already-created tablet slide packages to MindFeast.
 
-Use this skill when the user asks to sync slides, push slides, update the tablet, refresh MindFeast, or run slide sync. Do not create new slides in this skill. If the user asks both to create slides and sync them, create the slides with `tablet-slide-builder` or `mindfeast-weekly-slides` first, then use this sync contract.
+Use this skill when the user asks to sync slides, push slides, update the tablet, refresh MindFeast, or run slide sync. Do not create new slides in this skill. If the user asks both to create slides and sync them, create the slides with `mindfeast-slide-builder` or `mindfeast-weekly-slides` first, then use this sync contract.
 
 ## Student Config
 
@@ -18,7 +18,7 @@ This skill expects:
 
 ```yaml
 mindfeast:
-  remote_url: http://192.168.1.23:8787
+  remote_url: http://192.0.2.10:8787
   remote_token: "token from MindFeast remote settings"
 ```
 

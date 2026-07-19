@@ -1,6 +1,39 @@
-# Charlotte Homeschool Agent
+# Charlotte
 
-Charlotte is a homeschool agent system — named for Charlotte Mason — for automating [Homeschool Dashboard](https://github.com/bbusenius/Homeschool-Dashboard) compatible lesson time logging, Homeschool Dashboard compatible reading-list logging, pedagogically grounded field trip planning, curriculum and lesson authoring, material creation, and MindFeast slide generation. It coordinates Signal message capture, AI-assisted identification, spreadsheet logging, on-demand trip planning, weekly review Android tablet lock slide creation, and on-demand material generation — all against a local pedagogy knowledge base. Pedagogical grounding is configurable (see [Pedagogy packs](#pedagogy-packs)); Charlotte ships with a public-domain Charlotte Mason pack as the default, plus a complete set of Charlotte Mason authoring skills.
+A local-first homeschool agent for records, planning, materials, and review.
+
+An open-source project from [MindFeast](https://mindfeast.life/), built and used in a real homeschooling family.
+
+Charlotte connects the files and tools a family already controls. It can turn short family messages into lesson and reading records, answer questions from those records without sending whole spreadsheets to a model, build lessons and printable materials, plan field trips, and create optional MindFeast review slides. Family records, purchased curricula, generated work, and credentials remain local and are excluded from the repository.
+
+## What Charlotte can do
+
+- Log lesson time and books to Homeschool-Dashboard-compatible spreadsheets.
+- Query those records and generate local visual dashboards.
+- Build lessons, units, curricula, field trips, and print-ready materials.
+- Use a configurable local pedagogy knowledge base; a public-domain Charlotte Mason pack is included.
+- Create, validate, sync, and trigger optional MindFeast tablet slides.
+- Run directly in a coding agent or through the included always-on Hermes and OpenClaw adapters.
+
+Charlotte does not require MindFeast, Signal, a messaging gateway, or cloud-hosted family records. Enable only the workflows and external tools you want.
+
+## Quick start
+
+Requirements: Git, Python 3.12 or newer, and a skill-aware coding agent such as Codex, Claude Code, or OpenCode.
+
+```bash
+git clone https://github.com/bbusenius/charlotte.git
+cd charlotte
+python3 -m venv .venv
+.venv/bin/python -m pip install -e ".[dev]"
+cp students.yaml.example students.yaml
+```
+
+Edit the ignored `students.yaml` with your own local paths and fictional-or-real household configuration. Then open the repository in your coding agent and try a workflow that needs no external account, for example:
+
+> Build a short Charlotte Mason nature-study lesson about the Moon.
+
+Signal capture, image generation, spreadsheet records, Docker runtimes, and MindFeast tablet control have additional optional configuration described below. Run the test suite with `.venv/bin/python -m pytest`.
 
 ## How it works
 
@@ -36,7 +69,7 @@ Charlotte is **runtime-neutral by design**: the repo itself is the agent — ski
 
 ### Homeschool Dashboard record queries (`/hsd-records-read`)
 
-Reads existing time and reading-list workbooks without exposing whole spreadsheets to the model. Given a natural question such as "what was the last thing Eliana did in Math?" or "what books has Isamaya read lately?", the skill:
+Reads existing time and reading-list workbooks without exposing whole spreadsheets to the model. Given a natural question such as "what was the last thing Alice did in Math?" or "what books has Charlie read lately?", the skill:
 
 1. Resolves the student through `students.yaml`
 2. Runs `scripts/hsd_read.py` against the configured workbook
@@ -46,7 +79,7 @@ The helper supports time-log filters by subject, date range, text query, and lat
 
 ### Homeschool Dashboard viewing (`/hsd-dashboard-show`)
 
-Generates the visual [Homeschool Dashboard](https://github.com/bbusenius/Homeschool-Dashboard) HTML for a configured student. Given a request such as "show me Eliana's homeschool dashboard", the skill:
+Generates the visual [Homeschool Dashboard](https://github.com/bbusenius/Homeschool-Dashboard) HTML for a configured student. Given a request such as "show me Alice's homeschool dashboard", the skill:
 
 1. Resolves the student through `students.yaml`
 2. Runs `scripts/hsd_dashboard.py` against the student's `time_tracking_spreadsheet`
@@ -87,11 +120,13 @@ Generates a small weekly review set for the MindFeast Android lock-screen app fr
 1. Reads the student's logged lesson rows via `skills/mindfeast-weekly-slides/scripts/collect_week.py`
 2. Reads configured curriculum files or other known lesson materials when available to understand what was actually covered
 3. Chooses a small set of useful slide opportunities, usually fewer than 8 and sometimes 0
-4. Uses `tablet-slide-builder` to create MindFeast-compatible slide folders under the student's `tablet_slides_dir`
+4. Uses `mindfeast-slide-builder` to create MindFeast-compatible slide folders under the student's `tablet_slides_dir`
 5. Validates each slide package
 6. Optionally POSTs to the student's MindFeast remote sync endpoint and waits for the sync result before reporting
 
 Slide types are content-driven: informational cards, multiple-choice questions, free-text questions, and essay/narration prompts are all valid. If a slide is based on a known public-domain artwork, the skill prefers the actual image from Wikimedia Commons rather than generated art.
+
+The existing package contract is documented in [MindFeast Slide Package Format, Version 1](docs/mindfeast-slide-format-v1.md). Version 1 labels the specification; slide packages do not contain a format-version field.
 
 ### MindFeast slide sync (`/mindfeast-slide-sync`)
 
@@ -115,7 +150,7 @@ MindFeast sync is configured per student:
 
 ```yaml
 mindfeast:
-  remote_url: http://192.168.1.23:8787
+  remote_url: http://192.0.2.10:8787
   remote_token: ""
 ```
 
@@ -123,7 +158,7 @@ mindfeast:
 
 ## Pedagogy packs
 
-Pedagogical grounding is configurable. A **pedagogy pack** is a directory under `pedagogies/` containing `raw/` (immutable source documents) and `wiki/` (an LLM-maintained knowledge base built from them), following the schema in [pedagogies/AGENTS.md](pedagogies/AGENTS.md). The pack wiki implements Andrej Karpathy's [LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) pattern — instead of retrieving from raw documents at query time (RAG), the LLM ingests sources once into a persistent, cross-referenced "living wiki" and keeps it current as sources and questions accumulate. Charlotte ships with `pedagogies/charlotte-mason/` — built from Charlotte Mason's public-domain works — as the default.
+Pedagogical grounding is configurable. A **pedagogy pack** is a directory under `pedagogies/` containing `raw/` (immutable source documents) and `wiki/` (an LLM-maintained knowledge base built from them), following the schema in [pedagogies/AGENTS.md](pedagogies/AGENTS.md). The pack wiki implements Andrej Karpathy's [LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) pattern — instead of retrieving from raw documents at query time (RAG), the LLM ingests sources once into a persistent, cross-referenced "living wiki" and keeps it current as sources and questions accumulate. Charlotte ships with `pedagogies/charlotte-mason/` — built from Charlotte Mason works that are not restricted by U.S. copyright law — as the default. See [Third-party notices](THIRD_PARTY_NOTICES.md) for provenance and terms.
 
 To use your own pedagogy or curriculum philosophy:
 
@@ -304,14 +339,14 @@ Reading list spreadsheet columns (same across both "read by" and "read to" sheet
 ## Homeschool record read commands
 
 ```bash
-.venv/bin/python scripts/hsd_read.py --student eliana time --subject Math --latest 1
-.venv/bin/python scripts/hsd_read.py --student eliana books --latest 10
+.venv/bin/python scripts/hsd_read.py --student alice time --subject Math --latest 1
+.venv/bin/python scripts/hsd_read.py --student alice books --latest 10
 ```
 
 ## Homeschool dashboard command
 
 ```bash
-.venv/bin/python scripts/hsd_dashboard.py --student eliana
+.venv/bin/python scripts/hsd_dashboard.py --student alice
 ```
 
 ## Curricula
@@ -412,8 +447,8 @@ Examples:
 | `scripts/gemini_image.py` | Direct Google/Gemini image backend used by `scripts/charlotte_image.py` when configured |
 | `skills/mindfeast-slide-sync/scripts/sync.py` | Syncs existing MindFeast tablet slides through the per-student remote endpoint in `students.yaml` |
 | `skills/mindfeast-slide-trigger/scripts/trigger.py` | Triggers a configured MindFeast tablet to show a slide through the per-student remote endpoint in `students.yaml` |
-| `skills/tablet-slide-builder/scripts/make_slide.py` | Creates a Homeschool Screen Lock slide folder with `slide.md` and optional copied media |
-| `skills/tablet-slide-builder/scripts/validate_slide.py` | Validates Homeschool Screen Lock slide folders before delivery |
+| `skills/mindfeast-slide-builder/scripts/make_slide.py` | Creates a MindFeast slide folder with `slide.md` and optional copied media |
+| `skills/mindfeast-slide-builder/scripts/validate_slide.py` | Validates MindFeast slide folders before delivery |
 
 Local one-off conversion scripts for paid curriculum imports live in ignored `scripts/local/` and are not part of the reusable project surface.
 
@@ -443,7 +478,7 @@ charlotte/
 │   ├── mindfeast-weekly-slides/ # weekly MindFeast slide generation from time logs
 │   ├── mindfeast-slide-sync/ # sync existing MindFeast slides to tablets
 │   ├── mindfeast-slide-trigger/ # trigger a MindFeast tablet slide remotely
-│   ├── tablet-slide-builder/ # Android lock-screen slide generation skill
+│   ├── mindfeast-slide-builder/ # MindFeast slide generation skill
 │   │   └── scripts/
 │   │       ├── make_slide.py
 │   │       └── validate_slide.py
@@ -468,3 +503,17 @@ charlotte/
 ├── .logs/                   # local-only sync/operation logs
 └── .backups/                # local-only spreadsheet backups
 ```
+
+## License
+
+Charlotte's original code, skills, and documentation are licensed under the
+[Apache License 2.0](LICENSE).
+
+That license does not apply to third-party material identified in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), private family data,
+purchased curricula, generated family content, or separately licensed
+MindFeast products and trademarks. Charlotte's MindFeast integration tools are
+open source; the MindFeast Android application, official content, services,
+and visual brand assets are separately licensed.
+
+See [Contributing](CONTRIBUTING.md), [Support](SUPPORT.md), [Security and privacy](SECURITY.md), and [Third-party notices](THIRD_PARTY_NOTICES.md).

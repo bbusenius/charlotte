@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate a Homeschool Screen Lock slide folder."""
+"""Validate a MindFeast slide folder."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ except ImportError:  # pragma: no cover
 
 VALID_ORIENTATIONS = {"landscape", "portrait"}
 VALID_DIFFICULTIES = {"easy", "medium", "hard"}
-VALID_TYPES = {"question", "essay", "informational"}
+VALID_TYPES = {"question", "essay", "gratitude", "informational"}
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 
 
@@ -80,7 +80,7 @@ def validate(slide_dir: Path) -> tuple[list[str], list[str]]:
     audio = data.get("audio")
     paragraphs = [part.strip() for part in re.split(r"\n\s*\n+", body) if part.strip()]
 
-    if slide_type in {"question", "essay"} and not image and not audio:
+    if slide_type in {"question", "essay", "gratitude"} and not image and not audio:
         errors.append("slide must declare image or audio")
     if slide_type == "informational" and not paragraphs and not image and not audio:
         errors.append("informational slide must include text, image, or audio")
@@ -105,12 +105,12 @@ def validate(slide_dir: Path) -> tuple[list[str], list[str]]:
         accept = []
     if not isinstance(accept, list):
         errors.append("accept must be a list")
-    elif slide_type in {"essay", "informational"} and accept:
+    elif slide_type in {"essay", "gratitude", "informational"} and accept:
         warnings.append(f"{slide_type} slides ignore accept")
 
     choices = data.get("choices")
     if choices is not None:
-        if slide_type in {"essay", "informational"}:
+        if slide_type in {"essay", "gratitude", "informational"}:
             warnings.append(f"{slide_type} slides ignore choices")
         elif not isinstance(choices, list):
             errors.append("choices must be a list")
@@ -125,24 +125,25 @@ def validate(slide_dir: Path) -> tuple[list[str], list[str]]:
             if orientation == "landscape" and len(choices) >= 4:
                 warnings.append("four or more choices may fit better in portrait")
 
-    if slide_type in {"essay", "informational"} and data.get("answer"):
+    if slide_type in {"essay", "gratitude", "informational"} and data.get("answer"):
         warnings.append(f"{slide_type} slides ignore answer")
 
-    if slide_type in {"question", "essay"} and not paragraphs:
-        errors.append("question body missing")
+    if slide_type in {"question", "essay", "gratitude"} and not paragraphs:
+        label = "question" if slide_type == "question" else "prompt"
+        errors.append(f"{label} body missing")
     elif paragraphs and len(paragraphs[0]) > 140:
         label = "text" if slide_type == "informational" else "question"
         warnings.append(f"{label} is long for the lock-screen panel")
     if slide_type == "informational" and orientation == "landscape" and paragraphs:
         if len(paragraphs[0]) > 90:
             warnings.append("dense informational text may fit better in portrait")
-    if slide_type == "essay" and orientation == "landscape" and paragraphs:
+    if slide_type in {"essay", "gratitude"} and orientation == "landscape" and paragraphs:
         if len(paragraphs[0]) > 110:
-            warnings.append("long essay prompts may fit better in portrait")
+            warnings.append(f"long {slide_type} prompts may fit better in portrait")
     if slide_type == "question" and len(paragraphs) > 1 and len(paragraphs[1]) > 180:
         warnings.append("hint is long for the lock-screen panel")
-    if slide_type == "essay" and len(paragraphs) > 1:
-        warnings.append("essay slides use only the first body paragraph as the prompt")
+    if slide_type in {"essay", "gratitude"} and len(paragraphs) > 1:
+        warnings.append(f"{slide_type} slides use only the first body paragraph as the prompt")
     if slide_type == "informational" and len(paragraphs) > 1:
         warnings.append("informational slides display only the first body paragraph")
 

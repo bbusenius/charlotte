@@ -4,7 +4,8 @@ author: "Charlotte M. Mason"
 year: 1923
 type: book
 tags: [charlotte-mason, pneu, philosophy-of-education, homeschool, curriculum, liberal-education, elementary-schools, secondary-schools, continuation-schools, narration, knowledge]
-source_path: "raw/Towards-a-Philosophy-of-Education-Book-2.txt"
+source_path: "raw/An-Essay-Towards-a-Philosophy-of-Education.txt"
+source_scope: "Book II — Theory Applied"
 date_ingested: 2026-04-18
 ---
 
@@ -13,7 +14,7 @@ date_ingested: 2026-04-18
 **Author:** [[entities/charlotte-mason|Charlotte M. Mason]]
 **Year:** 1923 (volume 6 of the _Home Education Series_, published the year of her death)
 **Type:** book — the second, applied half of the 1923 volume
-**Note on split:** The user split the two books of _Towards a Philosophy of Education_ into separate files for ingest. This page covers **Book II — "Theory Applied."** Book I ("Some Preliminary Considerations"), the theoretical half, is a separate source: see [[sources/towards-a-philosophy-of-education-book-1|Book I]].
+**Source scope:** This page covers **Book II — "Theory Applied,"** the applied half of the complete source file. Book I ("Some Preliminary Considerations") has its own sectional summary: [[sources/towards-a-philosophy-of-education-book-1|Book I]].
 
 ## Overview
 

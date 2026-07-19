@@ -5,6 +5,7 @@ year: 2026
 type: gist
 tags: [knowledge-management, llm-tooling, meta, workflow]
 source_path: "raw/karpathy-llm-wiki.md"
+source_url: "https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f"
 date_ingested: 2026-04-18
 ---
 
@@ -30,15 +31,16 @@ Karpathy's LLM Wiki pattern proposes using LLMs not as query-time retrievers (RA
 - **The human's bottleneck is maintenance, not reading.** LLMs solve this — they don't get bored and can touch 15 files in one pass.
 - Relates in spirit to **Vannevar Bush's Memex (1945)** — private, actively curated, with associative trails between documents.
 
-## Notable Quotes
+## Attributed Paraphrases
 
-> "The wiki is a persistent, compounding artifact. The cross-references are already there. The contradictions have already been flagged."
-
-> "Obsidian is the IDE; the LLM is the programmer; the wiki is the codebase."
-
-> "Humans abandon wikis because the maintenance burden grows faster than the value. LLMs don't get bored."
-
-> "The part he [Bush] couldn't solve was who does the maintenance. The LLM handles that."
+- A maintained wiki accumulates synthesis and cross-references instead of
+  recreating them for every question.
+- Karpathy presents the note browser, the agent, and the wiki as parts of one
+  working environment.
+- Agent maintenance reduces the repetitive bookkeeping that often causes
+  human-maintained wikis to decay.
+- The proposal connects this maintenance role to the unfinished practical
+  challenge in Vannevar Bush's Memex idea.
 
 ## Entities Mentioned
 

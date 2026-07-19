@@ -34,6 +34,10 @@ year: YYYY
 type: article | book | paper | podcast | video | gist | other
 tags: [tag1, tag2]
 source_path: "raw/filename.md"
+# Optional when a summary covers one section of a larger source:
+source_scope: "Book I"
+# Optional when the original source is external:
+source_url: "https://example.com/source"
 date_ingested: YYYY-MM-DD
 ---
 ```
@@ -80,7 +84,8 @@ sources_cited: [page-link1, page-link2]
 4. Create `wiki/sources/<slug>.md` — a comprehensive summary with:
    - Abstract/overview (2–4 sentences)
    - Key claims or arguments (bulleted)
-   - Notable quotes (2–5, with context)
+   - Notable quotes (2–5, with context) only when quotation is legally
+     appropriate; otherwise use attributed paraphrases
    - Entities mentioned (linked to entity pages)
    - Concepts covered (linked to concept pages)
    - Connections to existing wiki content

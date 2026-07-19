@@ -32,7 +32,7 @@ Created full vault structure: directories, CLAUDE.md schema, templates, index, l
 
 ## [2026-04-18] ingest | Charlotte Mason — _Towards a Philosophy of Education_, Book I
 
-**Source:** `raw/Towards-a-Philosophy-of-Education-Book-1.txt` (the user-split Book I of the 1923 volume; Book II is a separate file for a future ingest)
+**Source:** `raw/An-Essay-Towards-a-Philosophy-of-Education.txt` (Book I section; originally ingested from a temporary split file)
 **Pages created:**
 - `wiki/sources/towards-a-philosophy-of-education-book-1.md`
 - `wiki/entities/charlotte-mason.md`
@@ -58,7 +58,7 @@ Created full vault structure: directories, CLAUDE.md schema, templates, index, l
 
 ## [2026-04-18] ingest | Charlotte Mason — _Towards a Philosophy of Education_, Book II
 
-**Source:** `raw/Towards-a-Philosophy-of-Education-Book-2.txt` (the user-split Book II of the 1923 volume; subtitled "Theory Applied")
+**Source:** `raw/An-Essay-Towards-a-Philosophy-of-Education.txt` (Book II section, "Theory Applied"; originally ingested from a temporary split file)
 **Pages created:**
 - `wiki/sources/towards-a-philosophy-of-education-book-2.md`
 - `wiki/entities/nfs-grundtvig.md`
@@ -183,3 +183,15 @@ Candidate future ingests: the four middle volumes of the series remain un-ingest
 - **0 hard orphan pages.**
 - **2 contextual query orphans fixed.** Linked the under-nine query from [[concepts/nature-study]] and the copywork query from [[concepts/phonics-and-literature-spelling]] and [[concepts/developmental-writing-pedagogy]].
 - **1 missing log entry fixed.** Added the 2026-05-16 copywork query entry that was present in the index but absent from this log.
+
+## [2026-07-18] maintenance | Restore complete Philosophy of Education source
+
+Replaced the two temporary Book I and Book II raw-file splits with the complete
+official Project Gutenberg plain-text eBook #66369. A normalized comparison
+confirmed that the split files contained the same text except for four blank
+lines omitted at the Book I/Book II boundary.
+
+The two existing sectional source summaries and all of their wiki slugs were
+preserved. Both now point to
+`raw/An-Essay-Towards-a-Philosophy-of-Education.txt` and declare their
+respective Book I or Book II scope. No page count or cross-reference changed.

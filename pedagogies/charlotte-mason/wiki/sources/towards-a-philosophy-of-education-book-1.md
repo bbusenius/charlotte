@@ -4,7 +4,8 @@ author: "Charlotte M. Mason"
 year: 1923
 type: book
 tags: [charlotte-mason, pnue, philosophy-of-education, homeschool, curriculum, narration, liberal-education]
-source_path: "raw/Towards-a-Philosophy-of-Education-Book-1.txt"
+source_path: "raw/An-Essay-Towards-a-Philosophy-of-Education.txt"
+source_scope: "Book I — Some Preliminary Considerations"
 date_ingested: 2026-04-18
 ---
 
@@ -13,7 +14,7 @@ date_ingested: 2026-04-18
 **Author:** [[entities/charlotte-mason|Charlotte M. Mason]]
 **Year:** 1923 (published the year of Mason's death, drawing on her 40 years running the [[entities/pneu|PNEU]] and [[entities/parents-union-school|Parents' Union School]])
 **Type:** book — volume 6 of Mason's _Home Education Series_
-**Note on split:** The original _Towards a Philosophy of Education_ contains two books bound together. The user split them into two files for ingest. This page covers **Book I — "Some Preliminary Considerations,"** the theoretical volume. Book II ("Theory Applied") is a separate file and a separate ingest.
+**Source scope:** This page covers **Book I — "Some Preliminary Considerations,"** the theoretical half of the complete source file. Book II ("Theory Applied") has its own sectional summary: [[sources/towards-a-philosophy-of-education-book-2|Book II]].
 
 ## Overview
 

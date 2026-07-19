@@ -2,6 +2,8 @@
 name = "charlotte"
 version = "0.1.0"
 description = "Charlotte Mason homeschool agent for logging, planning, and material creation"
+readme = "README.md"
+license = "Apache-2.0"
 requires-python = ">=3.12"
 dependencies = [
     "playwright>=1.58",

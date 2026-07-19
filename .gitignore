@@ -45,6 +45,23 @@ __pycache__/
 !.env.example
 runtime.yaml
 image-generation.yaml
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+secrets*.yaml
+secrets*.yml
+
+# Family records and message stores
+*.xlsx
+*.xls
+*.ods
+*.sqlite
+*.sqlite3
+*.db
+attachments/
+signal-attachments/
 
 # Editor files
 *.swp

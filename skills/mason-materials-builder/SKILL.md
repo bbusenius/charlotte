@@ -1,6 +1,6 @@
 ---
 name: mason-materials-builder
-description: Build printable or standalone homeschool materials — maps, timelines, flashcards, copywork sheets, nature-notebook pages, narration templates, picture-study and composer cards, vocabulary and memory-verse cards, math/phonics/handwriting practice, PDFs, SVGs, PNG illustrations, and similar resources — grounded in the project's pedagogy wiki. Invokes mason-aesthetics for visual direction and mason-print-design for rendering. Generates images through the configured Charlotte image router. Do not use for Android lock-screen slides, MindFeast slides, unlock questions, or Homeschool Screen Lock app packages; use tablet-slide-builder for those.
+description: Build printable or standalone homeschool materials — maps, timelines, flashcards, copywork sheets, nature-notebook pages, narration templates, picture-study and composer cards, vocabulary and memory-verse cards, math/phonics/handwriting practice, PDFs, SVGs, PNG illustrations, and similar resources — grounded in the project's pedagogy wiki. Invokes mason-aesthetics for visual direction and mason-print-design for rendering. Generates images through the configured Charlotte image router. Do not use for Android lock-screen slides, MindFeast slides, unlock questions, or app slide packages; use mindfeast-slide-builder for those.
 argument-hint: <material description in prose, optionally referencing a student or lesson> [--out PATH] [--image quality|fast] [--format pdf|html|svg|png|md] [--size 1K|2K|4K]
 ---
 
@@ -15,7 +15,7 @@ This skill owns the *what* — material type, content, pedagogical framing, curr
 
 Do not restate or reimplement those skills' guidance — invoke them.
 
-For Android Homeschool Screen Lock challenge slides synced from `tablet-slides/`, use `tablet-slide-builder` instead. This includes bare requests such as "make a slide about toads" when the active project context is MindFeast/tablet slides. Those slides have an app-specific folder, YAML, media, and validation contract rather than a print-rendering contract.
+For MindFeast challenge slides synced from `tablet-slides/`, use `mindfeast-slide-builder` instead. This includes bare requests such as "make a slide about toads" when the active project context is MindFeast/tablet slides. Those slides have an app-specific folder, YAML, media, and validation contract rather than a print-rendering contract.
 
 ## Usage
 

@@ -1,6 +1,6 @@
 ---
 name: mindfeast-weekly-slides
-description: Review a student's recent homeschool time logs, choose a small set of useful weekly review opportunities, create MindFeast-compatible tablet slides with tablet-slide-builder, and optionally trigger the student's MindFeast remote sync endpoint. Use when asked to make weekly learning slides, review slides, lock-screen questions, or MindFeast slides from a week of logged lessons.
+description: Review a student's recent homeschool time logs, choose a small set of useful weekly review opportunities, create MindFeast-compatible tablet slides with mindfeast-slide-builder, and optionally trigger the student's MindFeast remote sync endpoint. Use when asked to make weekly learning slides, review slides, lock-screen questions, or MindFeast slides from a week of logged lessons.
 ---
 
 # MindFeast Weekly Slides
@@ -10,7 +10,7 @@ Create a small, judgment-driven set of MindFeast slides from a student's week of
 This skill orchestrates:
 
 - `hsd-time-log` data already written to the student's time-tracking spreadsheet.
-- `tablet-slide-builder` for the actual slide packages.
+- `mindfeast-slide-builder` for the actual slide packages.
 - MindFeast remote sync via the per-student config in `students.yaml`. The standalone sync contract lives in `mindfeast-slide-sync`.
 
 ## Student Config
@@ -32,7 +32,7 @@ This skill also expects per-student MindFeast config:
 
 ```yaml
 mindfeast:
-  remote_url: http://192.168.1.23:8787
+  remote_url: http://192.0.2.10:8787
   remote_token: "token from MindFeast remote settings"
 ```
 
@@ -57,8 +57,8 @@ Omit `--week-start` to use the seven-day period ending today. The helper outputs
 4. Read the enriched rows as a whole week. Consider subject, lesson description, recovered curriculum material, time spent, notes, and repetition across the week.
 5. Decide whether slides are warranted. It is valid and sometimes best to create no slides.
 6. Build a slide plan before writing files. Keep the plan small: usually 3-6 slides, hard cap 8 unless the user explicitly asks for more.
-7. Use `tablet-slide-builder` to create each planned slide in the student's `tablet_slides_dir`.
-8. Validate every created slide folder with `skills/tablet-slide-builder/scripts/validate_slide.py`.
+7. Use `mindfeast-slide-builder` to create each planned slide in the student's `tablet_slides_dir`.
+8. Validate every created slide folder with `skills/mindfeast-slide-builder/scripts/validate_slide.py`.
 9. If at least one slide was created and sync is not disabled, trigger MindFeast sync with `mindfeast-slide-sync`, run it exactly once, and wait for it to finish.
 10. Report created slides, skipped opportunities, validation results, and the completed sync result. Never print the remote token.
 
@@ -96,11 +96,11 @@ Write for the student's `grade` and reading level. Keep question text short enou
 
 ## Slide Generation
 
-Use `tablet-slide-builder` as the source of truth for the slide package contract, image policy, validation, and delivery fields.
+Use `mindfeast-slide-builder` as the source of truth for the slide package contract, image policy, validation, and delivery fields.
 
-For planned slides that need images and have no provided image, let `tablet-slide-builder` generate calm, specific, full-bleed images using its normal configured image route. Do not generate images for slides that can be effective with existing media or audio, and do not invent copyrighted audio.
+For planned slides that need images and have no provided image, let `mindfeast-slide-builder` generate calm, specific, full-bleed images using its normal configured image route. Do not generate images for slides that can be effective with existing media or audio, and do not invent copyrighted audio.
 
-For painter or known-work-of-art slides, use the actual artwork image rather than a generated image. Prefer Wikimedia Commons (`https://commons.wikimedia.org/`) because most covered artists and paintings are public domain. Choose a mid-large rendition around 2,500 x 2,000 pixels when available; avoid tiny thumbnails and avoid the largest archival files when Commons offers extremely large versions. Save the image into the slide package through `tablet-slide-builder` as provided media, and keep the artwork title/artist in slide text and metadata rather than baking labels into the image.
+For painter or known-work-of-art slides, use the actual artwork image rather than a generated image. Prefer Wikimedia Commons (`https://commons.wikimedia.org/`) because most covered artists and paintings are public domain. Choose a mid-large rendition around 2,500 x 2,000 pixels when available; avoid tiny thumbnails and avoid the largest archival files when Commons offers extremely large versions. Save the image into the slide package through `mindfeast-slide-builder` as provided media, and keep the artwork title/artist in slide text and metadata rather than baking labels into the image.
 
 Choose stable IDs from the topic, not from calendar dates. If an ID already exists, make the slug more specific rather than overwriting an existing slide unless the user explicitly asked to replace it.
 
