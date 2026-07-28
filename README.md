@@ -8,6 +8,7 @@ Charlotte connects the files and tools a family already controls. It can turn sh
 
 ## What Charlotte can do
 
+- Keep a durable record of what was actually taught: captured photos, screenshots, and voice notes, their extracted text, and a written account of each session.
 - Log lesson time and books to Homeschool-Dashboard-compatible spreadsheets.
 - Query those records and generate local visual dashboards.
 - Build lessons, units, curricula, field trips, and print-ready materials.
@@ -47,19 +48,44 @@ Charlotte is **runtime-neutral by design**: the repo itself is the agent — ski
    - Tell the agent to run workflows in chat, or schedule skills with the harness's `cron`.
    - Both adapters run the identical skill set against the identical family data: switching harnesses is a matter of launching a different `runtime/<name>/run.sh`, and records logged under one runtime are fully visible to the other. The [runtime contract](docs/runtime-contract.md) defines what any new adapter must provide, so further harnesses can be added without touching the skills.
 
-### Homeschool Dashboard lesson time logging (`/hsd-time-log`)
+### Lesson logging (`/lesson-log`)
 
-1. A parent sends Signal messages (text + screenshots) to a per-child lesson group documenting what was covered
-2. **signal-sieve** captures those messages into SQLite (runs as a systemd service)
-3. The `hsd-time-log` skill:
-   - Reads text and screenshot images with a vision-capable runtime tool to identify lessons
-   - Looks up lesson details in the curriculum markdown files
-   - Logs entries to the child's time-tracking spreadsheet
-   - Marks messages as processed
+The primary record. One directory per teaching session under `lesson-logs/`:
+
+```
+lesson-logs/eliana/grade-3/2026/07/24/
+    language-arts-literature-lesson-112-guide-words/
+    math-lesson-45-comparing-rounded-amounts/
+    science-forest-plot-survey/
+        log.md          what was taught, how it went, what comes next
+        messages.md     what the parent said: text verbatim, voice transcribed
+        images.md       what Charlotte saw: description plus visible text
+        sources/        image-01.jpg, image-02.jpg, voice-01.ogg
+```
+
+Year, month, and day directories make all of one school day's sessions visible together. Each session name begins with its configured subject. Files in `sources/` are named only by kind and arrival order. What an image shows — which workbook page, whether it is filled in, what the scene is — lives in `images.md`, and the real page numbers also go in the log's frontmatter, so "what page are we on in Language Arts?" is answerable from a summary.
+
+1. A parent describes a lesson — in a [typed queue](docs/ingest-contract.md) or just in conversation — with any photos, screenshots, or voice notes
+2. The `lesson-log` skill:
+   - Reads every image with a vision-capable runtime tool and transcribes voice notes
+   - Looks up the lesson in the curriculum markdown files when there is one
+   - Copies the captured media into the session and writes the extracted text alongside it
+   - Writes the account of what was covered and how it went
+
+Keeping the extracted text, not just the photos, is what makes the record useful later: a year of captured pages is searchable, and it is enough to plan from for a subject with no digital curriculum.
+
+### Homeschool Dashboard time projection (`/hsd-time-log`)
+
+A spreadsheet row is a one-line receipt of a lesson log, and the dashboard renders it when you hover a date.
+
+1. Run it whenever you want the workbooks current — end of day, weekly, or after a month away
+2. The `hsd-time-log` skill finds logged sessions with no row yet and appends them
+
+It only ever adds missing rows. It never updates or overwrites an existing one, so hand edits survive, and running it twice writes nothing the second time. Sessions missing either start or end time are reported rather than written, since Homeschool-Dashboard needs both.
 
 ### Homeschool Dashboard book logging (`/hsd-book-log`)
 
-1. Messages (book titles or cover photos) are sent to a per-child book group (configured via `reading.signal_group_alias` in `students.yaml`)
+1. Messages (book titles or cover photos) are sent to a per-child book queue (configured via `reading.inbox` in `students.yaml`)
 2. **signal-sieve** captures them the same way
 3. The `hsd-book-log` skill:
    - Reads text / extracts title + author from cover images with a vision-capable runtime tool
@@ -69,7 +95,7 @@ Charlotte is **runtime-neutral by design**: the repo itself is the agent — ski
 
 ### Homeschool Dashboard record queries (`/hsd-records-read`)
 
-Reads existing time and reading-list workbooks without exposing whole spreadsheets to the model. Given a natural question such as "what was the last thing Alice did in Math?" or "what books has Charlie read lately?", the skill:
+Answers questions about what a student has done, without pulling whole spreadsheets or whole lesson logs into the model. Content questions ("what was the last thing Alice did in Math?", "have we covered guide words?") are answered from the lesson logs, which hold the full account and the captured page text. Hours and totals are answered from the time workbook, where the computation lives and where history from before lesson logging still is. Books come from the reading-list workbook. Given a question, the skill:
 
 1. Resolves the student through `students.yaml`
 2. Runs `scripts/hsd_read.py` against the configured workbook
@@ -138,7 +164,7 @@ Triggers a configured tablet to show a MindFeast slide now. Given a student, it 
 
 ## Student registry
 
-Per-student metadata lives in `students.yaml` at the repo root. This is the single source of truth for display name, grade, aliases, curriculum files (with lesson-header regex), subjects, time-tracking spreadsheet path, tablet slide directory, MindFeast remote sync config, Signal group alias, and reading list config (spreadsheet path, sheet indices, Signal group alias). Skills read from it rather than hard-coding student data, so the repo stays portable — another family can ship their own `students.yaml`.
+Per-student metadata lives in `students.yaml` at the repo root. This is the single source of truth for display name, grade, aliases, curriculum files (with lesson-header regex), subjects, time-tracking spreadsheet path, tablet slide directory, MindFeast remote sync config, the optional capture `inbox`, and reading list config (spreadsheet path, sheet indices, its own optional `inbox`). Skills read from it rather than hard-coding student data, so the repo stays portable — another family can ship their own `students.yaml`.
 
 Adding a student:
 
@@ -177,6 +203,7 @@ This repository tracks the homeschool agent system, reusable skills, scripts, ex
 The following paths are writable local content roots and are intentionally gitignored:
 
 - `curricula/` — paid/imported curriculum markdown plus generated curricula, units, lessons, and lesson assets
+- `lesson-logs/` — the record of what was actually taught: one directory per session holding the captured photos and voice notes, their extracted text, and the written log
 - `tablet-slides/` — generated Android lock-screen slide packages
 - `generated-images/` — standalone generated images that are not tablet slide packages or printable materials
 - `field-trips/` — generated field trip plans
@@ -203,11 +230,17 @@ Install non-Python rendering/browser tools with your system package manager:
 sudo apt install chromium ffmpeg inkscape
 ```
 
-### Signal capture setup
+### Capture setup
 
-The Charlotte install provides the `signal-sieve` CLI in `.venv/bin/`, which is enough for skills to read captured messages and mark them processed when `signal-sieve` config and data already exist.
+Material reaches Charlotte two ways, and both are first-class. See [the ingest contract](docs/ingest-contract.md) for the full picture.
 
-Signal-driven logging also needs a running Signal capture service. In the currently supported setup, that service is host-owned: `signal-cli` and `signal-sieve listen` run on the host, while Hermes-in-Docker mounts the host `signal-sieve` config, database, and attachments. This is only required for the `hsd-time-log` and `hsd-book-log` workflows; Telegram chat, curriculum/material generation, tablet slides, and MindFeast sync do not require Signal capture.
+**Conversation** needs no setup at all. Tell Charlotte what you covered and attach the photos. This is the default, and a student with no `inbox` block in `students.yaml` works this way.
+
+**A typed queue** is optional and worth it if you want terse messages or scheduled unattended runs: the queue's name says which workflow and which student, so nothing has to be inferred. Signal via `signal-sieve` is the implemented adapter; the contract itself is transport-neutral.
+
+The Charlotte install provides the `signal-sieve` CLI in `.venv/bin/`, which is enough to read captured messages and mark them processed when `signal-sieve` config and data already exist.
+
+Signal capture also needs a running service. In the currently supported setup, that service is host-owned: `signal-cli` and `signal-sieve listen` run on the host, while Hermes-in-Docker mounts the host `signal-sieve` config, database, and attachments. Nothing else requires it — conversational logging, Telegram chat, curriculum/material generation, tablet slides, and MindFeast sync all work without Signal.
 
 Host-owned Signal capture setup belongs to local operator provisioning. See [runtime/hermes/](runtime/hermes/) for the Docker mount configuration Charlotte expects when Hermes consumes host-captured Signal messages.
 
@@ -226,9 +259,16 @@ pedagogy:
   path: pedagogies/charlotte-mason    # active pedagogy pack
   aesthetics: skills/mason-aesthetics # visual register for generated images/materials
 
+logging:
+  lesson_log: true    # the primary record of what was taught (system of record)
+  time: true          # capture clock times on lessons
+  hsd: true           # also project rows into Homeschool-Dashboard spreadsheets
+
 tools:
   chrome_path: /usr/bin/google-chrome-stable
 ```
+
+`logging` is global, not per student. `hsd: true` requires both `lesson_log: true`, because spreadsheet rows are projected from lesson logs, and `time: true`, because Homeschool-Dashboard needs start and end times.
 
 The `pedagogy` block selects the active pedagogy pack and aesthetics skill (see [Pedagogy packs](#pedagogy-packs)); when absent, the Charlotte Mason defaults apply. `scripts/lexile/lookup.py` uses `tools.chrome_path` for its Playwright browser executable. Leave `runtime.yaml` absent if the defaults work.
 If `tools.chrome_path` is absent or points at a path that does not exist in the current runtime, the script searches common Chrome/Chromium executable names such as `google-chrome-stable` and `chromium`.
@@ -279,7 +319,9 @@ Hermes Docker runtime support lives in [runtime/hermes/](runtime/hermes/). Exper
 
 ### Homeschool-Dashboard-compatible records
 
-The current `hsd-time-log` and `hsd-book-log` skills write to spreadsheet records compatible with [Homeschool-Dashboard](https://github.com/bbusenius/Homeschool-Dashboard). Workbook paths live in `students.yaml`, so local Codex/Claude usage can keep host-native `~/...` paths. Docker runtimes must mount any host directories containing those workbooks, and host-owned Signal capture also requires mounting `signal-sieve` config/data paths; the Hermes adapter does both with `CHARLOTTE_HOME_MOUNTS`.
+The `hsd-time-log` and `hsd-book-log` skills write to spreadsheet records compatible with [Homeschool-Dashboard](https://github.com/bbusenius/Homeschool-Dashboard). Workbook paths live in `students.yaml`, so local Codex/Claude usage can keep host-native `~/...` paths. Docker runtimes must mount any host directories containing those workbooks, and host-owned Signal capture also requires mounting `signal-sieve` config/data paths; the Hermes adapter does both with `CHARLOTTE_HOME_MOUNTS`.
+
+Time records are a projection of the lesson logs, not a parallel record. `hsd-time-log` only adds rows for sessions that have a log and never modifies an existing row, so pre-existing history and hand edits are both safe.
 
 ### Material creation prerequisites
 
@@ -335,6 +377,26 @@ See [Runtime Tool Surface](docs/runtime-tool-surface.md) for the support checkli
 Lesson spreadsheet columns: Date, Start Time, End Time, Description, Teacher
 
 Reading list spreadsheet columns (same across both "read by" and "read to" sheets): Title, Author, Language, ISBN, SKU, Level, Audiobook, Part of coursework?
+
+## Lesson log commands
+
+```bash
+# session directories: locate, create, add captured media
+.venv/bin/python scripts/lesson_log_new.py find --student alice --date 2026-07-24 --subject Science
+.venv/bin/python scripts/lesson_log_new.py create --student alice --date 2026-07-24 \
+  --subject Science --slug forest-plot-survey
+.venv/bin/python scripts/lesson_log_new.py add --session <dir> --role image --file photo.jpg
+
+# reading logs back
+.venv/bin/python scripts/lesson_log_read.py list --student alice --subject Science --latest 1
+.venv/bin/python scripts/lesson_log_read.py search --student alice --query "guide words"
+.venv/bin/python scripts/lesson_log_read.py show --session <dir> --section "how it went"
+
+# spreadsheet projection
+.venv/bin/python scripts/hsd_project.py gaps --student alice
+.venv/bin/python scripts/hsd_project.py append --student alice --log <dir> \
+  --description "Lesson 12: Mapping a Plot" --notes "Grasped decomposers immediately."
+```
 
 ## Homeschool record read commands
 
@@ -395,8 +457,11 @@ Configured per student in `students.yaml`. The example registry stores Homeschoo
 From a skill-aware harness, while in the project directory:
 
 ```
-/hsd-time-log                # process all children's lesson messages
-/hsd-time-log <student>      # only one student's lesson messages
+/lesson-log                  # write lesson logs for every student with material waiting
+/lesson-log <student>        # only one student
+
+/hsd-time-log                # fill in missing Homeschool-Dashboard rows for every student
+/hsd-time-log <student>      # only one student
 
 /hsd-book-log                # process both children's book messages
 /hsd-book-log <student>      # only one student's book messages
@@ -441,6 +506,9 @@ Examples:
 | `scripts/openlibrary/lookup.py` | Looks up a book on Open Library; returns metadata with a high/medium/low confidence tier |
 | `scripts/openlibrary/subject_search.py` | Discovers books on a topic via Open Library subject search; classifies results as `picture_book`, `chapter_book`, `middle_grade`, `young_adult`, or `adult` for enrichment bucketing in field trip plans |
 | `scripts/get-sheet-name.py` | Resolves a sheet name by its positional index in an xlsx file |
+| `scripts/lesson_log_new.py` | Locates or creates lesson-log session directories and copies captured media in with stable append-only names |
+| `scripts/lesson_log_read.py` | Queries lesson logs as bounded JSON — session summaries, full-text search across logs/pages/messages, and named sections |
+| `scripts/hsd_project.py` | Finds logged sessions with no Homeschool-Dashboard row and appends the missing ones; never updates an existing row |
 | `scripts/hsd_read.py` | Reads configured Homeschool-Dashboard-compatible time and reading-list spreadsheets as compact JSON |
 | `scripts/hsd_dashboard.py` | Generates visual Homeschool Dashboard HTML for a configured student |
 | `scripts/charlotte_image.py` | Routes image generation through configured sources in `image-generation.yaml`; supports `--dry-run` prompt inspection; exits 2 when no script-callable provider is available |
@@ -465,8 +533,11 @@ charlotte/
 ├── .venv/                   # project virtualenv, local-only
 ├── curricula/               # local-only content root
 │   └── third-party/         # third-party curricula, one subdirectory per curriculum
+├── lesson-logs/             # local-only content root: the record of what was taught
+│   └── <student>/<grade>/<year>/<month>/<day>/<subject>-<slug>/
 ├── skills/                  # canonical tracked skills
-│   ├── hsd-time-log/        # Homeschool-Dashboard-compatible lesson time logging skill
+│   ├── lesson-log/          # lesson content logging skill (the system of record)
+│   ├── hsd-time-log/        # Homeschool-Dashboard time-row projection skill
 │   ├── hsd-book-log/        # Homeschool-Dashboard-compatible book logging skill
 │   ├── hsd-records-read/    # Read-only workbook query skill
 │   ├── hsd-dashboard-show/  # Visual dashboard generation skill
@@ -475,7 +546,7 @@ charlotte/
 │   ├── mason-curriculum-builder/  # Charlotte Mason curriculum authoring skill
 │   ├── mason-field-trip-planner/  # Charlotte Mason field trip planning skill
 │   ├── mason-materials-builder/   # Charlotte Mason material creation skill
-│   ├── mindfeast-weekly-slides/ # weekly MindFeast slide generation from time logs
+│   ├── mindfeast-weekly-slides/ # weekly MindFeast slides from lesson logs (workbook fallback)
 │   ├── mindfeast-slide-sync/ # sync existing MindFeast slides to tablets
 │   ├── mindfeast-slide-trigger/ # trigger a MindFeast tablet slide remotely
 │   ├── mindfeast-slide-builder/ # MindFeast slide generation skill
@@ -493,6 +564,9 @@ charlotte/
 │   └── charlotte-mason/     # shipped public-domain Charlotte Mason pack (raw/ + wiki/)
 ├── scripts/
 │   ├── get-sheet-name.py
+│   ├── lesson_log_new.py    # session directories + captured media
+│   ├── lesson_log_read.py   # bounded queries over lesson logs
+│   ├── hsd_project.py       # lesson logs -> Homeschool-Dashboard rows
 │   ├── charlotte_image.py   # configured image capability router
 │   ├── gemini_image.py      # direct Google/Gemini image backend
 │   ├── lexile/lookup.py

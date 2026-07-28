@@ -284,6 +284,7 @@ fi
 
 mkdir -p \
   "$repo_root/curricula" \
+  "$repo_root/lesson-logs" \
   "$repo_root/tablet-slides" \
   "$repo_root/field-trips" \
   "$repo_root/generated-images" \
@@ -312,6 +313,7 @@ base_docker_args+=(
   -v "$openclaw_home/hf-cache:/home/node/.cache/huggingface"
   -v "$repo_root/students.yaml:/workspace/students.yaml:ro"
   -v "$repo_root/curricula:/workspace/curricula"
+  -v "$repo_root/lesson-logs:/workspace/lesson-logs"
   -v "$repo_root/tablet-slides:/workspace/tablet-slides"
   -v "$repo_root/field-trips:/workspace/field-trips"
   -v "$repo_root/generated-images:/workspace/generated-images"

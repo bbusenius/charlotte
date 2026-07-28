@@ -10,17 +10,19 @@ The canonical project surface is:
 - `students.yaml` for local family/student configuration.
 - `runtime.yaml` for non-secret machine/tool paths.
 - `image-generation.yaml` for local image route configuration.
-- ignored local content roots: `curricula/`, `tablet-slides/`, `generated-images/`, `field-trips/`, `.backups/`, and `.logs/`.
+- ignored local content roots: `curricula/`, `lesson-logs/`, `tablet-slides/`, `generated-images/`, `field-trips/`, `.backups/`, and `.logs/`.
 
 Runtime adapters must not fork the skill instructions unless a runtime truly requires a shim. Prefer symlinks, external skill directories, or runtime config that points at the canonical skill tree.
 
 ## Ingress Model
 
-Signal via `signal-sieve` is the implemented structured workflow queue.
+Material reaches Charlotte through a **typed queue** or through **conversation**. Both are first-class, and a finished record is identical either way. The full contract, including what an adapter must implement, is in [ingest-contract.md](ingest-contract.md).
 
-Signal groups remain the capture path for lessons, books, screenshots, and other records that feed spreadsheet or generated-content workflows. Skills such as `hsd-time-log` and `hsd-book-log` consume captured Signal messages only when explicitly invoked.
+A typed queue is a destination whose name supplies the workflow and the student, so nothing has to be inferred and scheduled unattended runs are safe. Queues are configured per student as `inbox: {kind, queue}` in `students.yaml`. Signal via `signal-sieve` is the implemented adapter (`kind: signal`); the contract is transport-neutral and other adapters are welcome.
 
-General conversation gateways are runtime-adapter concerns. They may invoke Charlotte workflows, including logging, slide generation, planning, and material creation, but they should not replace Signal as the structured capture queue unless that behavior is explicitly designed. Gateways intended for family use should use explicit user/chat allowlists.
+Conversational ingest needs no configuration and works in every runtime. A student with no `inbox` block is a conversational-only student. Runtime chat gateways serve this mode: they deliver conversation, which is not the same thing as a pollable queue with consumed-state, so a gateway does not by itself constitute a typed queue.
+
+Runtimes that support scheduled unattended runs must also provide an **outbound path to the main conversation channel**, so a queue drain can report material it could not place and logs that are waiting on times. Reports never go into the queue itself; writing into a queue that exists to be consumed pollutes it. Gateways intended for family use should use explicit user/chat allowlists.
 
 ## Runtime Requirements
 
@@ -44,9 +46,9 @@ Runtime adapters should start conservative, but normal Charlotte workflows shoul
 - Ordinary conversation and read-only planning can run without special approval.
 - Writing generated artifacts under `curricula/`, `tablet-slides/`, `generated-images/`, `field-trips/`, `.logs/`, or another user-specified output path is allowed when requested.
 - Creating new ad-hoc files, including new spreadsheets or reports, is allowed when requested.
-- Updating canonical records is more sensitive. This includes time-tracking spreadsheets, reading-list spreadsheets, `students.yaml`, `runtime.yaml`, `image-generation.yaml`, and any future durable learner/profile state.
+- Updating canonical records is more sensitive. This includes lesson logs under `lesson-logs/`, time-tracking spreadsheets, reading-list spreadsheets, `students.yaml`, `runtime.yaml`, `image-generation.yaml`, and any future durable learner/profile state.
 - Canonical record updates are allowed when they are the expected action of an explicitly invoked workflow, such as `hsd-time-log` or `hsd-book-log`.
-- `signal-sieve mark-processed` is allowed only after the corresponding Signal messages have been successfully processed by an invoked logging workflow.
+- Marking queue items consumed (for `kind: signal`, `signal-sieve mark-processed`) is allowed only after the corresponding material has been successfully written by an invoked logging workflow.
 - Remote device syncs, including MindFeast slide sync, are allowed when directly requested, whether as part of a skill workflow or as a standalone action.
 - Outside requested workflows/actions, canonical record edits, Signal state changes, destructive shell commands, broad filesystem writes, and credential changes must be blocked or require explicit approval.
 

@@ -1,6 +1,6 @@
 ---
 name: mindfeast-weekly-slides
-description: Review a student's recent homeschool time logs, choose a small set of useful weekly review opportunities, create MindFeast-compatible tablet slides with mindfeast-slide-builder, and optionally trigger the student's MindFeast remote sync endpoint. Use when asked to make weekly learning slides, review slides, lock-screen questions, or MindFeast slides from a week of logged lessons.
+description: Review a student's recent lesson logs, choose a small set of useful weekly review opportunities, create MindFeast-compatible tablet slides with mindfeast-slide-builder, and optionally trigger the student's MindFeast remote sync endpoint. Use when asked to make weekly learning slides, review slides, lock-screen questions, or MindFeast slides from a week of logged lessons.
 ---
 
 # MindFeast Weekly Slides
@@ -9,7 +9,7 @@ Create a small, judgment-driven set of MindFeast slides from a student's week of
 
 This skill orchestrates:
 
-- `hsd-time-log` data already written to the student's time-tracking spreadsheet.
+- The student's lesson logs under `lesson-logs/`, written by `lesson-log`.
 - `mindfeast-slide-builder` for the actual slide packages.
 - MindFeast remote sync via the per-student config in `students.yaml`. The standalone sync contract lives in `mindfeast-slide-sync`.
 
@@ -42,8 +42,19 @@ If MindFeast config is missing, still generate slides when appropriate, but skip
 
 ## Workflow
 
-1. Parse the prompt for student, week/range, sync preference, and any explicitly requested subject focus. Normally infer subject weighting from the time-log rows themselves rather than asking for or assuming a subject focus. If no range is specified, review the seven calendar days ending today, inclusive.
-2. Run the bundled helper from the repo root to collect relevant rows:
+1. Parse the prompt for student, week/range, sync preference, and any explicitly requested subject focus. Normally infer subject weighting from the week's sessions themselves rather than asking for or assuming a subject focus. If no range is specified, review the seven calendar days ending today, inclusive.
+2. Collect the week's lesson logs from the repo root:
+
+```bash
+.venv/bin/python scripts/lesson_log_read.py list \
+  --student <student-slug-or-name> \
+  --from YYYY-MM-DD --to YYYY-MM-DD \
+  --include-section "how it went" --include-section "what comes next"
+```
+
+Lesson logs are the primary source: they carry what was actually covered, how it went, and — through `images.md` — the text of any pages that were photographed. Use `search` or `show` on a session when a summary looks promising and you want the full account or the captured page text.
+
+If the week predates lesson logging and `list` returns nothing, fall back to the time-tracking workbook:
 
 ```bash
 .venv/bin/python skills/mindfeast-weekly-slides/scripts/collect_week.py \
@@ -51,10 +62,10 @@ If MindFeast config is missing, still generate slides when appropriate, but skip
   --week-start YYYY-MM-DD
 ```
 
-Omit `--week-start` to use the seven-day period ending today. The helper outputs JSON grouped from the student's time-tracking workbook, including optional `Notes`/`Note` column values when present.
+Omit `--week-start` to use the seven-day period ending today. That helper outputs JSON grouped from the workbook, including optional `Notes`/`Note` column values when present. Its rows are one-line descriptions, so expect thinner material than a log.
 
-3. When a row references a configured curriculum lesson, use the student's `curricula_dir` and `curricula` map the same way `hsd-time-log` does: find the curriculum whose configured `subject` matches the row's subject, locate the lesson with `lesson_header_pattern`, and read the full matched lesson or covered section when it is available. Do this even when the time-log description is already useful; the curriculum or source material gives better context for choosing and writing slides. If the configured regex misses, do a targeted search in the curriculum file using the lesson number and any distinctive terms from the row. Also read any other lesson material explicitly named in the row when it is available. Skip material lookup only when the curriculum/source is unavailable or the lookup remains ambiguous.
-4. Read the enriched rows as a whole week. Consider subject, lesson description, recovered curriculum material, time spent, notes, and repetition across the week.
+3. Read the curriculum **in addition** to the logs, never instead of them. When a session names a configured curriculum lesson, use the student's `curricula_dir` and `curricula` map: find the curriculum whose configured `subject` matches, locate the lesson with `lesson_header_pattern`, and read the full matched lesson or covered section. Do this even when the log is already rich — the richest possible basis makes the best slides. If the configured regex misses, do a targeted search using the lesson number and any distinctive terms. Also read any other lesson material explicitly named. Skip material lookup only when the source is unavailable or the lookup stays ambiguous.
+4. Read the enriched sessions as a whole week. Consider subject, what was covered, recovered curriculum material, captured page text, observations, time spent, and repetition across the week.
 5. Decide whether slides are warranted. It is valid and sometimes best to create no slides.
 6. Build a slide plan before writing files. Keep the plan small: usually 3-6 slides, hard cap 8 unless the user explicitly asks for more.
 7. Use `mindfeast-slide-builder` to create each planned slide in the student's `tablet_slides_dir`.
@@ -68,16 +79,16 @@ Create slides for durable ideas, weak spots, rich images, memory-worthy facts, a
 
 Prioritize:
 
-- Rows whose `Notes` mention struggle, confusion, retrying, needs practice, missed items, or parent concern.
+- Sessions whose **How it went** mentions struggle, confusion, retrying, needs practice, missed items, or parent concern. This is the single best signal in the whole record.
 - New vocabulary, people, places, works of art, composers, scientific observations, math ideas, scripture, poetry, phonics, and history episodes.
-- Lessons with concrete content in the description.
-- Subjects with notes or dense conceptual work, even if that means several slides from one subject and none from another.
+- Sessions with concrete content in the log or in the captured page text.
+- Subjects with observations or dense conceptual work, even if that means several slides from one subject and none from another.
 
 Skip:
 
 - Empty or very thin weeks.
 - Routine handwriting or drill work with no durable content named.
-- Lessons where the log only says a lesson number and no topic can be recovered from the configured curriculum files.
+- Sessions where nothing specific can be recovered from the log, the captured pages, or the configured curriculum files.
 - Content that would create fake or trivial questions.
 - Weeks where summer break or light review means slides would add noise.
 
@@ -126,7 +137,7 @@ Use the harness's background-command mode when available (for example, `run_in_b
 Summarize:
 
 - Student and week range.
-- Number of log rows reviewed.
+- Number of sessions reviewed, and whether they came from lesson logs or the workbook fallback.
 - Number of slides created, with id, type, subject, and reason.
 - Any notable skipped subjects or rows.
 - Validation result for each slide.

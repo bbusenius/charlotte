@@ -237,8 +237,9 @@ Edge TTS for spoken replies.
 
 OpenClaw defaults are permissive (full shell as the container user). The
 container boundary is the outer wall: writes land only on the mounted content
-roots, profile state, and `CHARLOTTE_HOME_MOUNTS` paths; everything else in
-the container is disposable. Within that boundary, apply the [runtime
+roots (including the durable `lesson-logs/` record), profile state, and
+`CHARLOTTE_HOME_MOUNTS` paths; everything else in the container is disposable.
+Within that boundary, apply the [runtime
 contract](../../docs/runtime-contract.md) safety tiers with OpenClaw's own
 mechanisms as needed:
 

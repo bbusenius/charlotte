@@ -255,6 +255,8 @@ With no arguments, the wrapper runs `hermes chat`.
 
 The wrapper passes `HERMES_UID` and `HERMES_GID` so files written through mounted volumes are owned by the host user. It mounts `~/.hermes-charlotte` to `/opt/data`, mounts `students.yaml` and local `runtime.yaml` / `image-generation.yaml` read-only when present, mounts the ignored Charlotte data roots to `/workspace`, and mounts any configured `CHARLOTTE_HOME_MOUNTS` entries into both `/opt/data/home` and `/opt/data`.
 
+Hermes' native `write_file` tool applies an additional application-level path check beyond ordinary container filesystem permissions. The wrapper sets `HERMES_WRITE_SAFE_ROOT` to `/opt/data` and the specific writable Charlotte content roots under `/workspace`; it does not authorize the whole source tree. When adding a writable content-root mount, add its container path to that list as well.
+
 The wrapper quiets s6 supervisor chatter by default with `S6_VERBOSITY=0` and `S6_LOGGING=0`. To debug container boot, set `CHARLOTTE_HERMES_S6_VERBOSITY=1` or `CHARLOTTE_HERMES_S6_LOGGING=1` in the shell or `.env` before running `runtime/hermes/run.sh`.
 
 Override defaults with `CHARLOTTE_HERMES_IMAGE`, `CHARLOTTE_HERMES_HOME`, or `CHARLOTTE_HOME_MOUNTS`.
@@ -279,7 +281,7 @@ Run the gateway in the foreground:
 runtime/hermes/run.sh gateway run
 ```
 
-The gateway runs inside the Charlotte Hermes container, so `/workspace` paths are visible to the gateway. Generated files should still land under mounted local data roots such as `tablet-slides/`, `generated-images/`, `curricula/`, `field-trips/`, `.backups/`, and `.logs/`.
+The gateway runs inside the Charlotte Hermes container, so `/workspace` paths are visible to the gateway. Durable records and generated files should still land under mounted local data roots such as `lesson-logs/`, `tablet-slides/`, `generated-images/`, `curricula/`, `field-trips/`, `.backups/`, and `.logs/`.
 
 ### Voice Messages
 

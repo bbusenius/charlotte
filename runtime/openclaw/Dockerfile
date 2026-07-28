@@ -49,7 +49,7 @@ COPY . /workspace
 
 RUN set -eux; \
     mkdir -p \
-      /workspace/curricula /workspace/tablet-slides /workspace/generated-images \
+      /workspace/curricula /workspace/lesson-logs /workspace/tablet-slides /workspace/generated-images \
       /workspace/dashboards /workspace/field-trips /workspace/.backups /workspace/.logs \
       /workspace/.agent-state; \
     # OpenClaw's per-agent identity/memory files live in the host profile's

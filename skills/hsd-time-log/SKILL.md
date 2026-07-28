@@ -1,138 +1,129 @@
 ---
 name: hsd-time-log
-description: Process Signal messages from homeschool lesson groups, identify lessons covered, and log time entries to Homeschool-Dashboard-compatible time-tracking spreadsheets configured in students.yaml.
-argument-hint: [child-name]
+description: Project lesson logs into Homeschool-Dashboard-compatible time-tracking spreadsheets configured in students.yaml. Use when the user asks to log homeschool dashboard time, update Homeschool-Dashboard records, or catch the spreadsheets up. Writing the lesson logs themselves is a separate skill (lesson-log).
+argument-hint: "[child-name] [since YYYY-MM-DD]"
 ---
 
 # HSD Time Log
 
-Process unprocessed Signal messages to identify homeschool lessons and log them to Homeschool-Dashboard-compatible time-tracking spreadsheets.
+Fill in the Homeschool-Dashboard spreadsheet rows for sessions that already have
+a lesson log.
+
+The lesson log under `lesson-logs/` is the system of record; a spreadsheet row is
+a one-line receipt of it, and the dashboard renders that row when you hover a
+date. This skill only ever adds missing rows.
 
 ## Usage
 
-- `/hsd-time-log` — process all children
-- `/hsd-time-log <student>` — process only one student's messages
+- `/hsd-time-log` — catch up every student
+- `/hsd-time-log <student>` — one student
+- `/hsd-time-log <student> since <date>` — narrow the range
+
+Runs when the user says "log homeschool dashboard", "log HSD", or asks to bring
+the dashboard spreadsheets up to date. Plain "log time" means writing the lesson
+logs themselves — that is `lesson-log`, not this skill.
+
+This skill is decoupled from capture on purpose. A log missing either start or
+end time needs a conversation before it can be projected, and gap-filling means
+running this later costs nothing.
+
+## Three rules
+
+1. **Gap-fill only.** If a session already has a row, do nothing. Never update,
+   rewrite, or overwrite an existing row — Brad hand-edits these workbooks and
+   those edits must survive. Running this twice writes nothing the second time.
+2. **Only sessions with a lesson log.** Rows with no log behind them are never
+   touched and never counted as missing. Years of pre-log history stay exactly
+   as they are.
+3. **Materials and ISBN are never written.** They describe the curriculum for a
+   whole course and are set by hand at the start of the year. Writing them per
+   row would fill the dashboard's curricula table with repeats.
 
 ## Workflow
 
-### Step 0: Load student registry
-
-Read `students.yaml` at the repo root. This is the single source of truth for all per-student configuration. From it, extract for each student:
-
-- `display_name` — used for backup directory names and summaries
-- `signal_group_alias` — the group name passed to signal-sieve
-- `aliases` — alternate names the user may supply as `$ARGUMENTS`
-- `time_tracking_spreadsheet` — path to the xlsx file (expand `~`)
-- `curricula_dir` — base directory for curriculum markdown files (relative to repo root)
-- `curricula` — map of filename → `{ subject, lesson_header_pattern, lesson_title_on_next_line }`. An empty map means no curricula are available for this student.
-- `subjects` — valid sheet names for this student
-
-Also read the top-level `teacher:` field — this is the fallback name written to the Teacher column if a message has no `sender_alias`.
-
-Use the project-local console commands `.venv/bin/signal-sieve` and `.venv/bin/xlsx-append`. These are installed by `.venv/bin/python -m pip install -e .`.
-
-If `$ARGUMENTS` names a child (by slug or any alias), restrict processing to that student. Otherwise process all students.
-
-### Step 1: Fetch messages
-
-Do not derive the Signal group name from the display name or user capitalization. Always use the exact `signal_group_alias` value from `students.yaml`; aliases are case-sensitive.
-
-For each student to process, run:
+### Step 1: Find the gaps
 
 ```bash
-.venv/bin/signal-sieve list --group <signal_group_alias>
+.venv/bin/python scripts/hsd_project.py gaps --student <student> \
+  [--from YYYY-MM-DD] [--to YYYY-MM-DD]
 ```
 
-If there are no unprocessed messages for any student, tell the user and stop.
+Resolve the student from `students.yaml` by slug, display name, or alias; never
+hard-code names or paths. With no student argument, run this for each student in
+the registry.
 
-### Step 2: Analyze messages
+The result gives you:
 
-Look at ALL messages for a student together to understand the full context. Messages may arrive as:
-- Text describing what was covered (e.g. "Math lesson 45, 9:00-9:45")
-- Screenshots of lesson pages or completed work
-- A mix of text and images for the same lesson
-- Multiple messages about the same lesson session
+- `pending` — logged sessions with times and no row yet. These are the work.
+- `waiting_on_times` — logs missing a usable start or end time. They cannot be
+  projected; Homeschool-Dashboard requires both. Report them so the user can
+  supply the times, then they will appear as `pending` next run.
+- `unknown_subject` — a log whose subject has no matching sheet. Report it;
+  do not invent a sheet.
+- `already_logged` — the count that needed nothing.
+- `hsd_enabled` — if `false`, the user has turned off `logging.hsd` in
+  `runtime.yaml`. Say so and stop.
 
-For each message with image attachments, use a vision-capable runtime tool to analyze the image. Grok Vision MCP is the preferred implementation when available, but an equivalent runtime vision tool is acceptable. The attachment `path` field in the JSON gives the full file path to pass to the vision tool. **Important**: Include in your vision prompt that the image may be rotated or sideways, and to try reading it in all orientations before determining lesson numbers and titles.
+Scope is the student's current grade directory. A previous grade's logs belong
+to a previous grade's workbook.
 
-From the messages, extract:
-- **Subject** (must match one of the student's `subjects` exactly — case-sensitive)
-- **Lesson number** (if identifiable)
-- **Start time and end time** — ALWAYS use the times stated by the sender in the message text. Never use the message timestamp for start/end times.
-- **Date** — use the date from the message `timestamp` field (convert from milliseconds epoch to local date)
-- **Teacher** — use `sender_alias` from the message if present; fall back to `teacher` from students.yaml. If the message indicates the student worked independently (e.g. "did this on her own", "worked independently", "she did this herself"), set teacher to `""` regardless of sender_alias.
+If nothing is pending for anyone, say so and stop.
 
-### Step 3: Curriculum lookup and cross-check
+### Step 2: Read each pending log
 
-If the student's `curricula` map is non-empty and a lesson number and subject are identified, find the curriculum file whose `subject` matches, then look up the lesson using its `lesson_header_pattern`:
+Read the session's `log.md`. You need two things from it:
 
-```bash
-grep -n "<lesson_header_pattern with number substituted>" <curricula_dir>/<filename>
-```
+- **Description** — one sentence, the row the dashboard will show when the user
+  hovers that date. Lead with the lesson number and title when there is one, then
+  what was actually covered. For example: *"Lesson 45: Comparing Rounded Amounts
+  with Actual Amounts — rounding to the nearest dollar and comparing estimates to
+  exact prices."* Draw it from the log's **What we did** section. Keep it to one
+  sentence.
+- **Notes** — the observation, drawn from the log's **How it went** section.
+  Condense to a phrase or short sentence: *"Confused 6s and 9s; wanted to redo
+  the last four."* Skip it when the log records nothing worth carrying over.
 
-Then read the content around that line to understand what the lesson covers. If `lesson_title_on_next_line` is `true` for that file, the lesson title is on the line immediately following the header match.
+Do not re-derive either from curriculum files or images. The log already did that
+work; this step is compression, not analysis.
 
-If the configured lesson-header regex misses, do not stop immediately. Curriculum markdown is often produced from OCR/PDF extraction and may contain broken spacing or malformed headings. Fall back to a targeted text search in the same curriculum file using the lesson number, visible title/topic, book/chapter names, assessment label, or distinctive terms from the screenshot. If the fallback search finds a clear match, use it and note the regex miss only if it matters to the final summary. If the fallback search is ambiguous, skip that entry rather than guessing.
+### Step 3: Back up before the first write
 
-**Cross-check**: Compare the topic the vision tool described from the image against the curriculum title for the looked-up lesson number. If they don't match (e.g. the vision tool described "Highway Themes" but the curriculum says "Adjectives and Adverbs"), the lesson number was likely misread. In that case:
-1. Search the curriculum file for a lesson whose title better matches what the vision tool described.
-2. If a better match is found, use that lesson number instead.
-3. If no match is found, flag the entry in the summary as uncertain and still log it using the vision-derived description (not the mismatched curriculum title).
-
-Use the confirmed lesson info to write the description for the spreadsheet entry.
-
-If the student's `curricula` map is empty, skip this step — write the description based on message context alone.
-
-### Step 4: Back up spreadsheets
-
-Before making any edits, copy each spreadsheet that will be modified.
+Once per workbook per invocation, before any row is written:
 
 ```bash
 mkdir -p .backups/<display_name>/
-```
-
-```bash
 cp "<time_tracking_spreadsheet>" ".backups/<display_name>/<YYYYMMDD-HHMMSS>-<filename>"
 ```
 
-Only back up once per spreadsheet per invocation, even if logging multiple entries.
+### Step 4: Append
 
-### Step 5: Log entries
-
-For each lesson identified, append a row to the spreadsheet using the `teacher` value read from students.yaml:
+One call per session:
 
 ```bash
-.venv/bin/xlsx-append "<time_tracking_spreadsheet>" "<Sheet Name>" "<Date>" "<Start Time>" "<End Time>" "<Description>" "<teacher>" --json
+.venv/bin/python scripts/hsd_project.py append --student <student> \
+  --log <session-directory> \
+  --description "<one sentence>" \
+  [--notes "<observation>"]
 ```
 
-Column order: Date, Start Time, End Time, Description, Teacher
+Date, start time, end time, and teacher come from the log's frontmatter — do not
+pass them and do not retype them. The script places every value by header name,
+so `Notes` lands in the right column on sheets that have one and is skipped
+silently on sheets that do not (`notes_skipped_no_column` in the result says
+when that happened). It also writes a hidden `Lesson Log ID` column based on the
+session path. That stable ID prevents a corrected start time from making a
+second row; older rows without IDs retain the date/start fallback. The script
+re-checks for an existing row immediately before writing and returns
+`written: false` rather than creating a duplicate.
 
-- **Date**: format as `M/D/YYYY` (no leading zeros on month or day, e.g. `2/7/2026`, `3/2/2026`). Plain text, not a date field.
-- **Start Time / End Time**: format as 12-hour clock with AM/PM (e.g. `9:00 AM`, `2:15 PM`). The parent may write times informally (e.g. "1-2", "2 o'clock to 2:10", "9-9:45"). Normalize these to proper times. Infer AM/PM from context — school hours are roughly 8 AM to 4 PM. A time like "2" or "2:10" means PM. A time like "9" or "9:45" means AM.
-- **Description**: a concise summary of the lesson. If curriculum was looked up, include the lesson number, title, and a brief note on what was covered (e.g. "Lesson 45: Comparing Rounded Amounts with Actual Amounts — rounding to nearest dollar and comparing estimates to exact prices"). Keep it to one sentence. If no curriculum is available, describe based on message context.
-- **Teacher**: use the teacher value derived in Step 2 (sender_alias, fallback, or `""` for independent work)
+## Summary
 
-### Step 6: Mark processed
+Report:
 
-After all entries are logged successfully, mark all handled message IDs as processed in one call:
+- Rows written per student, with date, subject, and lesson
+- Sessions waiting on times, named specifically, since those need the user
+- Any unknown subjects
+- How many sessions already had rows
+- Any sheet where a note was dropped for lack of a Notes column
 
-```bash
-.venv/bin/signal-sieve mark-processed <id1> <id2> <id3> ...
-```
-
-### Step 7: Summary
-
-Output a summary of what was logged:
-- How many entries per child
-- Subject, lesson, and time for each entry
-- Any messages that couldn't be processed (and why)
-
-## Important notes
-
-- The sender's stated times are authoritative. Never substitute message timestamps for lesson times.
-- Multiple messages may relate to the same lesson — group them logically before logging.
-- If you cannot determine the subject or times from a message, skip it and include it in the summary as unprocessed. Do NOT mark it as processed.
-- If a message is clearly not about a lesson (e.g. casual conversation), mark it as processed and skip it.
-- The spreadsheet sheet names must match exactly (case-sensitive) — use the student's `subjects` list from students.yaml.
-- Always back up before writing.
-- Never hard-code student names, paths, subjects, or the teacher name — derive everything from students.yaml.
+Keep workbook paths out of the summary unless the user asks for provenance.

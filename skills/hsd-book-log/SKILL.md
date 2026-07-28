@@ -21,7 +21,7 @@ Read `students.yaml` at the repo root. This is the single source of truth for al
 
 - `display_name` — used for backup directory names and summaries
 - `aliases` — alternate names the user may supply as `$ARGUMENTS`
-- `reading.signal_group_alias` — the group name passed to signal-sieve for book messages
+- `reading.inbox` — the queue book messages arrive in: `kind` names the adapter (`signal` uses signal-sieve) and `queue` is the queue name that adapter knows. Older registries spell this `reading.signal_group_alias`; treat that as `kind: signal` with `queue` set to its value.
 - `reading.spreadsheet` — path to the reading list xlsx file (expand `~`)
 - `reading.read_by_self_sheet_index` — sheet index for books the student reads themselves
 - `reading.read_to_sheet_index` — sheet index for books read to the student
@@ -33,9 +33,9 @@ If `$ARGUMENTS` names a child (by slug or any alias), restrict processing to tha
 
 ### Step 1: Fetch messages
 
-Do not derive the Signal group name from the display name or user capitalization. Always use the exact `reading.signal_group_alias` value from `students.yaml`; aliases are case-sensitive.
+Do not derive the queue name from the display name or user capitalization. Always use the exact `reading.inbox.queue` value from `students.yaml` (or the legacy `reading.signal_group_alias`); queue names are case-sensitive.
 
-Run `.venv/bin/signal-sieve list --group <reading.signal_group_alias>` to get unprocessed messages as JSON. If `$ARGUMENTS` specifies a child, only fetch that group; otherwise fetch both.
+For `kind: signal`, run `.venv/bin/signal-sieve list --group <reading.inbox.queue>` to get unprocessed messages as JSON. If `$ARGUMENTS` specifies a child, only fetch that queue; otherwise fetch both. A student with no `reading.inbox` has no book queue — skip them here; their books are logged from what the user tells you directly.
 
 If there are no unprocessed messages, tell the user and stop.
 
@@ -44,7 +44,7 @@ If there are no unprocessed messages, tell the user and stop.
 For each message, you need: **title**, and optionally **author** and a **language hint**.
 
 - **Text-only message**: the text is typically just the book title. It may occasionally include author ("Frog and Toad Are Friends by Arnold Lobel"), language cues ("this is a Spanish book"), or context flags — parse these out.
-- **Image attachment**: use a vision-capable runtime tool to read the cover. Grok Vision MCP is the preferred implementation when available, but an equivalent runtime vision tool is acceptable. Prompt it to extract **title, author, and apparent language** from the cover — and note if the image shows an audiobook/app UI (Audible, Libby, etc.) rather than a physical book. Include in the prompt that the image may be rotated; try all orientations. If trusted runtime vision is unavailable or fails, do **not** load ad-hoc fallback skills, call subscription chat APIs directly, or ask a generic multimodal model to guess from the image. Skip that message and leave it unprocessed so it can be retried later.
+- **Image attachment**: use the active runtime's configured vision capability to read the cover. The runtime decides whether that means the main model's native vision or an auxiliary vision model; do not select or prefer a provider-specific MCP because it happens to be installed. Prompt it to extract **title, author, and apparent language** from the cover — and note if the image shows an audiobook/app UI (Audible, Libby, etc.) rather than a physical book. Include in the prompt that the image may be rotated; try all orientations. If trusted runtime vision is unavailable or fails, do **not** load ad-hoc fallback skills or call provider-specific chat APIs directly. Skip that message and leave it unprocessed so it can be retried later.
 - **Text + image**: combine. Text context (e.g. "this was an audiobook") overlays flags onto whatever the image identifies.
 
 Cover text beats API data when both are present — the cover is ground truth for that specific edition.

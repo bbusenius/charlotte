@@ -53,9 +53,27 @@ students:
       - Handwriting
       - Art
     time_tracking_spreadsheet: ~/Documents/Homeschool/Alice/4th Grade/Time-4.xlsx
-    signal_group_alias: alice
+    # How lesson material reaches Charlotte for this student. Optional — a
+    # student with no `inbox` has no queue, and you simply tell Charlotte what
+    # was covered in conversation instead.
+    #
+    # A queue is worth configuring because the queue name itself says which
+    # workflow and which student the material belongs to. Charlotte does not
+    # have to infer any of that, your messages can be terse, and scheduled
+    # unattended runs are safe.
+    #
+    #   kind:  which adapter reads the queue. "signal" uses signal-sieve.
+    #   queue: the queue name as that adapter knows it. For kind: signal this
+    #          is the signal-sieve group alias (case-sensitive), exactly as it
+    #          appears in `signal-sieve groups`.
+    inbox:
+      kind: signal
+      queue: alice
     reading:
-      signal_group_alias: alice-books
+      # Books go in their own queue, separate from lessons.
+      inbox:
+        kind: signal
+        queue: alice-books
       spreadsheet: ~/Documents/Homeschool/Alice/4th Grade/Reading List-4.xlsx
       read_by_self_sheet_index: 0
       read_to_sheet_index: 1
@@ -76,16 +94,16 @@ students:
       - Handwriting
       - Math
     time_tracking_spreadsheet: ~/Documents/Homeschool/Charlie/Preschool/Time-P.xlsx
-    signal_group_alias: charlie
+    # No `inbox` here on purpose: Charlie has no queue, so his lessons and
+    # books are logged from what you tell Charlotte in conversation. That is a
+    # normal configuration — see docs/ingest-contract.md. Mixing the two styles
+    # across students in one family is fine.
     reading:
-      signal_group_alias: charlie-books
       spreadsheet: ~/Documents/Homeschool/Charlie/Preschool/Reading List-P.xlsx
       read_by_self_sheet_index: 0
       read_to_sheet_index: 1
       default_sheet: read_to
 
-# Default teacher recorded on time-tracking entries (used by hsd-time-log).
-# TRANSITIONAL: to be replaced during a future refactor with a value passed
-# through from signal-sieve (respecting the message source, including sender
-# aliases). Leaving a default here until then.
+# Fallback teacher name written into a lesson log when the source material has
+# no sender alias. hsd-time-log later projects that value into the time workbook.
 teacher: Parent

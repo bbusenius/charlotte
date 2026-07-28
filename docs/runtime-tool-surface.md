@@ -16,7 +16,8 @@ Charlotte skills assume a small set of runtime capabilities. Runtime adapters ca
 | Spreadsheet append | `hsd-time-log`, `hsd-book-log` | `xlsx-append` from `pyproject.toml` |
 | Spreadsheet read | `hsd-records-read`, `mindfeast-weekly-slides` | `openpyxl` from `pyproject.toml` plus mounted workbook paths |
 | Dashboard HTML generation | `hsd-dashboard-show` | `homeschool_dashboard` from `pyproject.toml` plus mounted workbook paths |
-| Signal message state | `hsd-time-log`, `hsd-book-log` | `signal-sieve` CLI plus configured Signal capture state |
+| Typed queue state | `lesson-log`, `hsd-book-log` | The adapter named by `inbox.kind`; `signal` uses the `signal-sieve` CLI plus configured Signal capture state. Optional — conversational ingest needs none of it. See [ingest-contract.md](ingest-contract.md). |
+| Outbound report on unattended runs | `lesson-log` | The runtime's main conversation channel, so a scheduled queue drain can say what it could not log. Never the queue itself. |
 | Voice-note transcription | Chat-gateway voice input | `scripts/transcribe_media.py` (faster-whisper from `pyproject.toml`); Hermes uses its native `stt` layer instead, OpenClaw calls the script via its CLI transcription hook |
 | MindFeast remote control | `mindfeast-slide-sync`, `mindfeast-slide-trigger`, `mindfeast-weekly-slides` | HTTP POST from the runtime network |
 
@@ -26,7 +27,7 @@ Charlotte skills assume a small set of runtime capabilities. Runtime adapters ca
 | --- | --- | --- |
 | Google Maps places/geocoding/directions | `mason-field-trip-planner` | Google Maps MCP or equivalent runtime tools |
 | Web search/fetch | `mason-field-trip-planner`, book lookup fallback, general research | Runtime web tools or equivalent MCP |
-| Vision over local images | `hsd-time-log`, `hsd-book-log` | Grok Vision MCP or equivalent vision-capable runtime tool |
+| Vision over local images | `lesson-log`, `hsd-book-log` | Active runtime's configured vision capability |
 | Live search fallback | `hsd-book-log` | Grok live search MCP or equivalent search-capable runtime tool |
 | Runtime-native image fallback | `mason-materials-builder`, `mindfeast-slide-builder` | Optional runtime image tool used only after `charlotte_image.py` exits `2` |
 
@@ -42,7 +43,7 @@ The single-container Hermes adapter currently provisions the local CLI/toolchain
 - Supports configurable `~/...` host data mounts through `CHARLOTTE_HOME_MOUNTS`.
 - Can consume host-owned `signal-sieve` state when the Signal config/database/attachments are mounted.
 
-Hermes does not currently provision container-owned Signal capture. It also does not yet define a committed MCP server configuration for Google Maps or Grok tools. Those capabilities must be provided by the active Hermes toolset or treated as unavailable by the skill.
+Hermes does not currently provision container-owned Signal capture. Its `vision_analyze` tool, when the `vision` toolset is enabled, routes images through native main-model vision when supported and otherwise through `auxiliary.vision`. The adapter does not define a committed MCP server configuration for Google Maps or Grok tools; provider-specific capabilities must be supplied by the active Hermes toolset or treated as unavailable by the skill.
 
 For stdio MCP servers, Hermes does not pass through arbitrary environment variables. MCP credentials must be configured in the server's own `env` mapping or provided by an equivalent remote service.
 

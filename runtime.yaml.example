@@ -30,6 +30,31 @@ pedagogy:
   # route. If fast-route results look off, add that section.
   aesthetics: skills/mason-aesthetics
 
+logging:
+  # How Charlotte records what was taught. These are global settings; they are
+  # not configurable per student.
+  #
+  # lesson_log — the primary record: one directory per session under
+  #   lesson-logs/<student>/<grade>/<year>/<month>/<day>/<subject>-<slug>/
+  #   holding the raw photos and voice notes, their extracted text, and a
+  #   written log of what was taught and how it went. This is the system of
+  #   record.
+  #
+  # time — whether lessons carry clock times. Families who track hours (for
+  #   state reporting or their own records) want this on. Families who only
+  #   care what was covered can set it false; logs are then dated but have no
+  #   start/end times.
+  #
+  # hsd — additionally write a row into the student's Homeschool-Dashboard
+  #   time-tracking spreadsheet for each logged session. This is a projection
+  #   of the lesson log, not a separate record, and it requires time: true
+  #   because Homeschool-Dashboard needs start and end times. It also requires
+  #   lesson_log: true because there is no parallel direct-to-spreadsheet path.
+  #   Setting hsd: true with either prerequisite false is a configuration error.
+  lesson_log: true
+  time: true
+  hsd: true
+
 tools:
   # Used by scripts/lexile/lookup.py. Optional; if absent or not executable,
   # Charlotte searches common Chrome/Chromium executable names in the runtime.

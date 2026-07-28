@@ -10,7 +10,7 @@ full contract; these are the container-specific notes.
 - Deliver files to chat with `MEDIA:<absolute path>` — absolute paths only;
   relative `MEDIA:` paths are dropped silently by some channels.
 - Writable content roots (bind mounts): `/workspace/curricula`,
-  `/workspace/tablet-slides`, `/workspace/generated-images`,
+  `/workspace/lesson-logs`, `/workspace/tablet-slides`, `/workspace/generated-images`,
   `/workspace/field-trips`, `/workspace/dashboards`, `/workspace/.backups`,
   `/workspace/.logs`. Other paths under `/workspace` are baked into the image
   and writes there do not survive the container.
