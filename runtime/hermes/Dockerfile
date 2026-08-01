@@ -1,4 +1,5 @@
-FROM nousresearch/hermes-agent:latest
+# FROM nousresearch/hermes-agent:latest
+FROM nousresearch/hermes-agent:v2026.7.20@sha256:f7b35053268f532f98955195c909f15a230470fbcbdacaa9fdecb95707dad04a
 
 # The offline field-trip builder needs --embed-resources (pandoc >= 2.19);
 # distro pandoc can be older, so install a pinned upstream release.
@@ -28,7 +29,7 @@ RUN set -eux; \
     curl -fsSL "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-linux-${arch}.tar.gz" \
       | tar -xz -C /opt; \
     ln -sf "/opt/pandoc-${PANDOC_VERSION}/bin/pandoc" /usr/local/bin/pandoc; \
-    uv pip install --python /opt/hermes/.venv/bin/python "faster-whisper>=1.1" "ddgs>=9.0" "edge-tts>=7.0"; \
+    uv pip install --python /opt/hermes/.venv/bin/python "faster-whisper>=1.1" "ddgs>=9.0" "edge-tts==7.2.7"; \
     uv venv /workspace/.venv --python /opt/hermes/.venv/bin/python; \
     uv pip install --python /workspace/.venv/bin/python -e /workspace; \
     chown -R hermes:hermes /workspace/.venv
