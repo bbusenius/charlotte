@@ -15,6 +15,7 @@ dashboards/**
 .backups/
 .logs/
 .obsidian/
+.state/
 
 # Agent scratch space for working copies (see AGENTS.md, Other notes)
 .scratch/

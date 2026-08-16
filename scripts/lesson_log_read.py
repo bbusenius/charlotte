@@ -98,8 +98,10 @@ def summarize(
         "path": str(session),
         "date": frontmatter.get("date"),
         "subject": frontmatter.get("subject"),
+        "curriculum": lesson.get("curriculum"),
         "lesson_number": lesson.get("number"),
         "lesson_title": lesson.get("title"),
+        "source": lesson.get("source"),
         # The real pages in the real book — what "what page are we on?" means.
         "pages": lesson.get("pages"),
         "teacher": frontmatter.get("teacher"),

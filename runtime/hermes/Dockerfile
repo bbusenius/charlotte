@@ -37,8 +37,8 @@ RUN set -eux; \
 COPY --chown=hermes:hermes . /workspace
 
 RUN set -eux; \
-    mkdir -p /workspace/curricula /workspace/lesson-logs /workspace/tablet-slides /workspace/generated-images /workspace/dashboards /workspace/field-trips /workspace/.backups /workspace/.logs /workspace/.scratch; \
-    chown -R hermes:hermes /workspace/curricula /workspace/lesson-logs /workspace/tablet-slides /workspace/generated-images /workspace/dashboards /workspace/field-trips /workspace/.backups /workspace/.logs /workspace/.scratch
+    mkdir -p /workspace/curricula /workspace/lesson-logs /workspace/tablet-slides /workspace/generated-images /workspace/dashboards /workspace/field-trips /workspace/.backups /workspace/.logs /workspace/.state /workspace/.scratch; \
+    chown -R hermes:hermes /workspace/curricula /workspace/lesson-logs /workspace/tablet-slides /workspace/generated-images /workspace/dashboards /workspace/field-trips /workspace/.backups /workspace/.logs /workspace/.state /workspace/.scratch
 
 ENV PATH="/workspace/.venv/bin:${PATH}" \
     PYTHONUNBUFFERED="1"

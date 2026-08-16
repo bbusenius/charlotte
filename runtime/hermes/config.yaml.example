@@ -10,9 +10,11 @@ custom_providers:
     model: "minimax/minimax-m2.7"
     api_mode: "chat_completions"
 
-# Keep image understanding off the main NanoGPT text route. `vision_analyze`
-# uses this auxiliary route and reads GEMINI_API_KEY/GOOGLE_API_KEY from the
-# runtime environment without exposing the secret to terminal subprocesses.
+# Supply image understanding when the main model is text-only. With
+# `agent.image_input_mode: auto`, a vision-capable main model sees the pixels
+# directly and this auxiliary route is only the fallback. The fallback reads
+# GEMINI_API_KEY/GOOGLE_API_KEY from the runtime environment without exposing
+# the secret to terminal subprocesses.
 auxiliary:
   vision:
     provider: "gemini"
@@ -75,11 +77,12 @@ skills:
 
 platform_toolsets:
   cli: [hermes-cli, delegation]
-  telegram: [terminal, file, web, vision, skills, todo, cronjob, delegation]
-  discord: [hermes-discord, terminal, file, web, vision, skills, todo, cronjob, delegation]
+  telegram: [terminal, file, web, vision, tts, skills, todo, cronjob, delegation]
+  discord: [hermes-discord, terminal, file, web, vision, tts, skills, todo, cronjob, delegation]
 
 discord:
   require_mention: false
 
 agent:
   max_turns: 60
+  image_input_mode: auto

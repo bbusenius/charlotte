@@ -239,7 +239,7 @@ tz="${CHARLOTTE_TZ:-${env_tz:-}}"
 # Hermes' native write_file tool rejects paths outside HERMES_WRITE_SAFE_ROOT.
 # Keep the workspace source tree protected while allowing the mounted Charlotte
 # content roots and ephemeral workflow scratch space.
-hermes_write_safe_root="/opt/data:/workspace/curricula:/workspace/lesson-logs:/workspace/tablet-slides:/workspace/field-trips:/workspace/generated-images:/workspace/dashboards:/workspace/.backups:/workspace/.logs:/workspace/.scratch"
+hermes_write_safe_root="/opt/data:/workspace/curricula:/workspace/lesson-logs:/workspace/tablet-slides:/workspace/field-trips:/workspace/generated-images:/workspace/dashboards:/workspace/.backups:/workspace/.logs:/workspace/.state:/workspace/.scratch"
 if [ -z "$tz" ]; then
   tz="$(detect_timezone || true)"
 fi
@@ -262,7 +262,9 @@ mkdir -p \
   "$repo_root/generated-images" \
   "$repo_root/dashboards" \
   "$repo_root/.backups" \
-  "$repo_root/.logs"
+  "$repo_root/.logs" \
+  "$repo_root/.state" \
+  "$repo_root/.scratch"
 
 base_docker_args=(--rm)
 
@@ -296,6 +298,8 @@ base_docker_args+=(
   -v "$repo_root/dashboards:/workspace/dashboards"
   -v "$repo_root/.backups:/workspace/.backups"
   -v "$repo_root/.logs:/workspace/.logs"
+  -v "$repo_root/.state:/workspace/.state"
+  -v "$repo_root/.scratch:/workspace/.scratch"
 )
 
 if [ -f "$repo_root/runtime.yaml" ]; then

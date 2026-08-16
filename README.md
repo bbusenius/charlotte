@@ -139,6 +139,10 @@ Material types include printable worksheets, copywork pages, flashcards, narrati
 
 `mason-aesthetics` and `mason-print-design` are internal peer skills — invoked *by* creation skills such as `mason-materials-builder`, not directly by the user.
 
+### AO picture study (`/ao-picture-study`)
+
+Prepares the next AmblesideOnline artist-rotation picture study for a configured student. The skill parses AO's current year/term schedule, advances from a minimal per-student last-created cursor, finds the actual artwork with Wikimedia Commons as the first source, and requires the environment's default image-understanding capability to inspect the artwork itself. It also requires at least one museum, archive, scholarly, or equivalent tier-1/2 anchor source for the narration; discovery sources such as Wikipedia cannot satisfy that gate. It persists the artwork and finished narration as a reusable individual study linked from the student's configured AO curriculum entrypoint. It creates a short grade-appropriate single-narrator audio study with the environment's available TTS capability, packages the artwork, audio, and a two-line title/artist/date label as an informational MindFeast slide, validates and syncs it, selects that exact slide as next, and only then advances the cursor. Lesson logs remain independent until the study is actually taught.
+
 ### MindFeast weekly slides (`/mindfeast-weekly-slides`)
 
 Generates a small weekly review set for the MindFeast Android lock-screen app from a student's time-tracking spreadsheet. Given a student and optional week, the skill:
@@ -164,12 +168,12 @@ Triggers a configured tablet to show a MindFeast slide now. Given a student, it 
 
 ## Student registry
 
-Per-student metadata lives in `students.yaml` at the repo root. This is the single source of truth for display name, grade, aliases, curriculum files (with lesson-header regex), subjects, time-tracking spreadsheet path, tablet slide directory, MindFeast remote sync config, the optional capture `inbox`, and reading list config (spreadsheet path, sheet indices, its own optional `inbox`). Skills read from it rather than hard-coding student data, so the repo stays portable — another family can ship their own `students.yaml`.
+Per-student metadata lives in `students.yaml` at the repo root. This is the single source of truth for display name, grade, aliases, concrete curriculum entrypoint files (with optional identity, aliases, and lesson-header regex), subjects, time-tracking spreadsheet path, tablet slide directory, MindFeast remote sync config, the optional capture `inbox`, and reading list config (spreadsheet path, sheet indices, its own optional `inbox`). Skills read from it rather than hard-coding student data, so the repo stays portable — another family can ship their own `students.yaml`.
 
 Adding a student:
 
 1. Add an entry under `students:` in `students.yaml`
-2. Put any third-party curriculum markdown under `curricula/third-party/<slug>/<filename>.md` and list that relative path in the student's `curricula` map
+2. Put curriculum content under `curricula/` (`curricula/third-party/` for purchased/imported material) and list its concrete lookup entrypoint in the student's `curricula` map
 3. Skills that need the metadata will pick it up automatically
 
 MindFeast sync is configured per student:
@@ -480,6 +484,8 @@ From a skill-aware harness, while in the project directory:
 /mindfeast-weekly-slides <student> --week-start 2026-05-18 # generate from a specific week
 /mindfeast-weekly-slides <student> --no-sync              # create/validate slides without tablet sync
 
+/ao-picture-study <student>                               # prepare, sync, and select the next AO study
+
 /mindfeast-slide-sync <student>                           # sync existing slides for one student
 /mindfeast-slide-sync --all                               # sync every configured tablet
 /mindfeast-slide-sync <student> --dry-run                 # validate sync config without POSTing
@@ -495,6 +501,7 @@ Examples:
 - `/mason-materials-builder A copywork page for a mid-elementary student on a Robert Louis Stevenson couplet, with a small pen-and-ink vignette at the top.`
 - `/mason-materials-builder A set of six picture-study cards for monarch butterfly life stages, tablet-first, watercolor register.`
 - `/mindfeast-weekly-slides <student> for this week, but don't sync yet.`
+- `/ao-picture-study Make <student>'s next AO picture study.`
 - `/mindfeast-slide-sync <student>`
 - `/mindfeast-slide-trigger <student>`
 
@@ -517,6 +524,10 @@ Examples:
 | `skills/mindfeast-slide-trigger/scripts/trigger.py` | Triggers a configured MindFeast tablet to show a slide through the per-student remote endpoint in `students.yaml` |
 | `skills/mindfeast-slide-builder/scripts/make_slide.py` | Creates a MindFeast slide folder with `slide.md` and optional copied media |
 | `skills/mindfeast-slide-builder/scripts/validate_slide.py` | Validates MindFeast slide folders before delivery |
+| `skills/ao-picture-study/scripts/rotation.py` | Parses AO's artist rotation and maintains the last-created cursor |
+| `skills/ao-picture-study/scripts/write_study.py` | Persists an exact AO study and artwork and updates its curriculum index idempotently |
+| `skills/ao-picture-study/scripts/select_slide.py` | Selects an exact synced MindFeast slide as next without triggering it |
+| `scripts/curriculum_resolve.py` | Resolves a configured curriculum by id, alias, path, or unique subject without guessing among overlaps |
 
 Local one-off conversion scripts for paid curriculum imports live in ignored `scripts/local/` and are not part of the reusable project surface.
 
@@ -546,6 +557,7 @@ charlotte/
 │   ├── mason-curriculum-builder/  # Charlotte Mason curriculum authoring skill
 │   ├── mason-field-trip-planner/  # Charlotte Mason field trip planning skill
 │   ├── mason-materials-builder/   # Charlotte Mason material creation skill
+│   ├── ao-picture-study/    # next AO artwork + narrated MindFeast picture study
 │   ├── mindfeast-weekly-slides/ # weekly MindFeast slides from lesson logs (workbook fallback)
 │   ├── mindfeast-slide-sync/ # sync existing MindFeast slides to tablets
 │   ├── mindfeast-slide-trigger/ # trigger a MindFeast tablet slide remotely

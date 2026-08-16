@@ -190,7 +190,13 @@ def stub_log(student_slug: str, student: dict[str, Any], on_date: date_cls, subj
         "date": on_date.isoformat(),
         "subject": subject,
         "class": None,
-        "lesson": {"number": None, "title": None, "source": None, "pages": None},
+        "lesson": {
+            "curriculum": None,
+            "number": None,
+            "title": None,
+            "source": None,
+            "pages": None,
+        },
         "teacher": "",
         "concepts": [],
     }

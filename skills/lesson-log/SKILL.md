@@ -138,16 +138,33 @@ other children took part.
 
 ### Step 3: Look up the curriculum
 
-When the student has a non-empty `curricula` map and a lesson number and subject
-are identified, find the curriculum whose configured `subject` matches, then
-locate the lesson with its `lesson_header_pattern`:
+When the student has a non-empty `curricula` map and the material identifies a
+curriculum, resolve its configured file entrypoint with the shared helper:
+
+```bash
+.venv/bin/python scripts/curriculum_resolve.py \
+  --student <student> --curriculum <id-alias-or-configured-path>
+```
+
+When only the subject is known, use `--subject <subject>`. Subject fallback is
+valid only when exactly one configured curriculum matches; never choose the
+first of several curricula with the same subject.
+
+Treat zero configured curricula matching the subject as normal. Continue from
+messages, captured material, and observations with `lesson.curriculum` and
+`lesson.source` set to null. Absence or ambiguity affects only curriculum
+enrichment, never whether the lesson is logged.
+
+If the entrypoint itself contains the lesson, locate it with the configured
+`lesson_header_pattern`:
 
 ```bash
 grep -n "<pattern with the number substituted>" <curricula_dir>/<filename>
 ```
 
 Read around the match. When `lesson_title_on_next_line` is `true`, the title is
-the following line.
+the following line. If the entrypoint is an index linking individual lessons,
+follow the clear title/number match and read that exact linked file.
 
 If the configured regex misses, do not give up — curriculum markdown often comes
 from OCR and has broken spacing or malformed headings. Search the same file for
@@ -303,6 +320,7 @@ end_time: "10:05 AM"
 subject: Science
 class: null
 lesson:
+  curriculum: science-3
   number: 12
   title: "Mapping a Plot"
   source: curricula/third-party/science-3/Science-3.md
@@ -346,7 +364,11 @@ Frontmatter rules:
   `logging.time` is `false`. Absence is meaningful: a log with no times is one
   that cannot be projected into Homeschool-Dashboard yet.
 - `class` is for a generated curriculum this session belongs to; otherwise null.
-- `lesson.source` is the curriculum file path when one exists, otherwise null.
+- `lesson.curriculum` is the stable configured curriculum `id` when one exists,
+  otherwise null. Older configured entries derive an identity from the
+  entrypoint filename or its parent directory.
+- `lesson.source` is the exact lesson or chapter file path when one exists,
+  otherwise null. For a linked curriculum this is the leaf file, not its index.
 - **`lesson.pages` is where the child actually is in the book** — the printed
   page numbers, as a string like `"47-48"` or `"47"`. Take it from the pages
   captured in `images.md`, from the curriculum lookup, or from what the parent

@@ -105,6 +105,8 @@ def test_create_writes_stub_frontmatter_so_find_works_before_synthesis(tmp_path)
     assert frontmatter["grade"] == 3
     assert frontmatter["date"] == "2026-07-24"
     assert frontmatter["subject"] == "Science"
+    assert frontmatter["lesson"]["curriculum"] is None
+    assert frontmatter["lesson"]["source"] is None
     # Times are absent until they are known; their absence is the pending set.
     assert "start_time" not in frontmatter
     assert result["has_times"] is False

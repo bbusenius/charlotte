@@ -55,8 +55,20 @@ def test_hermes_native_writer_allows_each_writable_content_root():
     )
 
     assert "/opt/data" in safe_roots
+    assert "/workspace/.state" in safe_roots
     assert "/workspace/.scratch" in safe_roots
     assert "/workspace" not in safe_roots
     assert writable_mounts <= safe_roots
     assert '-e "HERMES_WRITE_SAFE_ROOT=$hermes_write_safe_root"' in text
     assert "/workspace/.scratch" in read("runtime/hermes/Dockerfile")
+    assert "/workspace/.state" in read("runtime/hermes/Dockerfile")
+
+
+def test_hermes_persists_workflow_state_and_scratch():
+    text = read("runtime/hermes/run.sh")
+
+    for name in (".state", ".scratch"):
+        assert f'"$repo_root/{name}"' in text
+        assert f'-v "$repo_root/{name}:/workspace/{name}"' in text
+
+    assert ".state/" in read(".dockerignore").splitlines()

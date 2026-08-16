@@ -56,6 +56,8 @@ def write_session(
     messages: str | None = None,
     lesson_number: int | None = None,
     lesson_title: str | None = None,
+    curriculum: str | None = None,
+    source: str | None = None,
     pages: str | None = None,
 ) -> Path:
     year, month, day = date.split("-")
@@ -77,9 +79,10 @@ def write_session(
         "date": date,
         "subject": subject,
         "lesson": {
+            "curriculum": curriculum,
             "number": lesson_number,
             "title": lesson_title,
-            "source": None,
+            "source": source,
             "pages": pages,
         },
         "teacher": "Brad",
@@ -184,6 +187,26 @@ def test_list_answers_what_page_are_we_on(tmp_path):
 
     assert latest["pages"] == "47-48"
     assert latest["lesson_number"] == 112
+
+
+def test_list_surfaces_exact_curriculum_provenance(tmp_path):
+    mod = load_module()
+    env = build_env(tmp_path)
+    write_session(
+        env,
+        date="2026-07-24",
+        subject="Art",
+        slug="the-four-freedoms",
+        curriculum="ao-picture-study",
+        source=(
+            "curricula/art/ao-picture-study/artists/"
+            "norman-rockwell/the-four-freedoms.md"
+        ),
+    )
+
+    latest = mod.cmd_list(list_args(env))["sessions"][0]
+    assert latest["curriculum"] == "ao-picture-study"
+    assert latest["source"].endswith("the-four-freedoms.md")
 
 
 def test_list_can_fold_in_observations_for_a_whole_week(tmp_path):

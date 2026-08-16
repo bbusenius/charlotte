@@ -46,7 +46,7 @@ If anything required is genuinely ambiguous and not under `--auto`, ask once and
 
 ## Student configuration
 
-Student metadata lives in `students.yaml` at the repo root. mason-curriculum-builder uses: `display_name`, `grade`, and `aliases`. It does **not** use `subjects`, `curricula_dir`, or `curricula` — those point at paid third-party curricula this skill is not authoring against.
+Student metadata lives in `students.yaml` at the repo root. mason-curriculum-builder uses: `display_name`, `grade`, and `aliases`. It does **not** use `subjects`, `curricula_dir`, or `curricula` — those assign existing curriculum entrypoints; this skill is authoring a new curriculum.
 
 Resolution procedure is the same as mason-lesson-plan-builder and mason-unit-builder: read `students.yaml`, lowercase-match prompt name references against each student's slug and `aliases` list, record `display_name` and `grade` on a hit. On no hit with a grade in the prompt, proceed on grade alone. On no hit and no grade, design for mid-elementary. Never hard-code student names, aliases, or grades.
 

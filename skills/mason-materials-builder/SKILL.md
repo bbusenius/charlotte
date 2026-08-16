@@ -164,8 +164,8 @@ The delivery message always names which route/source/model generated any images 
 When the prompt references a curriculum file or specific lesson:
 
 1. Resolve the student (see `students.yaml` above). This gives you a `curricula_dir` and a `curricula` map (filename → `{subject, lesson_header_pattern, ...}`).
-2. If the prompt names a curriculum file directly (e.g. "Level-3-Language-Arts Lesson 40"), locate it in the student's `curricula_dir`. If it names only a subject ("math lesson 42"), use the `curricula` map to find the file whose subject matches.
-3. Find the lesson in the file using the registry's `lesson_header_pattern`. Read the lesson content.
+2. Resolve a named curriculum by id, alias, or configured path with `scripts/curriculum_resolve.py`. If it names only a subject ("math lesson 42"), use `--subject`; proceed only when the match is unique.
+3. Find the lesson in a monolithic entrypoint using the registry's `lesson_header_pattern`, or follow the clear matching link when the entrypoint indexes individual lesson files. Read the exact lesson content.
 4. Build the material from what the lesson actually covers — not from a generic template and not from your prior about the topic.
 5. When a copywork passage, vocabulary word, or practice problem is going into the material and could come directly from the lesson's source text, prefer the actual source-text wording.
 6. Treat the lesson as **already studied** when the prompt refers to it as context; the material extends, applies, or consolidates it. Don't re-teach.

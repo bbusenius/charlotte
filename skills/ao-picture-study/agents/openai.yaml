@@ -1,0 +1,4 @@
+interface:
+  display_name: "AO Picture Study"
+  short_description: "Prepare and archive the next AO picture study"
+  default_prompt: "Use $ao-picture-study to prepare the next AO picture study for my student."

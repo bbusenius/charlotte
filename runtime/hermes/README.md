@@ -67,6 +67,8 @@ runtime/hermes/run.sh gateway run
 
 Files copied into the image include `skills/`, `scripts/`, `README.md`, `AGENTS.md`, `pyproject.toml`, and runtime adapter files. Local ignored files such as `.env`, `runtime.yaml`, `image-generation.yaml`, `students.yaml`, and generated content roots are mounted or passed at runtime.
 
+The wrapper also mounts the ignored root `.state/` and `.scratch/` directories. `.state/` preserves workflow cursors across container rebuilds and across Charlotte runtimes; `.scratch/` holds disposable working files. Both are writable by Hermes, but neither is a finished-content root.
+
 Standalone image requests should save under `generated-images/`. Tablet slide packages belong under `tablet-slides/`.
 
 `runtime/hermes/run.sh` installs `runtime/hermes/config.yaml.example` to `~/.hermes-charlotte/config.yaml` only when that profile config does not already exist. If you change the example later, update the live profile config intentionally.
@@ -109,14 +111,14 @@ The default Hermes config uses NanoGPT's subscription API with MiniMax M2.7 as t
 NANOGPT_API_KEY=
 ```
 
-The default auxiliary vision route is Gemini, so `vision_analyze` needs one of the Gemini key variables in `.env`:
+The supplied example profile configures Gemini 2.5 Flash as the auxiliary vision fallback, so using that configuration with a text-only main model requires one of the Gemini key variables in `.env`:
 
 ```env
 GEMINI_API_KEY=
 # or GOOGLE_API_KEY=
 ```
 
-This is intentionally separate from `terminal.env_passthrough`: Hermes may scrub provider credentials from terminal subprocesses while still using them for provider-backed tools such as `vision_analyze`.
+With `agent.image_input_mode: auto`, a vision-capable main model inspects images directly and the auxiliary model is not called. This fallback is intentionally separate from `terminal.env_passthrough`: Hermes may scrub provider credentials from terminal subprocesses while still using them for provider-backed vision.
 
 Charlotte image generation is routed by `scripts/charlotte_image.py` using `image-generation.yaml`. Useful `.env` keys:
 
@@ -179,7 +181,7 @@ MCP servers create toolsets named `mcp-<server>`. Add the needed MCP toolset to 
 ```yaml
 platform_toolsets:
   cli: [hermes-cli, mcp-google_maps, mcp-grok_mcp]
-  telegram: [terminal, file, web, vision, skills, todo, cronjob, mcp-google_maps, mcp-grok_mcp]
+  telegram: [terminal, file, web, vision, tts, skills, todo, cronjob, mcp-google_maps, mcp-grok_mcp]
 ```
 
 One useful local pattern is to mount a home-relative MCP server checkout with `CHARLOTTE_HOME_MOUNTS`, then point the MCP command at the corresponding `/opt/data/...` path:

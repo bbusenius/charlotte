@@ -6,19 +6,18 @@
 # hsd-time-log, hsd-book-log, mason-lesson-plan-builder, mason-field-trip-planner,
 # mason-unit-builder, mason-curriculum-builder).
 #
-# Students are keyed by a lowercase slug. Paid third-party curricula live
-# under `curricula/third-party/<curriculum-slug>/` and are shared across
-# students; the per-student `curricula` map below records which ones a given
-# student is using.
+# Students are keyed by a lowercase slug. Curriculum content is shared across
+# students; the per-student `curricula` map records the concrete entrypoint
+# files each student is using. Purchased/imported curricula live under
+# `curricula/third-party/`; locally authored curricula may live by subject.
 #
 # Command-line tools such as signal-sieve and xlsx-append are installed from
 # pyproject.toml into the project virtualenv; they are not configured here.
 #
 # Adding a student:
 #   1. Add an entry under `students:` below.
-#   2. Put any third-party curriculum markdown under
-#      `curricula/third-party/<slug>/<filename>.md` and list that relative
-#      path in the student's `curricula` map below.
+#   2. Put curriculum content under `curricula/` and list its concrete lookup
+#      entrypoint file in the student's `curricula` map below.
 #   3. Skills that need the metadata will pick it up automatically.
 
 students:
@@ -35,16 +34,20 @@ students:
         no_tablet:
           days: [sunday]
           count: 50
-    curricula_dir: curricula/third-party
+    curricula_dir: curricula
     curricula:
-      level-4-language-arts/Level-4-Language-Arts.md:
+      third-party/level-4-language-arts/Level-4-Language-Arts.md:
         subject: Language Arts & Literature
         lesson_header_pattern: '^##\s+Lesson\s+(?P<number>\d+)'
         lesson_title_on_next_line: false
-      math-4/Math-4.md:
+      third-party/math-4/Math-4.md:
         subject: Math
         lesson_header_pattern: '^##\s+Lesson\s+(?P<number>\d+)'
         lesson_title_on_next_line: false
+      art/ao-picture-study/curriculum.md:
+        id: ao-picture-study
+        aliases: [AO, picture study, AmblesideOnline picture study]
+        subject: Art
     subjects:
       - Language Arts & Literature
       - Math
@@ -87,7 +90,7 @@ students:
     mindfeast:
       remote_url: http://192.0.2.10:8787
       remote_token: ""
-    curricula_dir: curricula/third-party
+    curricula_dir: curricula
     curricula: {}
     subjects:
       - Language Arts

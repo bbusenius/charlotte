@@ -38,7 +38,7 @@ If subject or theme cannot be inferred and the prompt is genuinely ambiguous, as
 
 ## Student configuration
 
-Student metadata lives in `students.yaml` at the repo root. This skill uses: `display_name` (for address), `grade` (for length and register defaults), `aliases` (for matching prompt references). It does **not** use the `subjects` list (see above) and does **not** use `curricula_dir` or `curricula` (those point at paid third-party curricula this skill is not authoring against).
+Student metadata lives in `students.yaml` at the repo root. This skill uses: `display_name` (for address), `grade` (for length and register defaults), `aliases` (for matching prompt references). It does **not** use the `subjects` list (see above) and does **not** use `curricula_dir` or `curricula` (those assign existing curriculum entrypoints; this skill is authoring a new lesson).
 
 Resolution procedure:
 
