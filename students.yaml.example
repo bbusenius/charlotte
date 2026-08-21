@@ -48,6 +48,10 @@ students:
         id: ao-picture-study
         aliases: [AO, picture study, AmblesideOnline picture study]
         subject: Art
+      music/ao-composer-study/curriculum.md:
+        id: ao-composer-study
+        aliases: [AO composer study, composer study, AmblesideOnline composer study]
+        subject: Music
     subjects:
       - Language Arts & Literature
       - Math

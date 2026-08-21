@@ -51,7 +51,7 @@ RUN set -eux; \
     mkdir -p \
       /workspace/curricula /workspace/lesson-logs /workspace/tablet-slides /workspace/generated-images \
       /workspace/dashboards /workspace/field-trips /workspace/.backups /workspace/.logs \
-      /workspace/.agent-state; \
+      /workspace/.state /workspace/.scratch /workspace/.agent-state; \
     # OpenClaw's per-agent identity/memory files live in the host profile's
     # workspace-state dir, mounted at /workspace/.agent-state. Symlinks (not
     # per-file bind mounts) connect them: a directory mount keeps tracking

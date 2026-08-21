@@ -12,8 +12,9 @@ full contract; these are the container-specific notes.
 - Writable content roots (bind mounts): `/workspace/curricula`,
   `/workspace/lesson-logs`, `/workspace/tablet-slides`, `/workspace/generated-images`,
   `/workspace/field-trips`, `/workspace/dashboards`, `/workspace/.backups`,
-  `/workspace/.logs`. Other paths under `/workspace` are baked into the image
-  and writes there do not survive the container.
+  `/workspace/.logs`, `/workspace/.state`, `/workspace/.scratch`. Other paths
+  under `/workspace` are baked into the image and writes there do not survive
+  the container.
 - Host records referenced from `students.yaml` as `~/...` resolve under
   `/home/node/...` via `CHARLOTTE_HOME_MOUNTS`.
 - The `image` tool only reads paths inside the workspace. When a file lives
@@ -21,8 +22,9 @@ full contract; these are the container-specific notes.
   copy it to `/workspace/.scratch/` (create the directory if needed), analyze
   it there, and delete the copy afterward. Never park working copies in
   `generated-images/`, `tablet-slides/`, or other content roots — those hold
-  finished artifacts only. `.scratch/` is ephemeral in this container, which
-  is exactly right for scratch files.
+  finished artifacts only. `.scratch/` persists across container replacement
+  so interrupted workflows can resume, but its contents remain temporary and
+  must be cleaned by the owning workflow after success.
 - Voice replies: when the inbound message contains the marker
   `[Audio transcript (machine-generated, untrusted)]`, the user spoke a
   voice note — end your reply with a line containing exactly

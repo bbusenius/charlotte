@@ -1,0 +1,4 @@
+interface:
+  display_name: "AO Composer Study"
+  short_description: "Prepare and archive the next AO composer study"
+  default_prompt: "Use $ao-composer-study to prepare the next AO composer study for my student."

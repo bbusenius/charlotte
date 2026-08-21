@@ -17,10 +17,12 @@ RUN set -eux; \
         chromium \
         curl \
         ffmpeg \
+        file \
         git \
         imagemagick \
         inkscape \
         libopus0 \
+        nodejs \
         python3-pip \
         python3-venv; \
       rm -rf /var/lib/apt/lists/*; \
@@ -35,6 +37,7 @@ RUN set -eux; \
     chown -R hermes:hermes /workspace/.venv
 
 COPY --chown=hermes:hermes . /workspace
+COPY --chown=hermes:hermes runtime/hermes/plugins/image_gen/gemini /opt/hermes/plugins/image_gen/gemini
 
 RUN set -eux; \
     mkdir -p /workspace/curricula /workspace/lesson-logs /workspace/tablet-slides /workspace/generated-images /workspace/dashboards /workspace/field-trips /workspace/.backups /workspace/.logs /workspace/.state /workspace/.scratch; \

@@ -143,6 +143,10 @@ Material types include printable worksheets, copywork pages, flashcards, narrati
 
 Prepares the next AmblesideOnline artist-rotation picture study for a configured student. The skill parses AO's current year/term schedule, advances from a minimal per-student last-created cursor, finds the actual artwork with Wikimedia Commons as the first source, and requires the environment's default image-understanding capability to inspect the artwork itself. It also requires at least one museum, archive, scholarly, or equivalent tier-1/2 anchor source for the narration; discovery sources such as Wikipedia cannot satisfy that gate. It persists the artwork and finished narration as a reusable individual study linked from the student's configured AO curriculum entrypoint. It creates a short grade-appropriate single-narrator audio study with the environment's available TTS capability, packages the artwork, audio, and a two-line title/artist/date label as an informational MindFeast slide, validates and syncs it, selects that exact slide as next, and only then advances the cursor. Lesson logs remain independent until the study is actually taught.
 
+### AO composer study (`/ao-composer-study`)
+
+Prepares the next AmblesideOnline composer-rotation selection for a configured student. The primary informational MindFeast slide pairs the real AO-selected recording with a generated image and displays only the work title and composer; a secondary informational slide contains a short narrated composer/work study and its own generated image. Both are archived as an exact reusable curriculum study, validated, and synced, but only the primary listening slide is selected next. AO selections assigned four weeks are delivered twice without duplicating the podcast. A per-student cursor preserves the flexibility to give different tablets independent schedules or copy one student's position to another. The shared `yt-dlp` and `ffmpeg` dependencies acquire audio from AO's links when a suitable public-domain recording is not readily available.
+
 ### MindFeast weekly slides (`/mindfeast-weekly-slides`)
 
 Generates a small weekly review set for the MindFeast Android lock-screen app from a student's time-tracking spreadsheet. Given a student and optional week, the skill:
@@ -226,7 +230,7 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e .
 ```
 
-This installs the Python dependencies from `pyproject.toml`, including `signal-sieve`, `xlsx-append`, `faster-whisper`, and `weasyprint` into `.venv/bin/`. The Lexile lookup uses Playwright with a system Chrome/Chromium executable, and audiobook transcription uses `ffmpeg`/`ffprobe`.
+This installs the Python dependencies from `pyproject.toml`, including `signal-sieve`, `xlsx-append`, `faster-whisper`, `weasyprint`, and `yt-dlp` into `.venv/bin/`. The Lexile lookup uses Playwright with a system Chrome/Chromium executable; audiobook transcription and AO composer-study recording extraction use `ffmpeg`/`ffprobe`. Full YouTube support also needs a JavaScript runtime; both shipped Docker runtimes provide Node.js.
 
 Install non-Python rendering/browser tools with your system package manager:
 
@@ -485,6 +489,7 @@ From a skill-aware harness, while in the project directory:
 /mindfeast-weekly-slides <student> --no-sync              # create/validate slides without tablet sync
 
 /ao-picture-study <student>                               # prepare, sync, and select the next AO study
+/ao-composer-study <student>                              # create two slides; select the listening slide
 
 /mindfeast-slide-sync <student>                           # sync existing slides for one student
 /mindfeast-slide-sync --all                               # sync every configured tablet
@@ -502,6 +507,7 @@ Examples:
 - `/mason-materials-builder A set of six picture-study cards for monarch butterfly life stages, tablet-first, watercolor register.`
 - `/mindfeast-weekly-slides <student> for this week, but don't sync yet.`
 - `/ao-picture-study Make <student>'s next AO picture study.`
+- `/ao-composer-study Make <student>'s next AO composer study.`
 - `/mindfeast-slide-sync <student>`
 - `/mindfeast-slide-trigger <student>`
 
@@ -527,6 +533,10 @@ Examples:
 | `skills/ao-picture-study/scripts/rotation.py` | Parses AO's artist rotation and maintains the last-created cursor |
 | `skills/ao-picture-study/scripts/write_study.py` | Persists an exact AO study and artwork and updates its curriculum index idempotently |
 | `skills/ao-picture-study/scripts/select_slide.py` | Selects an exact synced MindFeast slide as next without triggering it |
+| `skills/ao-composer-study/scripts/rotation.py` | Parses AO's composer rotation and maintains per-student presentation cursors |
+| `skills/ao-composer-study/scripts/download_audio.py` | Acquires a selected web recording as MP3 with yt-dlp and ffmpeg |
+| `skills/ao-composer-study/scripts/write_study.py` | Idempotently archives a work, narration, images, sources, and recording metadata |
+| `skills/ao-composer-study/scripts/select_slide.py` | Selects the exact primary listening slide without triggering it |
 | `scripts/curriculum_resolve.py` | Resolves a configured curriculum by id, alias, path, or unique subject without guessing among overlaps |
 
 Local one-off conversion scripts for paid curriculum imports live in ignored `scripts/local/` and are not part of the reusable project surface.
@@ -558,6 +568,7 @@ charlotte/
 │   ├── mason-field-trip-planner/  # Charlotte Mason field trip planning skill
 │   ├── mason-materials-builder/   # Charlotte Mason material creation skill
 │   ├── ao-picture-study/    # next AO artwork + narrated MindFeast picture study
+│   ├── ao-composer-study/   # AO recording + primary listening and secondary podcast slides
 │   ├── mindfeast-weekly-slides/ # weekly MindFeast slides from lesson logs (workbook fallback)
 │   ├── mindfeast-slide-sync/ # sync existing MindFeast slides to tablets
 │   ├── mindfeast-slide-trigger/ # trigger a MindFeast tablet slide remotely

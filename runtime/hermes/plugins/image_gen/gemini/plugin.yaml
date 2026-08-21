@@ -1,0 +1,7 @@
+name: gemini
+version: 1.0.0
+description: Direct Google Gemini image generation through Charlotte's configured image router.
+author: Charlotte
+kind: backend
+requires_env:
+  - GEMINI_API_KEY

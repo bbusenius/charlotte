@@ -290,7 +290,9 @@ mkdir -p \
   "$repo_root/generated-images" \
   "$repo_root/dashboards" \
   "$repo_root/.backups" \
-  "$repo_root/.logs"
+  "$repo_root/.logs" \
+  "$repo_root/.state" \
+  "$repo_root/.scratch"
 
 base_docker_args=(--rm)
 
@@ -320,6 +322,8 @@ base_docker_args+=(
   -v "$repo_root/dashboards:/workspace/dashboards"
   -v "$repo_root/.backups:/workspace/.backups"
   -v "$repo_root/.logs:/workspace/.logs"
+  -v "$repo_root/.state:/workspace/.state"
+  -v "$repo_root/.scratch:/workspace/.scratch"
   # Identity/memory state as ONE directory mount; baked symlinks in the
   # image map /workspace/SOUL.md etc. onto it. Never mount these as single
   # files: file mounts pin the inode and silently stop tracking host edits

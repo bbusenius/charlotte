@@ -4,14 +4,26 @@ import importlib.util
 from pathlib import Path
 
 
+ROOT = Path(__file__).resolve().parents[1]
+
+
 def load_charlotte_image_module():
-    module_path = Path(__file__).resolve().parents[1] / "scripts" / "charlotte_image.py"
+    module_path = ROOT / "scripts" / "charlotte_image.py"
     spec = importlib.util.spec_from_file_location("charlotte_image", module_path)
     assert spec is not None
     assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def test_project_instructions_make_configured_aesthetics_authoritative():
+    instructions = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+
+    assert "For every Charlotte-backed image generation call" in instructions
+    assert "standalone or inside any skill or workflow" in instructions
+    assert "Do not invent medium, style adjectives, lighting, palette" in instructions
+    assert "The configured `pedagogy.aesthetics` skill owns" in instructions
 
 
 def test_compact_prompt_uses_short_router_summary_without_examples():

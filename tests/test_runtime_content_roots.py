@@ -72,3 +72,51 @@ def test_hermes_persists_workflow_state_and_scratch():
         assert f'-v "$repo_root/{name}:/workspace/{name}"' in text
 
     assert ".state/" in read(".dockerignore").splitlines()
+
+
+def test_openclaw_persists_workflow_state_and_scratch():
+    text = read("runtime/openclaw/run.sh")
+
+    for name in (".state", ".scratch"):
+        assert f'"$repo_root/{name}"' in text
+        assert f'-v "$repo_root/{name}:/workspace/{name}"' in text
+        assert f"/workspace/{name}" in read("runtime/openclaw/Dockerfile")
+
+
+def test_hermes_bakes_and_enables_direct_gemini_image_provider():
+    dockerfile = read("runtime/hermes/Dockerfile")
+    config = read("runtime/hermes/config.yaml.example")
+
+    assert "runtime/hermes/plugins/image_gen/gemini" in dockerfile
+    assert 'provider: "gemini"' in config
+    assert 'model: "quality"' in config
+    assert "image_gen" in config
+    assert "NANOGPT" not in config
+    terminal = config.split("terminal:", 1)[1].split("web:", 1)[0]
+    assert "GEMINI_API_KEY" not in terminal
+
+
+def test_hermes_enables_browser_for_keyless_page_retrieval():
+    config = read("runtime/hermes/config.yaml.example")
+
+    assert "search_backend: ddgs" in config
+    for platform in ("cli", "telegram", "discord"):
+        line = next(
+            line
+            for line in config.splitlines()
+            if line.strip().startswith(f"{platform}:")
+        )
+        assert "browser" in line
+
+
+def test_hermes_disables_autonomous_skill_rewrites():
+    config = read("runtime/hermes/config.yaml.example")
+
+    assert "creation_nudge_interval: 0" in config
+    assert re.search(r"^curator:\n  enabled: false$", config, re.MULTILINE)
+
+
+def test_hermes_provisions_file_utility_for_media_qc():
+    dockerfile = read("runtime/hermes/Dockerfile")
+
+    assert re.search(r"^        file \\$", dockerfile, re.MULTILINE)

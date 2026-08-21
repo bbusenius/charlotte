@@ -105,36 +105,24 @@ chmod 600 .env
 
 Fill only the keys and local mount settings your runtime needs. The image build excludes `.env`; do not bake secrets into the image.
 
-The default Hermes config uses NanoGPT's subscription API with MiniMax M2.7 as the model driver:
-
-```env
-NANOGPT_API_KEY=
-```
-
-The supplied example profile configures Gemini 2.5 Flash as the auxiliary vision fallback, so using that configuration with a text-only main model requires one of the Gemini key variables in `.env`:
+The supplied example profile uses Gemini 2.5 Flash as its main model and auxiliary vision fallback, and uses the same direct Google credential for Charlotte image generation:
 
 ```env
 GEMINI_API_KEY=
 # or GOOGLE_API_KEY=
 ```
 
-With `agent.image_input_mode: auto`, a vision-capable main model inspects images directly and the auxiliary model is not called. This fallback is intentionally separate from `terminal.env_passthrough`: Hermes may scrub provider credentials from terminal subprocesses while still using them for provider-backed vision.
+With `agent.image_input_mode: auto`, a vision-capable main model inspects images directly and the auxiliary model is not called. Provider credentials do not belong in `terminal.env_passthrough`; Hermes deliberately scrubs them from model-authored subprocesses.
 
-Charlotte image generation is routed by `scripts/charlotte_image.py` using `image-generation.yaml`. Useful `.env` keys:
+The custom image backend baked into the Charlotte Hermes image registers as `image_gen.provider: gemini`. It runs `scripts/charlotte_image.py` from Hermes's trusted provider process, so `image-generation.yaml`, the configured aesthetics skill, and route provenance remain authoritative without exposing the Gemini key to terminal commands. The shipped profile selects the `quality` route:
 
-```env
-NANOGPT_IMAGE_MODEL_SUBSCRIPTION=
-NANOGPT_IMAGE_MODEL_GEMINI=
-NANOGPT_IMAGE_MODEL_GROK=
-GEMINI_API_KEY=
-XAI_API_KEY=
-XAI_IMAGE_MODEL=
-GOOGLE_MAPS_API_KEY=
+```yaml
+image_gen:
+  provider: "gemini"
+  model: "quality"
 ```
 
-NanoGPT subscription chat uses `https://nano-gpt.com/api/subscription/v1`. NanoGPT subscription images use `https://nano-gpt.com/api/generate-image` with models from the subscription image model list. NanoGPT's OpenAI-compatible `/v1/images/generations` endpoint may require separate USD balance.
-
-For quality-first image generation, keep the local `quality` route pointed at your strongest configured image model. Use the `fast` route for fast/cheap/simple generation. Standalone Telegram image requests should pass the user's requested subject plainly to `--prompt`; the router applies full Mason prompt context for non-`fast` routes and the compact image-router summary for route `fast`.
+For quality-first image generation, keep the local `quality` route pointed at the desired direct Google model. Use the `fast` route for fast/simple generation. The provider rejects any result that does not report the requested route, `source: google`, and the expected aesthetics prompt mode.
 
 `GOOGLE_MAPS_API_KEY` is for Maps-capable MCP/runtime tools. It is separate from Gemini image-generation keys and is only useful when the active Hermes toolset exposes a Google Maps capability.
 
@@ -270,7 +258,7 @@ The first supported Telegram setup is direct-message only: open Telegram, messag
 Create a Telegram bot with BotFather, then put the token and allowed numeric Telegram user IDs in the repo-local `.env`:
 
 ```env
-NANOGPT_API_KEY=
+GEMINI_API_KEY=
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_ALLOWED_USERS=
 ```
@@ -304,7 +292,7 @@ tts:
 
 The default Charlotte profile sets `voice.auto_tts: true`, so voice-originating gateway messages get spoken replies by default. Typed messages still get plain text replies. Use `/voice off` in a chat to opt out, `/voice on` to opt back in, or `/voice tts` only when you intentionally want every reply spoken.
 
-The Docker image installs `faster-whisper` and `edge-tts` into Hermes' own runtime venv, and installs `ffmpeg` for audio handling. It also installs `libopus0` so the image has the codec needed for future Discord voice-channel support. After changing this runtime image, rebuild and restart the gateway:
+The Docker image installs `faster-whisper` and `edge-tts` into Hermes' own runtime venv, and installs `ffmpeg` for audio handling. Charlotte's shared project environment installs `yt-dlp` from `pyproject.toml`; the image supplies Node.js as its JavaScript runtime for full YouTube extraction support. It also installs `libopus0` so the image has the codec needed for future Discord voice-channel support. After changing this runtime image, rebuild and restart the gateway:
 
 ```bash
 docker build -f runtime/hermes/Dockerfile -t charlotte-hermes:local .

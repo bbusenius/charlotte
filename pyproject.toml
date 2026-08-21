@@ -14,6 +14,7 @@ dependencies = [
     "PyYAML>=6.0",
     "weasyprint>=62",
     "qrcode[pil]>=7.4",
+    "yt-dlp[default]>=2025.7.21",
     "signal-sieve @ git+https://github.com/bbusenius/signal-sieve.git@master",
     "xlsx-append @ git+https://github.com/bbusenius/xlsx-append.git@master",
     "homeschool_dashboard @ git+https://github.com/bbusenius/Homeschool-Dashboard.git@master",

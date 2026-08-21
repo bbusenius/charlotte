@@ -94,6 +94,8 @@ Before drafting, establish a source gate:
 - Use general publications only for details they directly report. Never treat search-result snippets as verification.
 - Do not persist discovery pages merely because they were consulted. Persist the principal sources actually relied upon, using descriptive labels rather than `Research source`.
 
+Actually retrieve and read every principal source used in the claim ledger. If the configured search backend cannot extract pages, use the active environment's browser/page-reading capability. Fall back to a noninteractive generic HTTPS retrieval command only when no browser capability exists. If no available capability can retrieve a required anchor, stop rather than drafting from snippets or apparent URLs.
+
 Seek historically truthful, memorable living ideas rather than an inventory of facts. Look for a documented human or artistic thread: a problem the artist faced, how the work arose, a revealing incident, an artistic decision, the historical moment, contemporary reception, or a connection among the term's works.
 
 - Verify attractive anecdotes before using them. Do not repeat legends as facts.

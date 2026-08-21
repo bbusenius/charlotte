@@ -1,14 +1,7 @@
 model:
-  default: "minimax/minimax-m2.7"
-  provider: "custom:nanogpt"
-  base_url: ""
-
-custom_providers:
-  - name: "nanogpt"
-    base_url: "https://nano-gpt.com/api/subscription/v1"
-    key_env: "NANOGPT_API_KEY"
-    model: "minimax/minimax-m2.7"
-    api_mode: "chat_completions"
+  default: "gemini-2.5-flash"
+  provider: "gemini"
+  base_url: "https://generativelanguage.googleapis.com/v1beta"
 
 # Supply image understanding when the main model is text-only. With
 # `agent.image_input_mode: auto`, a vision-capable main model sees the pixels
@@ -22,8 +15,15 @@ auxiliary:
     timeout: 120
     download_timeout: 30
 
+# Generate images directly through Google with the same Gemini key. The
+# provider runs Charlotte's configured image route inside Hermes's trusted
+# process, so provider credentials never enter model-authored terminal commands.
+image_gen:
+  provider: "gemini"
+  model: "quality"
+
 # Optional: route delegated subagents through direct xAI/Grok instead of the
-# main NanoGPT-backed model. Requires XAI_API_KEY in the repo-local .env.
+# main Gemini model. Requires XAI_API_KEY in the repo-local .env.
 # delegation:
 #   provider: "xai"
 #   model: "grok-4.3"
@@ -53,32 +53,26 @@ terminal:
   timeout: 180
   docker_mount_cwd_to_workspace: false
   lifetime_seconds: 300
-  env_passthrough:
-    - GEMINI_API_KEY
-    - GOOGLE_API_KEY
-    - GOOGLE_MAPS_API_KEY
-    - XAI_API_KEY
-    - XAI_IMAGE_MODEL
-    - NANOGPT_API_KEY
-    - NANOGPT_IMAGE_MODEL_SUBSCRIPTION
-    - NANOGPT_IMAGE_MODEL_GEMINI
-    - NANOGPT_IMAGE_MODEL_GROK
 
-# Web search/fetch backend for the `web` toolset. `ddgs` (DuckDuckGo) is
-# keyless and installed into the Hermes venv by runtime/hermes/Dockerfile, so
-# it works on a fresh clone with no API key. Swap to tavily/brave/exa here if
-# you add the corresponding API key to .env.
+# DDGS is the keyless search backend; it cannot extract pages. The browser
+# toolset below supplies keyless page retrieval for research workflows.
 web:
   search_backend: ddgs
 
 skills:
   external_dirs:
     - /workspace/skills
+  # Charlotte's checked-in skills are authoritative. Do not have background
+  # review forks create runtime supplements after workflow runs.
+  creation_nudge_interval: 0
+
+curator:
+  enabled: false
 
 platform_toolsets:
-  cli: [hermes-cli, delegation]
-  telegram: [terminal, file, web, vision, tts, skills, todo, cronjob, delegation]
-  discord: [hermes-discord, terminal, file, web, vision, tts, skills, todo, cronjob, delegation]
+  cli: [hermes-cli, browser, image_gen, delegation]
+  telegram: [terminal, file, web, browser, vision, image_gen, tts, skills, todo, cronjob, delegation]
+  discord: [hermes-discord, terminal, file, web, browser, vision, image_gen, tts, skills, todo, cronjob, delegation]
 
 discord:
   require_mention: false

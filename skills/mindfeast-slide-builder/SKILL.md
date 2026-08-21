@@ -241,9 +241,10 @@ Use the same image route policy as `mason-materials-builder`, but with slide-spe
 
 Image generation for this skill is route-based. Use the normal `quality` route unless the user explicitly asks for a fast/cheap slide image; `image-generation.yaml` decides which provider/model supplies that route.
 
-- Use the repo-local router below, invoked from the project root through `.venv/bin/python`.
-- If the router exits `2`, no configured script-callable image provider is available. At that point, use a runtime-native image tool if the active harness exposes one. If no runtime image tool exists, report that image generation is unavailable.
+- Prefer a runtime-native file-producing image capability when it explicitly identifies itself as Charlotte-backed and reports route/source/model/prompt-mode provenance. Otherwise use the repo-local router below from the project root through `.venv/bin/python`.
+- If the repo-local router exits `2`, no configured script-callable image provider is available. Report that image generation is unavailable unless a Charlotte-backed runtime-native capability exists.
 - If the router exits `3`, stop. That is a policy/safety rejection; do not try another provider.
+- Never bypass a failed Charlotte route with a direct provider call, handwritten HTTP request, or unrelated image tool.
 
 ### Provided image
 
