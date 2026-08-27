@@ -261,6 +261,9 @@ Write `curricula/<curriculum-slug>/curriculum.md` in the shape below. Embed the 
 
 ```markdown
 ---
+id: <curriculum-slug>
+title: "<Curriculum, human-readable, e.g. 'Guatemalan History'>"
+subject: "<Underlying subject, human-readable, e.g. 'History'>"
 curriculum: "<Curriculum, human-readable, e.g. 'Guatemalan History'>"
 curriculum_slug: <curriculum-slug>
 class: "<Underlying class/subject+grade, human-readable, e.g. '3rd-Grade History'>"

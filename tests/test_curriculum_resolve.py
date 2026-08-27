@@ -89,3 +89,44 @@ def test_require_existing_and_safe_paths(tmp_path):
     }
     with pytest.raises(SystemExit, match="escapes curricula_dir"):
         mod.curriculum_entries(unsafe, tmp_path)
+
+
+def test_reads_identity_from_arbitrarily_named_nested_index(tmp_path):
+    mod = load_module()
+    index = tmp_path / "curricula" / "publisher" / "course" / "catalog.md"
+    index.parent.mkdir(parents=True)
+    index.write_text(
+        "---\nid: stable-course\naliases: [friendly]\nsubject: Math\n---\n# Course\n",
+        encoding="utf-8",
+    )
+    configured = {
+        "curricula_dir": "curricula",
+        "curricula": {"publisher/course/catalog.md": {}},
+    }
+
+    selected = mod.resolve_curriculum(configured, tmp_path, curriculum="friendly")
+
+    assert selected["id"] == "stable-course"
+    assert selected["subject"] == "Math"
+    assert selected["path"] == str(index)
+
+
+def test_configured_aliases_extend_index_aliases(tmp_path):
+    mod = load_module()
+    index = tmp_path / "curricula" / "course" / "curriculum.md"
+    index.parent.mkdir(parents=True)
+    index.write_text(
+        "---\nid: course\naliases: [index-alias]\n---\n# Course\n",
+        encoding="utf-8",
+    )
+    configured = {
+        "curricula_dir": "curricula",
+        "curricula": {
+            "course/curriculum.md": {"aliases": ["student-alias"]}
+        },
+    }
+
+    from_index = mod.resolve_curriculum(configured, tmp_path, curriculum="index-alias")
+    from_config = mod.resolve_curriculum(configured, tmp_path, curriculum="student-alias")
+
+    assert from_index["path"] == from_config["path"]

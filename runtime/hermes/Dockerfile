@@ -23,6 +23,7 @@ RUN set -eux; \
         inkscape \
         libopus0 \
         nodejs \
+        poppler-utils \
         python3-pip \
         python3-venv; \
       rm -rf /var/lib/apt/lists/*; \

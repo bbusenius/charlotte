@@ -68,7 +68,7 @@ Year, month, and day directories make all of one school day's sessions visible t
 1. A parent describes a lesson — in a [typed queue](docs/ingest-contract.md) or just in conversation — with any photos, screenshots, or voice notes
 2. The `lesson-log` skill:
    - Reads every image with a vision-capable runtime tool and transcribes voice notes
-   - Looks up the lesson in the curriculum markdown files when there is one
+   - Looks up the lesson through its configured curriculum index and native sources when available
    - Copies the captured media into the session and writes the extracted text alongside it
    - Writes the account of what was covered and how it went
 
@@ -172,7 +172,7 @@ Triggers a configured tablet to show a MindFeast slide now. Given a student, it 
 
 ## Student registry
 
-Per-student metadata lives in `students.yaml` at the repo root. This is the single source of truth for display name, grade, aliases, concrete curriculum entrypoint files (with optional identity, aliases, and lesson-header regex), subjects, time-tracking spreadsheet path, tablet slide directory, MindFeast remote sync config, the optional capture `inbox`, and reading list config (spreadsheet path, sheet indices, its own optional `inbox`). Skills read from it rather than hard-coding student data, so the repo stays portable — another family can ship their own `students.yaml`.
+Per-student metadata lives in `students.yaml` at the repo root. This is the single source of truth for display name, grade, aliases, concrete curriculum index files (with optional identity, aliases, and subject overrides), subjects, time-tracking spreadsheet path, tablet slide directory, MindFeast remote sync config, the optional capture `inbox`, and reading list config (spreadsheet path, sheet indices, its own optional `inbox`). Skills read from it rather than hard-coding student data, so the repo stays portable — another family can ship their own `students.yaml`.
 
 Adding a student:
 
@@ -210,7 +210,7 @@ This repository tracks the homeschool agent system, reusable skills, scripts, ex
 
 The following paths are writable local content roots and are intentionally gitignored:
 
-- `curricula/` — paid/imported curriculum markdown plus generated curricula, units, lessons, and lesson assets
+- `curricula/` — paid/imported native curriculum sources and indexes plus generated curricula, units, lessons, and lesson assets
 - `lesson-logs/` — the record of what was actually taught: one directory per session holding the captured photos and voice notes, their extracted text, and the written log
 - `tablet-slides/` — generated Android lock-screen slide packages
 - `generated-images/` — standalone generated images that are not tablet slide packages or printable materials
@@ -338,6 +338,7 @@ Time records are a projection of the lesson logs, not a parallel record. `hsd-ti
 - **Image routes** in ignored `image-generation.yaml` when a material needs generated images. `scripts/charlotte_image.py` uses the configured route; direct Google via `scripts/gemini_image.py` is one available backend, not a required default.
 - **WeasyPrint** — HTML → PDF rendering, invoked from `mason-print-design`. Installed by `.venv/bin/python -m pip install -e .`; system libraries such as `libpango` and `libcairo` may still be required depending on the platform.
 - **Inkscape** — SVG → PDF/PNG rendering. Install from your package manager (`apt install inkscape`).
+- **Poppler utilities** — native PDF text extraction and selected-page rendering for `curriculum_read.py` (`pdftotext` and `pdftoppm`; install `poppler-utils` on Debian/Ubuntu).
 
 ### Tests
 
@@ -363,6 +364,7 @@ These are separate, reusable tools that this project relies on:
 | Gemini (`google-genai` SDK) | `scripts/gemini_image.py` | Direct Google/Gemini image backend used when configured as a route |
 | WeasyPrint | Installed from `pyproject.toml` | HTML → PDF rendering; invoked from `mason-print-design` |
 | Inkscape | system package | SVG → PDF/PNG rendering; invoked from `mason-print-design` |
+| Poppler utilities | system package | Native curriculum PDF search, bounded extraction, and selected-page rendering through `scripts/curriculum_read.py` |
 | hub.lexile.com (free tier) | — | Primary source for book metadata + Lexile level |
 | openlibrary.org | — | Secondary source for title/author/ISBN when Lexile misses |
 | `pedagogies/` | This repo | Pedagogy packs (see [Pedagogy packs](#pedagogy-packs)); the shipped `charlotte-mason` pack is read by the mason-* skills for framing, and the active pack (`pedagogy.path` in `runtime.yaml`) grounds general pedagogical help |
@@ -421,32 +423,69 @@ Reading list spreadsheet columns (same across both "read by" and "read to" sheet
 
 ## Curricula
 
-Curriculum PDFs are converted to markdown with `pdftotext` or [OpenDataLoader PDF](https://github.com/opendataloader-project/opendataloader-pdf), then post-processed as needed to normalize lesson headers. PDF-to-markdown cleanup is curriculum-specific; one-off local fixup scripts belong under ignored `scripts/local/`.
+Each curriculum assigned in `students.yaml` names one concrete Markdown
+entrypoint file beneath the student's `curricula_dir`. Charlotte conventionally
+uses `curriculum.md`, and `mason-curriculum-builder` produces that name, but the
+resolver does not assume it: any configured filename is valid.
 
-### Converting a new curriculum
+An imported curriculum index links to its real source files without requiring
+conversion. Sources currently supported by the shared reader are Markdown,
+plain text, and PDF. A composite index can describe the purpose of each file:
+
+```markdown
+---
+id: example-language-arts-4
+title: Example Language Arts Level 4
+publisher: Example Publisher
+subject: Language Arts & Literature
+aliases: [language arts 4]
+components:
+  - path: Course Book.pdf
+    role: primary-lessons
+  - path: Reader.pdf
+    role: reader
+---
+
+# Example Language Arts Level 4
+
+- [Course Book](Course%20Book.pdf)
+- [Reader](Reader.pdf)
+```
+
+Component paths are relative to the index. They must stay within the authorized
+`curricula_dir`; directory names and publisher layouts are organizational
+choices, not runtime signals.
+
+### Reading native curriculum sources
+
+The shared reader resolves the configured index, searches its linked sources,
+and reads only a bounded section:
 
 ```bash
-pdftotext "Course Book.pdf" "output.md"
-scripts/local/<your-fixup-script> "output.md"
+.venv/bin/python scripts/curriculum_read.py --student alice inspect \
+  --curriculum example-language-arts-4
+.venv/bin/python scripts/curriculum_read.py --student alice search \
+  --curriculum example-language-arts-4 --lesson 5 --role primary-lessons
+.venv/bin/python scripts/curriculum_read.py --student alice read \
+  --source curricula/third-party/example/course.pdf --pages 19-20
 ```
-or
 
-```bash
-opendataloader-pdf curricula.pdf -f markdown
-```
-
-After processing, lesson headers appear as `## Lesson <number>` which the AI can search by lesson number.
+PDF search text is extracted and normalized in memory for that invocation, then
+discarded. The PDF remains the authoritative curriculum. When page layout or
+imagery matters, `read --render-dir <temporary-directory>` renders only the
+selected pages; callers inspect those images and remove the scratch directory.
+There is no persistent extraction cache.
 
 ### Curriculum files
 
-Third-party curricula are stored under `curricula/third-party/<slug>/`, one subdirectory per curriculum, shared across students:
+Third-party curricula may be stored under `curricula/third-party/`, shared across students. This is an example layout rather than a required hierarchy:
 
 ```
 curricula/
 └── third-party/
-    ├── math-3/                   # e.g. Math-3.md
-    ├── level-3-language-arts/    # e.g. Level-3-Language-Arts.md
-    └── level-3-spanish-unit-3/   # e.g. Level-3-Spanish-Unit-3.md
+    ├── publisher-a/math-3/curriculum.md
+    ├── publisher-a/language-arts-3/course-index.md
+    └── publisher-b/spanish-3/curriculum.md
 ```
 
 The child ↔ curriculum association lives in `students.yaml`, not in the directory layout.
@@ -538,8 +577,10 @@ Examples:
 | `skills/ao-composer-study/scripts/write_study.py` | Idempotently archives a work, narration, images, sources, and recording metadata |
 | `skills/ao-composer-study/scripts/select_slide.py` | Selects the exact primary listening slide without triggering it |
 | `scripts/curriculum_resolve.py` | Resolves a configured curriculum by id, alias, path, or unique subject without guessing among overlaps |
+| `scripts/curriculum_read.py` | Inspects curriculum indexes and searches or reads bounded Markdown, text, and native PDF sources; PDF extraction is temporary |
 
-Local one-off conversion scripts for paid curriculum imports live in ignored `scripts/local/` and are not part of the reusable project surface.
+Purchased curriculum files remain in their native formats; conversion is not a
+registration requirement.
 
 ## Project structure
 
@@ -590,12 +631,14 @@ charlotte/
 │   ├── lesson_log_new.py    # session directories + captured media
 │   ├── lesson_log_read.py   # bounded queries over lesson logs
 │   ├── hsd_project.py       # lesson logs -> Homeschool-Dashboard rows
+│   ├── curriculum_resolve.py # configured curriculum identity + entrypoint resolution
+│   ├── curriculum_read.py   # bounded Markdown/text/native-PDF curriculum reader
 │   ├── charlotte_image.py   # configured image capability router
 │   ├── gemini_image.py      # direct Google/Gemini image backend
 │   ├── lexile/lookup.py
 │   ├── openlibrary/lookup.py
 │   └── openlibrary/subject_search.py
-├── scripts/local/           # ignored local one-off curriculum conversion scripts
+├── scripts/local/           # ignored local one-off import/fixup scripts
 ├── field-trips/             # local-only saved field trip plans
 ├── .logs/                   # local-only sync/operation logs
 └── .backups/                # local-only spreadsheet backups

@@ -11,6 +11,7 @@ Charlotte skills assume a small set of runtime capabilities. Runtime adapters ca
 | Image generation | Materials, tablet slides, standalone image requests | `scripts/charlotte_image.py` plus `image-generation.yaml` routes |
 | HTML to PDF | `mason-print-design`, `mason-materials-builder` | WeasyPrint from `pyproject.toml` |
 | SVG to PDF/PNG | `mason-print-design`, `mason-materials-builder` | System `inkscape` |
+| Native curriculum PDF read | `lesson-log`, `mindfeast-weekly-slides`, `mason-materials-builder` | System Poppler utilities (`pdftotext`, `pdftoppm`) through `scripts/curriculum_read.py` |
 | Offline field-trip bundles | `scripts/build_offline_field_trips.py` | System `pandoc` >= 2.19 (`--embed-resources`; distro packages can be older — both Dockerfiles pin an upstream release) plus ImageMagick (`magick`/`convert`); ImageMagick also backs `mason-print-design` PDF previews |
 | Browser automation | Lexile lookup | Playwright plus `tools.chrome_path` in `runtime.yaml` |
 | Spreadsheet append | `hsd-time-log`, `hsd-book-log` | `xlsx-append` from `pyproject.toml` |

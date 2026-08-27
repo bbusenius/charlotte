@@ -163,9 +163,9 @@ The delivery message always names which route/source/model generated any images 
 
 When the prompt references a curriculum file or specific lesson:
 
-1. Resolve the student (see `students.yaml` above). This gives you a `curricula_dir` and a `curricula` map (filename → `{subject, lesson_header_pattern, ...}`).
+1. Resolve the student (see `students.yaml` above). This gives you a `curricula_dir` and a `curricula` map of concrete curriculum entrypoint files.
 2. Resolve a named curriculum by id, alias, or configured path with `scripts/curriculum_resolve.py`. If it names only a subject ("math lesson 42"), use `--subject`; proceed only when the match is unique.
-3. Find the lesson in a monolithic entrypoint using the registry's `lesson_header_pattern`, or follow the clear matching link when the entrypoint indexes individual lesson files. Read the exact lesson content.
+3. Use `scripts/curriculum_read.py inspect` and `search` to find the requested lesson in the entrypoint's linked Markdown, text, or PDF components. Read the complete bounded source with `curriculum_read.py read`; render selected PDF pages to temporary scratch when visual content matters. Search results are candidates, so skip rather than guess if the lesson remains ambiguous.
 4. Build the material from what the lesson actually covers — not from a generic template and not from your prior about the topic.
 5. When a copywork passage, vocabulary word, or practice problem is going into the material and could come directly from the lesson's source text, prefer the actual source-text wording.
 6. Treat the lesson as **already studied** when the prompt refers to it as context; the material extends, applies, or consolidates it. Don't re-teach.
@@ -192,7 +192,7 @@ Then, by material type:
 
 ### Step 4 — Read the referenced curriculum lesson (if any)
 
-If a lesson was referenced, read it in full from the student's `curricula_dir`, using the registry's `lesson_header_pattern` to locate it. Note the passage, terms, problems, or content that should flow into the material.
+If a lesson was referenced, read it in full through `scripts/curriculum_read.py`. Note the passage, terms, problems, or content that should flow into the material. Delete any rendered PDF scratch pages after the material is complete.
 
 ### Step 5 — Invoke `mason-aesthetics`
 

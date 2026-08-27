@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Resolve one configured curriculum entrypoint for a student.
 
-Curriculum paths in ``students.yaml`` point to files.  This helper only owns
-selection and safe path resolution; the calling skill still decides how to
-locate a lesson inside that entrypoint or through links from it.
+Curriculum paths in ``students.yaml`` point to files. This helper owns identity
+selection and safe entrypoint resolution. ``curriculum_read.py`` owns native
+component inspection, search, and bounded reads.
 """
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from curriculum_common import read_markdown
 from hsd_common import load_registry, resolve_student
 
 
@@ -62,21 +63,37 @@ def curriculum_entries(
     entries: list[dict[str, Any]] = []
     for raw_path, raw_metadata in configured.items():
         configured_path = str(raw_path)
-        metadata = raw_metadata or {}
-        if not isinstance(metadata, dict):
+        configured_metadata = raw_metadata or {}
+        if not isinstance(configured_metadata, dict):
             raise SystemExit(
                 f"curriculum metadata must be a mapping: {configured_path}"
             )
-        curriculum_id = str(metadata.get("id") or _derived_id(configured_path))
-        raw_aliases = metadata.get("aliases") or []
-        if not isinstance(raw_aliases, list):
-            raise SystemExit(
-                f"curriculum aliases must be a list: {configured_path}"
-            )
-        aliases = [str(alias) for alias in raw_aliases]
         base, path = _entrypoint_path(
             registry_dir, student.get("curricula_dir"), configured_path
         )
+        index_metadata: dict[str, Any] = {}
+        if path.is_file() and path.suffix.casefold() == ".md":
+            index_metadata, _ = read_markdown(path)
+        metadata = {**index_metadata, **configured_metadata}
+        index_aliases = index_metadata.get("aliases") or []
+        configured_aliases = configured_metadata.get("aliases") or []
+        if not isinstance(index_aliases, list) or not isinstance(configured_aliases, list):
+            raise SystemExit(
+                f"curriculum aliases must be a list: {configured_path}"
+            )
+        aliases = [
+            *index_aliases,
+            *configured_aliases,
+        ]
+        if aliases:
+            metadata["aliases"] = list(dict.fromkeys(str(alias) for alias in aliases))
+        curriculum_id = str(
+            metadata.get("id")
+            or metadata.get("curriculum_slug")
+            or _derived_id(configured_path)
+        )
+        raw_aliases = metadata.get("aliases") or []
+        aliases = [str(alias) for alias in raw_aliases]
         entries.append(
             {
                 "id": curriculum_id,
@@ -87,6 +104,8 @@ def curriculum_entries(
                 "path": str(path),
                 "exists": path.is_file(),
                 "metadata": metadata,
+                "index_metadata": index_metadata,
+                "configured_metadata": configured_metadata,
             }
         )
     return entries

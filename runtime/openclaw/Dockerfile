@@ -34,7 +34,8 @@ RUN set -eux; \
       inkscape \
       libopus0 \
       libpango-1.0-0 \
-      libpangoft2-1.0-0; \
+      libpangoft2-1.0-0 \
+      poppler-utils; \
     rm -rf /var/lib/apt/lists/*; \
     arch="$(dpkg --print-architecture)"; \
     curl -fsSL "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-linux-${arch}.tar.gz" \

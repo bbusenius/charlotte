@@ -36,14 +36,10 @@ students:
           count: 50
     curricula_dir: curricula
     curricula:
-      third-party/level-4-language-arts/Level-4-Language-Arts.md:
+      third-party/example-publisher/language-arts-level-4/curriculum.md:
         subject: Language Arts & Literature
-        lesson_header_pattern: '^##\s+Lesson\s+(?P<number>\d+)'
-        lesson_title_on_next_line: false
-      third-party/math-4/Math-4.md:
+      third-party/example-publisher/math-level-4/course-index.md:
         subject: Math
-        lesson_header_pattern: '^##\s+Lesson\s+(?P<number>\d+)'
-        lesson_title_on_next_line: false
       art/ao-picture-study/curriculum.md:
         id: ao-picture-study
         aliases: [AO, picture study, AmblesideOnline picture study]

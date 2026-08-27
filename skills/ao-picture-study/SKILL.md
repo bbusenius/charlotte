@@ -156,7 +156,7 @@ Write the finished study before building the slide. Use the curriculum entrypoin
 
 Pass `--anchor-source` at least once and repeat it for each tier-1/2 source actually used. Pass `--research-source` only for additional principal sources. Use human-readable labels such as `Norman Rockwell Museum — Four Freedoms feature` or `National Archives — Powers of Persuasion`; the writer persists those labels in the study. The writer creates one file under `artists/<artist>/<work>.md`, saves the artwork beside it, and links the study from `curriculum.md`. It is idempotent: on a retry it restores missing image/index pieces but reuses an existing matching study instead of overwriting its text. Stop on an identity collision.
 
-The returned `study_path` is the exact file that a later `lesson-log` run records as `lesson.source`; this AO preparation run still does not write the log.
+The returned `study_path` is the exact file that a later `lesson-log` run records in `lesson.sources`; this AO preparation run still does not write the log.
 
 ### 8. Build and validate the informational slide
 

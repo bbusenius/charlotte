@@ -151,25 +151,45 @@ valid only when exactly one configured curriculum matches; never choose the
 first of several curricula with the same subject.
 
 Treat zero configured curricula matching the subject as normal. Continue from
-messages, captured material, and observations with `lesson.curriculum` and
-`lesson.source` set to null. Absence or ambiguity affects only curriculum
-enrichment, never whether the lesson is logged.
+messages, captured material, and observations with `lesson.curriculum` set to
+null and `lesson.sources` set to an empty list. Absence or ambiguity affects
+only curriculum enrichment, never whether the lesson is logged.
 
-If the entrypoint itself contains the lesson, locate it with the configured
-`lesson_header_pattern`:
+Inspect the configured entrypoint and its linked native components:
 
 ```bash
-grep -n "<pattern with the number substituted>" <curricula_dir>/<filename>
+.venv/bin/python scripts/curriculum_read.py --student <student> inspect \
+  --curriculum <id-alias-or-configured-path>
 ```
 
-Read around the match. When `lesson_title_on_next_line` is `true`, the title is
-the following line. If the entrypoint is an index linking individual lessons,
-follow the clear title/number match and read that exact linked file.
+Search by the strongest locator supplied by the lesson material. Numbered
+lessons can use `--lesson`; unnumbered material can use `--unit`, `--chapter`,
+or `--query`. Start with `--role primary-lessons` when the index identifies one:
 
-If the configured regex misses, do not give up — curriculum markdown often comes
-from OCR and has broken spacing or malformed headings. Search the same file for
-the lesson number, the visible title, book or chapter names, or distinctive terms
-from the images. Use a clear match; skip rather than guess on an ambiguous one.
+```bash
+.venv/bin/python scripts/curriculum_read.py --student <student> search \
+  --curriculum <id-alias-or-configured-path> --lesson <number> \
+  --role primary-lessons
+```
+
+The helper reads Markdown/text directly and extracts PDF text in memory for the
+invocation. Its normalized search view is temporary and is not a converted
+curriculum. Search results are candidates: inspect their text and locations,
+then read the exact selected source. For PDF pages whose layout, diagrams, or
+illustrations matter, supply a temporary `--render-dir`, inspect the rendered
+page images, and delete that scratch directory after the session is written:
+
+```bash
+.venv/bin/python scripts/curriculum_read.py --student <student> read \
+  --source <exact-source-path> --pages <first-last> \
+  --render-dir <temporary-scratch-directory>
+```
+
+Read the whole bounded lesson, not just the search hit. Expand or trim the page
+range until the complete lesson is present. Follow explicit references from the
+primary lesson into reader, workshop, card, or other indexed components and add
+each source actually used. Skip rather than guess when candidates remain
+ambiguous.
 
 **Cross-check the lesson number.** Compare what vision described against the
 curriculum title for that lesson number. A mismatch usually means the number was
@@ -323,7 +343,10 @@ lesson:
   curriculum: science-3
   number: 12
   title: "Mapping a Plot"
-  source: curricula/third-party/science-3/Science-3.md
+  sources:
+    - path: curricula/third-party/science-3/Science-3.pdf
+      role: primary-lessons
+      pdf_pages: [53, 54]
   pages: "47-48"
 teacher: Brad
 also_present: [isamaya]
@@ -365,10 +388,12 @@ Frontmatter rules:
   that cannot be projected into Homeschool-Dashboard yet.
 - `class` is for a generated curriculum this session belongs to; otherwise null.
 - `lesson.curriculum` is the stable configured curriculum `id` when one exists,
-  otherwise null. Older configured entries derive an identity from the
-  entrypoint filename or its parent directory.
-- `lesson.source` is the exact lesson or chapter file path when one exists,
-  otherwise null. For a linked curriculum this is the leaf file, not its index.
+  otherwise null.
+- `lesson.sources` is always a list, empty when no configured source was used.
+  Each item requires `path`, the exact leaf source rather than its index. Add the
+  component `role` when known. For PDFs, `pdf_pages` records the inclusive PDF
+  page index read; for Markdown/text, `section` or `lines` may locate the bounded
+  passage. Include every indexed component actually used in the session.
 - **`lesson.pages` is where the child actually is in the book** — the printed
   page numbers, as a string like `"47-48"` or `"47"`. Take it from the pages
   captured in `images.md`, from the curriculum lookup, or from what the parent

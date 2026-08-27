@@ -44,6 +44,17 @@ def test_container_images_provision_the_lesson_log_mountpoint(dockerfile):
     assert "/workspace/lesson-logs" in read(dockerfile)
 
 
+@pytest.mark.parametrize(
+    "dockerfile",
+    [
+        "runtime/hermes/Dockerfile",
+        "runtime/openclaw/Dockerfile",
+    ],
+)
+def test_container_images_install_native_pdf_reader(dockerfile):
+    assert "poppler-utils" in read(dockerfile)
+
+
 def test_hermes_native_writer_allows_each_writable_content_root():
     text = read("runtime/hermes/run.sh")
     match = re.search(r'^hermes_write_safe_root="([^"]+)"$', text, re.MULTILINE)
