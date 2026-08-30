@@ -164,12 +164,14 @@ mcp_servers:
       Authorization: "Bearer ..."
 ```
 
-MCP servers create toolsets named `mcp-<server>`. Add the needed MCP toolset to each platform that should be able to use it:
+Configured MCP servers are discovered automatically. To enable one for a
+platform, add its raw server name—not `mcp-<server>`—to
+`platform_toolsets`. Hermes resolves those aliases after discovery:
 
 ```yaml
 platform_toolsets:
-  cli: [hermes-cli, mcp-google_maps, mcp-grok_mcp]
-  telegram: [terminal, file, web, vision, tts, skills, todo, cronjob, mcp-google_maps, mcp-grok_mcp]
+  cli: [hermes-cli, browser, image_gen, delegation, google_maps, grok_mcp]
+  telegram: [terminal, file, web, browser, vision, image_gen, tts, skills, todo, cronjob, delegation, google_maps, grok_mcp]
 ```
 
 One useful local pattern is to mount a home-relative MCP server checkout with `CHARLOTTE_HOME_MOUNTS`, then point the MCP command at the corresponding `/opt/data/...` path:
