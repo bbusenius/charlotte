@@ -10,6 +10,7 @@ tablet-slides/**
 field-trips/**
 generated-images/**
 dashboards/**
+schedules/**
 
 # Local backups and app state
 .backups/

@@ -173,6 +173,8 @@ start_info_page() {
     -e "HERMES_GID=$(id -g)"
     -v "$repo_root/apps/charlotte:/workspace/apps/charlotte:ro"
     -v "$repo_root/dashboards:/workspace/dashboards:ro"
+    -v "$repo_root/schedules:/workspace/schedules:ro"
+    -v "$repo_root/students.yaml:/workspace/students.yaml:ro"
   )
 
   docker rm -f "$container_name" >/dev/null 2>&1 || true
@@ -183,7 +185,9 @@ start_info_page() {
       --host 0.0.0.0 \
       --port "$info_port" \
       --static-root apps/charlotte/static \
-      --dashboard-root dashboards >/dev/null; then
+      --dashboard-root dashboards \
+      --schedule-root schedules \
+      --registry students.yaml >/dev/null; then
     echo "Charlotte info page container failed to start; continuing without it." >&2
     return 0
   fi
@@ -239,7 +243,7 @@ tz="${CHARLOTTE_TZ:-${env_tz:-}}"
 # Hermes' native write_file tool rejects paths outside HERMES_WRITE_SAFE_ROOT.
 # Keep the workspace source tree protected while allowing the mounted Charlotte
 # content roots and ephemeral workflow scratch space.
-hermes_write_safe_root="/opt/data:/workspace/curricula:/workspace/lesson-logs:/workspace/tablet-slides:/workspace/field-trips:/workspace/generated-images:/workspace/dashboards:/workspace/.backups:/workspace/.logs:/workspace/.state:/workspace/.scratch"
+hermes_write_safe_root="/opt/data:/workspace/curricula:/workspace/lesson-logs:/workspace/tablet-slides:/workspace/field-trips:/workspace/generated-images:/workspace/dashboards:/workspace/schedules:/workspace/.backups:/workspace/.logs:/workspace/.state:/workspace/.scratch"
 if [ -z "$tz" ]; then
   tz="$(detect_timezone || true)"
 fi
@@ -261,6 +265,7 @@ mkdir -p \
   "$repo_root/field-trips" \
   "$repo_root/generated-images" \
   "$repo_root/dashboards" \
+  "$repo_root/schedules" \
   "$repo_root/.backups" \
   "$repo_root/.logs" \
   "$repo_root/.state" \
@@ -296,6 +301,7 @@ base_docker_args+=(
   -v "$repo_root/field-trips:/workspace/field-trips"
   -v "$repo_root/generated-images:/workspace/generated-images"
   -v "$repo_root/dashboards:/workspace/dashboards"
+  -v "$repo_root/schedules:/workspace/schedules"
   -v "$repo_root/.backups:/workspace/.backups"
   -v "$repo_root/.logs:/workspace/.logs"
   -v "$repo_root/.state:/workspace/.state"

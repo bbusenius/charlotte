@@ -107,6 +107,16 @@ students:
       read_to_sheet_index: 1
       default_sheet: read_to
 
+# Shared forward-looking household plans. The title is the key; no separate ID
+# is needed. `path` is relative to the repository root and must point under
+# the local-only schedules/ content root.
+schedules:
+  Family Weekly Rhythm:
+    description: The shared weekly teaching rhythm for Alice and Charlie.
+    school_year: 2026-2027
+    students: [alice, charlie]
+    path: schedules/2026-2027/family-weekly-rhythm.html
+
 # Fallback teacher name written into a lesson log when the source material has
 # no sender alias. hsd-time-log later projects that value into the time workbook.
 teacher: Parent

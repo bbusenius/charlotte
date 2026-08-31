@@ -172,7 +172,7 @@ Triggers a configured tablet to show a MindFeast slide now. Given a student, it 
 
 ## Student registry
 
-Per-student metadata lives in `students.yaml` at the repo root. This is the single source of truth for display name, grade, aliases, concrete curriculum index files (with optional identity, aliases, and subject overrides), subjects, time-tracking spreadsheet path, tablet slide directory, MindFeast remote sync config, the optional capture `inbox`, and reading list config (spreadsheet path, sheet indices, its own optional `inbox`). Skills read from it rather than hard-coding student data, so the repo stays portable — another family can ship their own `students.yaml`.
+Per-student metadata lives in `students.yaml` at the repo root. This is the single source of truth for display name, grade, aliases, concrete curriculum index files (with optional identity, aliases, and subject overrides), subjects, time-tracking spreadsheet path, tablet slide directory, MindFeast remote sync config, the optional capture `inbox`, and reading list config (spreadsheet path, sheet indices, its own optional `inbox`). Its top-level `schedules:` map registers shared forward-looking family schedules. Skills read this registry rather than hard-coding household paths, so the repo stays portable — another family can ship their own `students.yaml`.
 
 Adding a student:
 
@@ -189,6 +189,17 @@ mindfeast:
 ```
 
 `remote_url` is the base URL for the tablet's MindFeast remote server. `remote_token` is the bearer token copied from MindFeast remote settings. Keep real tokens in local `students.yaml`, not in committed examples.
+
+Shared schedules are a planning layer, not records of completed lessons. Use the human title as the map key; `path` is repository-relative and must be under `schedules/`. The Charlotte LAN page lists configured schedules and serves only those configured paths.
+
+```yaml
+schedules:
+  Family Weekly Rhythm:
+    description: The shared weekly teaching rhythm for the household.
+    school_year: 2026-2027
+    students: [alice, charlie]
+    path: schedules/2026-2027/family-weekly-rhythm.html
+```
 
 ## Pedagogy packs
 
@@ -216,6 +227,7 @@ The following paths are writable local content roots and are intentionally gitig
 - `generated-images/` — standalone generated images that are not tablet slide packages or printable materials
 - `field-trips/` — generated field trip plans
 - `dashboards/` — generated Homeschool Dashboard HTML
+- `schedules/` — forward-looking household schedule artifacts, which may be school-year or calendar anchored
 - `.backups/` — local spreadsheet backups created during logging workflows
 - `.logs/` — local sync and long-running operation logs
 
@@ -597,6 +609,7 @@ charlotte/
 │   └── third-party/         # third-party curricula, one subdirectory per curriculum
 ├── lesson-logs/             # local-only content root: the record of what was taught
 │   └── <student>/<grade>/<year>/<month>/<day>/<subject>-<slug>/
+├── schedules/               # local-only forward-looking household schedules
 ├── skills/                  # canonical tracked skills
 │   ├── lesson-log/          # lesson content logging skill (the system of record)
 │   ├── hsd-time-log/        # Homeschool-Dashboard time-row projection skill

@@ -175,6 +175,8 @@ start_info_page() {
     -e "HOME=/home/node"
     -v "$repo_root/apps/charlotte:/workspace/apps/charlotte:ro"
     -v "$repo_root/dashboards:/workspace/dashboards:ro"
+    -v "$repo_root/schedules:/workspace/schedules:ro"
+    -v "$repo_root/students.yaml:/workspace/students.yaml:ro"
     -v "$repo_root/.logs:/workspace/.logs"
   )
 
@@ -186,7 +188,9 @@ start_info_page() {
       --host 0.0.0.0 \
       --port "$info_port" \
       --static-root apps/charlotte/static \
-      --dashboard-root dashboards >/dev/null; then
+      --dashboard-root dashboards \
+      --schedule-root schedules \
+      --registry students.yaml >/dev/null; then
     echo "Charlotte info page container failed to start; continuing without it." >&2
     return 0
   fi
@@ -289,6 +293,7 @@ mkdir -p \
   "$repo_root/field-trips" \
   "$repo_root/generated-images" \
   "$repo_root/dashboards" \
+  "$repo_root/schedules" \
   "$repo_root/.backups" \
   "$repo_root/.logs" \
   "$repo_root/.state" \
@@ -320,6 +325,7 @@ base_docker_args+=(
   -v "$repo_root/field-trips:/workspace/field-trips"
   -v "$repo_root/generated-images:/workspace/generated-images"
   -v "$repo_root/dashboards:/workspace/dashboards"
+  -v "$repo_root/schedules:/workspace/schedules"
   -v "$repo_root/.backups:/workspace/.backups"
   -v "$repo_root/.logs:/workspace/.logs"
   -v "$repo_root/.state:/workspace/.state"
