@@ -54,6 +54,7 @@ def write_session(
     grade_dir: str = "grade-3",
     images: str | None = None,
     messages: str | None = None,
+    videos: str | None = None,
     lesson_number: int | None = None,
     lesson_title: str | None = None,
     curriculum: str | None = None,
@@ -98,6 +99,8 @@ def write_session(
         (session / "images.md").write_text(images, encoding="utf-8")
     if messages:
         (session / "messages.md").write_text(messages, encoding="utf-8")
+    if videos:
+        (session / "videos.md").write_text(videos, encoding="utf-8")
     return session
 
 
@@ -281,6 +284,27 @@ def test_search_reads_captured_page_text(tmp_path):
     result = mod.cmd_search(search_args(env, "decomposers"))
     assert result["count"] == 1
     assert "images.md" in result["sessions"][0]["matches"]
+
+
+def test_search_reads_video_transcripts(tmp_path):
+    """A watched video is searchable by what it said, not only its URL."""
+    mod = load_module()
+    env = build_env(tmp_path)
+    write_session(
+        env,
+        date="2026-07-24",
+        subject="Science",
+        slug="bees",
+        videos=(
+            "## https://www.youtube.com/watch?v=example\n"
+            "title: How Bees Make Honey\n\n"
+            "Bees collect nectar and fan the water off until it becomes honey.\n"
+        ),
+    )
+
+    result = mod.cmd_search(search_args(env, "fan the water"))
+    assert result["count"] == 1
+    assert "videos.md" in result["sessions"][0]["matches"]
 
 
 def test_search_reads_the_parents_own_messages(tmp_path):

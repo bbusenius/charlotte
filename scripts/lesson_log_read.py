@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Query lesson logs without pulling whole sessions into context.
 
-A session's log, its page transcriptions, and the parent's original messages
-add up to a lot of text. A week of five subjects would swamp a conversation, so
+A session's log, its page transcriptions, video transcripts, and the parent's
+original messages add up to a lot of text. A week of five subjects would swamp a conversation, so
 every subcommand here returns frontmatter plus bounded excerpts, and the caller
 asks for more only when it needs more.
 
@@ -34,7 +34,7 @@ from hsd_common import load_registry, parse_date, resolve_student  # noqa: E402
 from lesson_log_new import iter_session_dirs, read_frontmatter  # noqa: E402
 
 DEFAULT_ROOT = Path("lesson-logs")
-SEARCHABLE = ("log.md", "images.md", "messages.md")
+SEARCHABLE = ("log.md", "images.md", "messages.md", "videos.md")
 SUMMARY_SECTION = "what we did"
 SUMMARY_CHARS = 240
 SNIPPET_CHARS = 200

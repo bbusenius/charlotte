@@ -12,7 +12,7 @@ There are two record sets, and the question decides which one to open:
 
 | Question is about | Source | Why |
 |---|---|---|
-| What was covered, how it went, whether a topic has come up, what a lesson contained | **Lesson logs** (`scripts/lesson_log_read.py`) | The log holds the full account, the observations, and the text of the captured pages. |
+| What was covered, how it went, whether a topic has come up, what a lesson contained | **Lesson logs** (`scripts/lesson_log_read.py`) | The log holds the full account, the observations, the text of the captured pages, and video transcripts. |
 | Hours, totals, date-range time accounting | **Time workbook** (`scripts/hsd_read.py time`) | Hours are a spreadsheet computation, and history from before lesson logging exists only there. |
 | Books read | **Reading workbook** (`scripts/hsd_read.py books`) | Reading lists are not lesson logs. |
 
@@ -38,8 +38,8 @@ Session summaries, newest first:
   [--latest N] [--limit N]
 ```
 
-Full-text search across the log, the captured page text, and the parent's
-original messages:
+Full-text search across the log, the captured page text, video transcripts,
+and the parent's original messages:
 
 ```bash
 .venv/bin/python scripts/lesson_log_read.py search --student <student> \
@@ -50,7 +50,7 @@ Named sections of one session:
 
 ```bash
 .venv/bin/python scripts/lesson_log_read.py show --session <session-dir> \
-  [--file log.md|images.md|messages.md] [--section "how it went"]
+  [--file log.md|images.md|messages.md|videos.md] [--section "how it went"]
 ```
 
 Question shapes:
@@ -63,9 +63,9 @@ Question shapes:
 - "How did last week go?" → `list --from --to`, then `show --section "how it went"`
   on the sessions that look relevant.
 
-Prefer `--section` over `--full`. A session's log, page transcriptions, and
-messages are large; pulling whole sessions into context defeats the point of
-these commands.
+Prefer `--section` over `--full`. A session's log, page transcriptions, video
+transcripts, and messages are large; pulling whole sessions into context
+defeats the point of these commands.
 
 ## Time and reading records
 

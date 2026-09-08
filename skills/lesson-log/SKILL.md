@@ -1,6 +1,6 @@
 ---
 name: lesson-log
-description: Record what was actually taught in a homeschool session as a durable lesson log — captured photos, screenshots, and voice notes, their extracted text, and a written account of what was covered and how it went. Use when the user asks to log time, log lessons, log what we did, process lesson messages, or write up a class. This is the primary record; the Homeschool-Dashboard spreadsheet projection is a separate skill (hsd-time-log).
+description: Record what was actually taught in a homeschool session as a durable lesson log — captured photos, screenshots, and voice notes, their extracted text, video transcripts, and a written account of what was covered and how it went. Use when the user asks to log time, log lessons, log what we did, process lesson messages, or write up a class. This is the primary record; the Homeschool-Dashboard spreadsheet projection is a separate skill (hsd-time-log).
 argument-hint: [child-name]
 ---
 
@@ -28,12 +28,14 @@ lesson-logs/<student>/<grade>/<year>/<month>/<day>/<subject>-<slug>/
     log.md          the synthesis — the deliverable
     messages.md     what the parent said: text verbatim, voice transcribed
     images.md       what Charlotte saw: description always, text when present
+    videos.md       videos watched: URL, what it was about, transcript
     sources/        image-01.jpg, image-02.jpg, voice-01.ogg
 ```
 
 `sources/` holds the raw files exactly as they arrived, named only by kind and
 arrival order. What an image actually is — which workbook page, whether she
 filled it in, what the scene shows — goes in `images.md`, never in a filename.
+What a video is — the URL, the transcript, what it taught — goes in `videos.md`.
 
 Never build these paths by hand. `scripts/lesson_log_new.py` owns directory
 naming, grade directories, collision handling, and source-file numbering.
@@ -103,8 +105,8 @@ display name. Each message carries a timestamp, sender alias, body text, and
 attachment paths. If no student has unprocessed material, say so and stop.
 
 **From conversation** — the user describes a lesson directly and attaches photos
-or voice notes. Resolve the student from what they said, from context, or by
-asking. Everything downstream is the same.
+or voice notes, or sends a video link. Resolve the student from what they said,
+from context, or by asking. Everything downstream is the same.
 
 ### Step 2: Read the material
 
@@ -129,6 +131,21 @@ otherwise:
 ```bash
 .venv/bin/python scripts/transcribe_media.py <path-to-audio>
 ```
+
+**Videos.** When inbound text contains a link to a video — YouTube, Vimeo,
+or any other page whose primary content is a watchable video — fetch its
+transcript. Do not download the video into `sources/`; the URL is the source.
+
+```bash
+.venv/bin/python scripts/fetch_video_transcript.py <url>
+```
+
+The helper returns JSON: the canonical URL, title, channel, duration, a
+transcript when captions or auto-captions exist, and a description to use
+only when they do not. Read that before writing anything. If captions are
+missing or the helper fails, the URL is still a video source — `videos.md`
+uses whatever you could read, and a helper failure is noted in your
+summary. Do not skip the session.
 
 **Extract per session:** the subject (exact match against the student's
 `subjects`), the date, start and end times when stated, the lesson number and
@@ -271,8 +288,10 @@ Voice note — [voice-01.ogg](sources/voice-01.ogg):
 ```
 
 Text messages verbatim — do not clean up, summarize, or correct them. Voice notes
-as transcript with a link to the audio. Provenance is timestamp, sender, and
-channel; never message IDs, which point into an inbox that gets pruned.
+as transcript with a link to the audio. Video URLs stay in the message as sent;
+the transcript and account of the video belong in `videos.md`. Provenance is
+timestamp, sender, and channel; never message IDs, which point into an inbox
+that gets pruned.
 
 ### Step 7: Write `images.md`
 
@@ -323,11 +342,46 @@ at the edge of mixed hardwood. Handwritten index cards tied to four stakes:
   staked plot — which corner, which species, which labels. That is
   site-specific and irreplaceable.
 
-### Step 8: Write `log.md`
+### Step 8: Write `videos.md`
+
+One section per video URL. Write this file only when the session has videos.
+Existing entries are never rewritten; a URL already present is skipped.
+
+```markdown
+# Videos watched
+
+## https://www.youtube.com/watch?v=example
+title: How Bees Make Honey
+channel: SciShow Kids
+duration: 4:12
+transcript: captions
+
+A short science video explaining how honeybees collect nectar, pass it to
+house bees, and fan the water off until it becomes honey. It shows the
+waggle dance as the way a forager tells the hive where the flowers are.
+
+Transcript:
+
+Bees collect nectar from flowers with their long tongues. Back at the hive
+they pass it to house bees, who spread the nectar in the comb and fan it
+until most of the water is gone.
+```
+
+- The heading is the canonical URL from the helper. That is the identity of
+  the video, the way `ref` is the identity of a page.
+- `transcript` is `captions`, `auto-captions`, or `none`.
+- The short account — what the video is about — is the analogue of an image
+  description. Write it from the transcript, not from the title alone. When
+  captions were missing, write it from the title and description the helper
+  returned.
+- Then the transcript itself, so the spoken content is searchable. Do not
+  dump the uploader's description here; it is not the lesson.
+
+### Step 9: Write `log.md`
 
 The synthesis, and the thing anyone will actually read. Rewrite it in full from
-everything now in the session — sources, `messages.md`, `images.md`, and the
-curriculum. Do not append to what is already there.
+everything now in the session — sources, `messages.md`, `images.md`,
+`videos.md`, and the curriculum. Do not append to what is already there.
 
 ```markdown
 ---
@@ -408,18 +462,22 @@ Body rules:
 
 - **What we did** is the important part. Content, not administration: what was
   read, what the experiment was, what she concluded, what the argument was. A
-  reader should learn the lesson from this, not just its name.
+  reader should learn the lesson from this, not just its name. When a video
+  was watched, this section is what the video taught — the demonstration, the
+  story, the argument — not "we watched a YouTube video."
 - **How it went** is where observations, struggles, and surprises go — "she
   confused 6s and 9s," "the T's are wobbly," "she got decomposers immediately."
   This is what `hsd-time-log` projects into the spreadsheet's Notes column and
   what makes review slides worth generating.
 - **What comes next** is a note to your future self about progression.
 - **Pages covered** links to `images.md` and embeds the images.
+- **Videos watched** links each video's URL and `videos.md`. Include it when
+  the session has videos.
 - Link to the sidecars; never inline their content. Duplicated text desyncs the
   moment new material arrives.
 - Standard markdown links only. Never Obsidian `[[wiki-links]]`.
 
-### Step 9: One log per student
+### Step 10: One log per student
 
 When a session included more than one child, write a **separate log for each**,
 with the narrative repeated and `also_present` naming the others. Each child's
@@ -427,7 +485,7 @@ log then carries the observations specific to her, which is usually the
 interesting part, and every reader downstream gets one child's history as a
 path rather than a query.
 
-### Step 10: Mark the material consumed
+### Step 11: Mark the material consumed
 
 Only after the durable log and its sidecars are written. For `kind: signal`:
 
@@ -462,7 +520,7 @@ runtime's normal outbound channel:
 Report per student:
 
 - Sessions written or added to, with subject, date, and path
-- What was captured: pages, work, photos, voice notes
+- What was captured: pages, work, photos, voice notes, videos
 - Sessions with no times yet, since those cannot reach Homeschool-Dashboard
 - Anything left unprocessed, and what it needs
 - Any lesson number that did not match its curriculum title

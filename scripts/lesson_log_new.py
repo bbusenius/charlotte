@@ -7,6 +7,7 @@ A lesson log is one directory per teaching session:
         log.md          synthesis (written by the lesson-log skill)
         messages.md     what the parent said
         images.md       what Charlotte saw
+        videos.md       videos watched: URL, account, transcript
         sources/        raw photos, screenshots, voice notes
 
 This script owns the mechanical parts of that layout — finding an existing

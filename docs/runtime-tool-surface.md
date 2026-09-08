@@ -20,6 +20,7 @@ Charlotte skills assume a small set of runtime capabilities. Runtime adapters ca
 | Typed queue state | `lesson-log`, `hsd-book-log` | The adapter named by `inbox.kind`; `signal` uses the `signal-sieve` CLI plus configured Signal capture state. Optional — conversational ingest needs none of it. See [ingest-contract.md](ingest-contract.md). |
 | Outbound report on unattended runs | `lesson-log` | The runtime's main conversation channel, so a scheduled queue drain can say what it could not log. Never the queue itself. |
 | Voice-note transcription | Chat-gateway voice input | `scripts/transcribe_media.py` (faster-whisper from `pyproject.toml`); Hermes uses its native `stt` layer instead, OpenClaw calls the script via its CLI transcription hook |
+| Video transcript fetch | `lesson-log` | `scripts/fetch_video_transcript.py` (yt-dlp from `pyproject.toml`); captions preferred, then auto-captions; the video itself is not downloaded |
 | MindFeast remote control | `mindfeast-slide-sync`, `mindfeast-slide-trigger`, `mindfeast-weekly-slides` | HTTP POST from the runtime network |
 
 ## External AI And Research Tools

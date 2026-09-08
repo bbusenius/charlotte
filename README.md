@@ -60,19 +60,21 @@ lesson-logs/eliana/grade-3/2026/07/24/
         log.md          what was taught, how it went, what comes next
         messages.md     what the parent said: text verbatim, voice transcribed
         images.md       what Charlotte saw: description plus visible text
+        videos.md       videos watched: URL, what it was about, transcript
         sources/        image-01.jpg, image-02.jpg, voice-01.ogg
 ```
 
-Year, month, and day directories make all of one school day's sessions visible together. Each session name begins with its configured subject. Files in `sources/` are named only by kind and arrival order. What an image shows — which workbook page, whether it is filled in, what the scene is — lives in `images.md`, and the real page numbers also go in the log's frontmatter, so "what page are we on in Language Arts?" is answerable from a summary.
+Year, month, and day directories make all of one school day's sessions visible together. Each session name begins with its configured subject. Files in `sources/` are named only by kind and arrival order. What an image shows — which workbook page, whether it is filled in, what the scene is — lives in `images.md`, and the real page numbers also go in the log's frontmatter, so "what page are we on in Language Arts?" is answerable from a summary. A watched video is logged the same way: the URL, the transcript, and what the video taught live in `videos.md`.
 
-1. A parent describes a lesson — in a [typed queue](docs/ingest-contract.md) or just in conversation — with any photos, screenshots, or voice notes
+1. A parent describes a lesson — in a [typed queue](docs/ingest-contract.md) or just in conversation — with any photos, screenshots, voice notes, or video links
 2. The `lesson-log` skill:
    - Reads every image with a vision-capable runtime tool and transcribes voice notes
+   - Fetches the transcript of any video URL and records what the video is about
    - Looks up the lesson through its configured curriculum index and native sources when available
    - Copies the captured media into the session and writes the extracted text alongside it
    - Writes the account of what was covered and how it went
 
-Keeping the extracted text, not just the photos, is what makes the record useful later: a year of captured pages is searchable, and it is enough to plan from for a subject with no digital curriculum.
+Keeping the extracted text, not just the photos, is what makes the record useful later: a year of captured pages and watched videos is searchable, and it is enough to plan from for a subject with no digital curriculum.
 
 ### Homeschool Dashboard time projection (`/hsd-time-log`)
 
@@ -95,7 +97,7 @@ It only ever adds missing rows. It never updates or overwrites an existing one, 
 
 ### Homeschool Dashboard record queries (`/hsd-records-read`)
 
-Answers questions about what a student has done, without pulling whole spreadsheets or whole lesson logs into the model. Content questions ("what was the last thing Alice did in Math?", "have we covered guide words?") are answered from the lesson logs, which hold the full account and the captured page text. Hours and totals are answered from the time workbook, where the computation lives and where history from before lesson logging still is. Books come from the reading-list workbook. Given a question, the skill:
+Answers questions about what a student has done, without pulling whole spreadsheets or whole lesson logs into the model. Content questions ("what was the last thing Alice did in Math?", "have we covered guide words?") are answered from the lesson logs, which hold the full account, the captured page text, and video transcripts. Hours and totals are answered from the time workbook, where the computation lives and where history from before lesson logging still is. Books come from the reading-list workbook. Given a question, the skill:
 
 1. Resolves the student through `students.yaml`
 2. Runs `scripts/hsd_read.py` against the configured workbook
@@ -222,7 +224,7 @@ This repository tracks the homeschool agent system, reusable skills, scripts, ex
 The following paths are writable local content roots and are intentionally gitignored:
 
 - `curricula/` — paid/imported native curriculum sources and indexes plus generated curricula, units, lessons, and lesson assets
-- `lesson-logs/` — the record of what was actually taught: one directory per session holding the captured photos and voice notes, their extracted text, and the written log
+- `lesson-logs/` — the record of what was actually taught: one directory per session holding the captured photos and voice notes, their extracted text, video transcripts, and the written log
 - `tablet-slides/` — generated Android lock-screen slide packages
 - `generated-images/` — standalone generated images that are not tablet slide packages or printable materials
 - `field-trips/` — generated field trip plans
@@ -571,7 +573,8 @@ Examples:
 | `scripts/openlibrary/subject_search.py` | Discovers books on a topic via Open Library subject search; classifies results as `picture_book`, `chapter_book`, `middle_grade`, `young_adult`, or `adult` for enrichment bucketing in field trip plans |
 | `scripts/get-sheet-name.py` | Resolves a sheet name by its positional index in an xlsx file |
 | `scripts/lesson_log_new.py` | Locates or creates lesson-log session directories and copies captured media in with stable append-only names |
-| `scripts/lesson_log_read.py` | Queries lesson logs as bounded JSON — session summaries, full-text search across logs/pages/messages, and named sections |
+| `scripts/lesson_log_read.py` | Queries lesson logs as bounded JSON — session summaries, full-text search across logs/pages/messages/video transcripts, and named sections |
+| `scripts/fetch_video_transcript.py` | Fetches a video URL's captions or auto-captions as JSON without downloading the video |
 | `scripts/hsd_project.py` | Finds logged sessions with no Homeschool-Dashboard row and appends the missing ones; never updates an existing row |
 | `scripts/hsd_read.py` | Reads configured Homeschool-Dashboard-compatible time and reading-list spreadsheets as compact JSON |
 | `scripts/hsd_dashboard.py` | Generates visual Homeschool Dashboard HTML for a configured student |
@@ -643,6 +646,7 @@ charlotte/
 │   ├── get-sheet-name.py
 │   ├── lesson_log_new.py    # session directories + captured media
 │   ├── lesson_log_read.py   # bounded queries over lesson logs
+│   ├── fetch_video_transcript.py # video URL captions/auto-captions as JSON
 │   ├── hsd_project.py       # lesson logs -> Homeschool-Dashboard rows
 │   ├── curriculum_resolve.py # configured curriculum identity + entrypoint resolution
 │   ├── curriculum_read.py   # bounded Markdown/text/native-PDF curriculum reader

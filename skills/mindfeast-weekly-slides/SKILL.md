@@ -52,7 +52,7 @@ If MindFeast config is missing, still generate slides when appropriate, but skip
   --include-section "how it went" --include-section "what comes next"
 ```
 
-Lesson logs are the primary source: they carry what was actually covered, how it went, and — through `images.md` — the text of any pages that were photographed. Use `search` or `show` on a session when a summary looks promising and you want the full account or the captured page text.
+Lesson logs are the primary source: they carry what was actually covered, how it went, and — through `images.md` and `videos.md` — the text of photographed pages and watched videos. Use `search` or `show` on a session when a summary looks promising and you want the full account, the captured page text, or a video transcript.
 
 If the week predates lesson logging and `list` returns nothing, fall back to the time-tracking workbook:
 
@@ -65,7 +65,7 @@ If the week predates lesson logging and `list` returns nothing, fall back to the
 Omit `--week-start` to use the seven-day period ending today. That helper outputs JSON grouped from the workbook, including optional `Notes`/`Note` column values when present. Its rows are one-line descriptions, so expect thinner material than a log.
 
 3. Read the curriculum **in addition** to the logs, never instead of them. Walk every item in `lesson.sources` and use `scripts/curriculum_read.py read` to recover that exact bounded Markdown, text, or PDF source. Use `pdf_pages`, `lines`, or `section` from the source item when present; render selected PDF pages to a temporary scratch directory when layout or imagery matters, inspect them, and delete the scratch directory afterward. Do not re-resolve an exact logged source by subject. Also read any other lesson material explicitly named. Skip material lookup only when the source is unavailable or its recorded location remains ambiguous.
-4. Read the enriched sessions as a whole week. Consider subject, what was covered, recovered curriculum material, captured page text, observations, time spent, and repetition across the week.
+4. Read the enriched sessions as a whole week. Consider subject, what was covered, recovered curriculum material, captured page text, video transcripts, observations, time spent, and repetition across the week.
 5. Decide whether slides are warranted. It is valid and sometimes best to create no slides.
 6. Build a slide plan before writing files. Keep the plan small: usually 3-6 slides, hard cap 8 unless the user explicitly asks for more.
 7. Use `mindfeast-slide-builder` to create each planned slide in the student's `tablet_slides_dir`.
@@ -81,14 +81,14 @@ Prioritize:
 
 - Sessions whose **How it went** mentions struggle, confusion, retrying, needs practice, missed items, or parent concern. This is the single best signal in the whole record.
 - New vocabulary, people, places, works of art, composers, scientific observations, math ideas, scripture, poetry, phonics, and history episodes.
-- Sessions with concrete content in the log or in the captured page text.
+- Sessions with concrete content in the log, the captured page text, or a video transcript.
 - Subjects with observations or dense conceptual work, even if that means several slides from one subject and none from another.
 
 Skip:
 
 - Empty or very thin weeks.
 - Routine handwriting or drill work with no durable content named.
-- Sessions where nothing specific can be recovered from the log, the captured pages, or the configured curriculum files.
+- Sessions where nothing specific can be recovered from the log, the captured pages, the video transcripts, or the configured curriculum files.
 - Content that would create fake or trivial questions.
 - Weeks where summer break or light review means slides would add noise.
 
