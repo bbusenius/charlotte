@@ -18,7 +18,7 @@ Charlotte skills assume a small set of runtime capabilities. Runtime adapters ca
 | Spreadsheet read | `hsd-records-read`, `mindfeast-weekly-slides` | `openpyxl` from `pyproject.toml` plus mounted workbook paths |
 | Dashboard HTML generation | `hsd-dashboard-show` | `homeschool_dashboard` from `pyproject.toml` plus mounted workbook paths |
 | Typed queue state | `lesson-log`, `hsd-book-log` | The adapter named by `inbox.kind`; `signal` uses the `signal-sieve` CLI plus configured Signal capture state. Optional — conversational ingest needs none of it. See [ingest-contract.md](ingest-contract.md). |
-| Outbound report on unattended runs | `lesson-log` | The runtime's main conversation channel, so a scheduled queue drain can say what it could not log. Never the queue itself. |
+| Outbound report on unattended runs | `lesson-log`, `weekly-review` | The runtime's main conversation channel. `lesson-log` uses it so a scheduled queue drain can say what it could not log; `weekly-review` uses it as the digest itself. Never the queue. |
 | Voice-note transcription | Chat-gateway voice input | `scripts/transcribe_media.py` (faster-whisper from `pyproject.toml`); Hermes uses its native `stt` layer instead, OpenClaw calls the script via its CLI transcription hook |
 | Video transcript fetch | `lesson-log` | `scripts/fetch_video_transcript.py` (yt-dlp from `pyproject.toml`); captions preferred, then auto-captions; the video itself is not downloaded |
 | MindFeast remote control | `mindfeast-slide-sync`, `mindfeast-slide-trigger`, `mindfeast-weekly-slides` | HTTP POST from the runtime network |

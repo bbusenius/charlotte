@@ -10,7 +10,7 @@ Charlotte connects the files and tools a family already controls. It can turn sh
 
 - Keep a durable record of what was actually taught: captured photos, screenshots, and voice notes, their extracted text, and a written account of each session.
 - Log lesson time and books to Homeschool-Dashboard-compatible spreadsheets.
-- Query those records and generate local visual dashboards.
+- Query those records, send a weekly household digest of how learning went, and generate local visual dashboards.
 - Build lessons, units, curricula, field trips, and print-ready materials.
 - Use a configurable local pedagogy knowledge base; a public-domain Charlotte Mason pack is included.
 - Create, validate, sync, and trigger optional MindFeast tablet slides.
@@ -114,7 +114,17 @@ Generates the visual [Homeschool Dashboard](https://github.com/bbusenius/Homesch
 3. Writes `dashboards/<student>.html`
 4. Opens, links, or reports the generated HTML path depending on the active runtime
 
-This path is for visual dashboards. Conversational questions about logged records should use `/hsd-records-read`.
+This path is for visual dashboards. Conversational questions about logged records should use `/hsd-records-read`. A weekly household digest of highlights and things that need attention is `/weekly-review`.
+
+### Weekly review (`/weekly-review`)
+
+A short household digest of the week's lesson logs for the adults who are responsible for the children. Given a request such as "how did the week go" or `/weekly-review`, the skill:
+
+1. Resolves students through `students.yaml` (every student, or one named student)
+2. Reads the week's lesson logs through `scripts/lesson_log_read.py`
+3. Replies with one chat message: highlights, things that need attention, and what to do next
+
+It does not recap classes one by one, write a file, create slides, or touch a spreadsheet. The lesson logs remain the durable record. Default range is the seven calendar days ending today. The skill is unattended-safe and meant to be scheduled weekly on the harness cron; the digest is the conversation reply.
 
 ### Field trip planning (`/mason-field-trip-planner`)
 
@@ -527,6 +537,10 @@ From a skill-aware harness, while in the project directory:
 /hsd-book-log                # process both children's book messages
 /hsd-book-log <student>      # only one student's book messages
 
+/weekly-review               # household digest of the last seven days (cron form)
+/weekly-review <student>     # only one student
+/weekly-review --from YYYY-MM-DD --to YYYY-MM-DD
+
 /mason-field-trip-planner <theme + location in prose>           # ranked list + interactive pick
 /mason-field-trip-planner <...> --auto                          # skip the ranked list; take rank 1
 /mason-field-trip-planner <...> --save path/to/plan.md          # override default save location
@@ -558,6 +572,8 @@ Examples:
 - `/mason-field-trip-planner We've just finished Math-3 Lessons 40–45 (rounding and estimation). Plan a trip in Hyde Park, Chicago, within 5 miles.`
 - `/mason-materials-builder A copywork page for a mid-elementary student on a Robert Louis Stevenson couplet, with a small pen-and-ink vignette at the top.`
 - `/mason-materials-builder A set of six picture-study cards for monarch butterfly life stages, tablet-first, watercolor register.`
+- `/weekly-review`
+- `/weekly-review last week`
 - `/mindfeast-weekly-slides <student> for this week, but don't sync yet.`
 - `/ao-picture-study Make <student>'s next AO picture study.`
 - `/ao-composer-study Make <student>'s next AO composer study.`
@@ -615,6 +631,7 @@ charlotte/
 ├── schedules/               # local-only forward-looking household schedules
 ├── skills/                  # canonical tracked skills
 │   ├── lesson-log/          # lesson content logging skill (the system of record)
+│   ├── weekly-review/       # household digest of the week's lesson logs
 │   ├── hsd-time-log/        # Homeschool-Dashboard time-row projection skill
 │   ├── hsd-book-log/        # Homeschool-Dashboard-compatible book logging skill
 │   ├── hsd-records-read/    # Read-only workbook query skill

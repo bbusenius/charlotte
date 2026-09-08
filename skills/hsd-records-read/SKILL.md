@@ -60,8 +60,9 @@ Question shapes:
 - "Have we covered guide words?" → `search --query "guide words"`.
 - "What was in that experiment?" → `list` to find the session, then `show` with
   `--section "what we did"`.
-- "How did last week go?" → `list --from --to`, then `show --section "how it went"`
-  on the sessions that look relevant.
+
+"How did last week go?", a weekly review, or a parent report of the week is
+`weekly-review`, not this skill.
 
 Prefer `--section` over `--full`. A session's log, page transcriptions, video
 transcripts, and messages are large; pulling whole sessions into context
