@@ -77,7 +77,7 @@ All routes require `Authorization: Bearer <token>` and a LAN peer. Mutations ret
 | --- | --- | --- |
 | Status | `GET /api/status` | — |
 | Audio | `POST /api/audio` | raw bytes; `Content-Type: audio/*` or `application/octet-stream`; optional `X-Filename` (clears composer/title) |
-| Audio meta | `POST /api/audio/meta` | `{"composer":"…","title":"…"}` (empty strings allowed; same sanitization/length as picture meta) |
+| Audio meta | `POST /api/audio/meta` | `{"composer":"…","title":"…"}` — UI labels **Credit** / **Title**; empty strings allowed; same sanitization/length as picture meta |
 | Picture | `POST /api/picture` | raw JPEG/PNG/WebP; optional `X-Filename` |
 | Picture meta | `POST /api/picture/meta` | `{"artist":"…","title":"…"}` (empty strings allowed) |
 | Notes | `POST /api/notes` | `notes` and/or `notesHeading` (at least one) |
@@ -90,7 +90,7 @@ All routes require `Authorization: Bearer <token>` and a LAN peer. Mutations ret
 
 Limits worth respecting: audio ≤ 50 MiB; picture ≤ 10 MiB; JSON ≤ 4 KiB; notes ≤ 2 KiB UTF-8; heading/artist/title/composer/audio title ≤ 200 chars. Theme colors are `#RGB` / `#RRGGBB`; `cardAlpha` is 0–1. Accent-surface text is fixed white (not a token).
 
-Helper flags for wake-sound attribution: `--composer` and `--audio-title` map to `POST /api/audio/meta` (`composer` / `title` JSON). Status exposes `audioComposer` and `audioTitle`. Importing or clearing audio clears those fields; empty strings are allowed.
+Helper flags for wake-sound attribution: `--composer` (credit) and `--audio-title` (title) map to `POST /api/audio/meta` (`composer` / `title` JSON). Status exposes stable keys `audioComposer` and `audioTitle` (UI: Credit / Title). Importing or clearing audio clears those fields; empty strings are allowed. Default picture title is English **Sunset**.
 
 ## Theme from the picture
 
