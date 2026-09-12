@@ -1,6 +1,7 @@
 ---
 name: mindfeast-weekly-slides
 description: Review a student's recent lesson logs, choose a small set of useful weekly review opportunities, create MindFeast-compatible tablet slides with mindfeast-slide-builder, and optionally trigger the student's MindFeast remote sync endpoint. Use when asked to make weekly learning slides, review slides, lock-screen questions, or MindFeast slides from a week of logged lessons.
+argument-hint: "[student-name] [--week-start YYYY-MM-DD] [--no-sync]"
 ---
 
 # MindFeast Weekly Slides
@@ -12,6 +13,14 @@ This skill orchestrates:
 - The student's lesson logs under `lesson-logs/`, written by `lesson-log`.
 - `mindfeast-slide-builder` for the actual slide packages.
 - MindFeast remote sync via the per-student config in `students.yaml`. The standalone sync contract lives in `mindfeast-slide-sync`.
+
+## Usage
+
+- `/mindfeast-weekly-slides` — every student with both `mindfeast.remote_url` and `mindfeast.remote_token` set
+- `/mindfeast-weekly-slides <student>` — that student, even if MindFeast remote config is missing
+- Range from the prompt; default is the seven calendar days ending today
+
+Also runs when the harness cron invokes it with no student named. Treat "all students", "every student", and a scheduled job the same as the unnamed form. A scheduled job has no one to answer a question; never ask which child.
 
 ## Student Config
 
@@ -36,13 +45,15 @@ mindfeast:
   remote_token: "token from MindFeast remote settings"
 ```
 
-`remote_url` is the base MindFeast remote URL, including scheme, host, and port, with no path or token fragment. `remote_token` is the required token from MindFeast remote settings. Always POST to `<remote_url>/api/sync` and send the token in the `Authorization: Bearer ...` header.
+`remote_url` is the base MindFeast remote URL, including scheme, host, and port, with no path or token fragment. `remote_token` is the required token from MindFeast remote settings. Always POST to `<remote_url>/api/sync` and send the token in the `Authorization: Bearer ...` header. Treat blank or whitespace-only values as missing.
 
-If MindFeast config is missing, still generate slides when appropriate, but skip sync and report exactly which field is missing.
+If a student is named and MindFeast remote config is missing, still generate slides when appropriate, but skip sync and report exactly which field is missing.
+
+If no student is named, generate only for students with both `mindfeast.remote_url` and `mindfeast.remote_token` configured. Skip everyone else without creating slides. `tablet_slides_dir` is the output path, not a tablet. If more than one student is configured, report each result separately. If none are configured, say so and stop.
 
 ## Workflow
 
-1. Parse the prompt for student, week/range, sync preference, and any explicitly requested subject focus. Normally infer subject weighting from the week's sessions themselves rather than asking for or assuming a subject focus. If no range is specified, review the seven calendar days ending today, inclusive.
+1. Parse the prompt for student, week/range, sync preference, and any explicitly requested subject focus. Resolve who is covered: a named slug, display name, or alias is only that student, even without MindFeast remote config. No student named, "all students", "every student", or a scheduled job means every student with both `mindfeast.remote_url` and `mindfeast.remote_token` non-blank. Phrases such as "all students" do not name a student. Normally infer subject weighting from the week's sessions themselves rather than asking for or assuming a subject focus. If no range is specified, review the seven calendar days ending today, inclusive. Repeat steps 2–9 for each covered student.
 2. Collect the week's lesson logs from the repo root:
 
 ```bash

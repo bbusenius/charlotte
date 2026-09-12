@@ -27,6 +27,8 @@ students:
     grade: 4
     aliases: [alice]
     tablet_slides_dir: tablet-slides/alice/active
+    # Omit the mindfeast block until this student has a tablet. Blank
+    # remote_url/remote_token is the same as missing.
     mindfeast:
       remote_url: http://192.0.2.10:8787
       remote_token: ""

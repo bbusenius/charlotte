@@ -161,7 +161,7 @@ Prepares the next AmblesideOnline composer-rotation selection for a configured s
 
 ### MindFeast weekly slides (`/mindfeast-weekly-slides`)
 
-Generates a small weekly review set for the MindFeast Android lock-screen app from a student's time-tracking spreadsheet. Given a student and optional week, the skill:
+Generates a small weekly review set for the MindFeast Android lock-screen app from a student's lesson logs, with a time-tracking workbook fallback. Given a student and optional week, the skill covers that student even when MindFeast remote config is missing (sync is then skipped). If no student is named, it covers every student with complete MindFeast remote config. Then it:
 
 1. Reads the student's logged lesson rows via `skills/mindfeast-weekly-slides/scripts/collect_week.py`
 2. Reads configured curriculum files or other known lesson materials when available to understand what was actually covered
@@ -204,7 +204,7 @@ mindfeast:
   remote_token: ""
 ```
 
-`remote_url` is the base URL for the tablet's MindFeast remote server. `remote_token` is the bearer token copied from MindFeast remote settings. Keep real tokens in local `students.yaml`, not in committed examples.
+`remote_url` is the base URL for the tablet's MindFeast remote server. `remote_token` is the bearer token copied from MindFeast remote settings. Keep real tokens in local `students.yaml`, not in committed examples. Omit the `mindfeast` block until the student has a tablet; blank `remote_url` or `remote_token` is the same as missing.
 
 MindFeast Agent Alarm is per student and a separate Android app from lock-screen MindFeast:
 
@@ -565,6 +565,7 @@ From a skill-aware harness, while in the project directory:
 /mason-materials-builder <...> --format pdf|html|svg|png|md     # override default format
 /mason-materials-builder <...> --size 1K|2K|4K                  # override illustration resolution
 
+/mindfeast-weekly-slides                                  # this week, every student with a tablet remote
 /mindfeast-weekly-slides <student>                        # generate this week's MindFeast slides
 /mindfeast-weekly-slides <student> --week-start 2026-05-18 # generate from a specific week
 /mindfeast-weekly-slides <student> --no-sync              # create/validate slides without tablet sync
