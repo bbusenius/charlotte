@@ -1,10 +1,11 @@
 # Students registry — copy this file to students.yaml and fill in your own data.
 #
-# This file is the single source of truth for per-student metadata used by
-# skills in this project (mason-materials-builder, mindfeast-slide-builder,
-# mindfeast-weekly-slides, mindfeast-slide-sync, mindfeast-slide-trigger,
-# hsd-time-log, hsd-book-log, mason-lesson-plan-builder, mason-field-trip-planner,
-# mason-unit-builder, mason-curriculum-builder).
+# This file is the single source of truth for household and per-student
+# metadata used by skills in this project (mason-materials-builder,
+# mindfeast-slide-builder, mindfeast-weekly-slides, mindfeast-slide-sync,
+# mindfeast-slide-trigger, mindfeast-agent-alarm, hsd-time-log, hsd-book-log,
+# mason-lesson-plan-builder, mason-field-trip-planner, mason-unit-builder,
+# mason-curriculum-builder).
 #
 # Students are keyed by a lowercase slug. Curriculum content is shared across
 # students; the per-student `curricula` map records the concrete entrypoint
@@ -34,6 +35,11 @@ students:
         no_tablet:
           days: [sunday]
           count: 50
+    # Separate Android app from lock-screen MindFeast. Two students may share
+    # one URL when they share a tablet.
+    agent_alarm:
+      remote_url: http://192.0.2.20:8787
+      remote_token: ""
     curricula_dir: curricula
     curricula:
       third-party/example-publisher/language-arts-level-4/curriculum.md:
@@ -89,6 +95,9 @@ students:
     tablet_slides_dir: tablet-slides/charlie/active
     mindfeast:
       remote_url: http://192.0.2.10:8787
+      remote_token: ""
+    agent_alarm:
+      remote_url: http://192.0.2.20:8787
       remote_token: ""
     curricula_dir: curricula
     curricula: {}

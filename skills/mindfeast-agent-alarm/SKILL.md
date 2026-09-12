@@ -1,14 +1,14 @@
 ---
 name: mindfeast-agent-alarm
-description: Push a morning atmosphere to MindFeast Agent Alarm over LAN (status, wake audio, picture, notes/heading, theme, wake time/enable, clock format). Use when the user asks to set the agent alarm, push a wake song, morning picture, morning note, theme, or alarm time to a student's tablet. Reads per-student agent_alarm.remote_url and agent_alarm.remote_token from students.yaml; never prints the token.
-argument-hint: "[student name|slug|alias] [--all] [--status|--dry-run] [--audio PATH] [--picture PATH] [--artist TEXT] [--title TEXT] [--notes TEXT] [--notes-heading TEXT] [--theme JSON|--theme-restore-default] [--time HH:MM] [--enable|--disable] [--use-24-hour|--use-12-hour]"
+description: Push a morning atmosphere to MindFeast Agent Alarm over LAN (status, wake audio, picture, notes/heading, theme, wake time, repeat days, enable, clock format). Use when the user asks to set the agent alarm, push a wake song, morning picture, morning note, theme, alarm time, or weekday schedule to a student's tablet. Reads per-student agent_alarm.remote_url and agent_alarm.remote_token from students.yaml; never prints the token.
+argument-hint: "[student name|slug|alias] [--all] [--status|--dry-run] [--audio PATH] [--composer TEXT] [--audio-title TEXT] [--picture PATH] [--artist TEXT] [--title TEXT] [--notes TEXT] [--notes-heading TEXT] [--theme JSON|--theme-restore-default] [--time HH:MM] [--days DAYS] [--enable|--disable] [--use-24-hour|--use-12-hour]"
 ---
 
 # MindFeast Agent Alarm
 
 Talk to the **MindFeast Agent Alarm** Android app on the LAN. This is separate from MindFeast lock-screen slide sync (`mindfeast.remote_*`). Each student with an alarm has their own `agent_alarm` endpoint. Two students may share one URL when they share a tablet.
 
-Use this skill when the user asks to set the agent alarm, push wake audio, a morning picture, morning notes, theme colors, or alarm time/enable.
+Use this skill when the user asks to set the agent alarm, push wake audio, a morning picture, morning notes, theme colors, alarm time, weekday repeat days, or enable/disable.
 
 Do not invent the tablet IP or token. Never print the bearer token. Never use MindFeast lock-screen `/api/sync` or `/api/trigger` here. Do not create slides or generate media in this skill; push existing files.
 
@@ -34,10 +34,11 @@ agent_alarm:
 
 ## Workflow
 
-1. Parse the prompt for a student name, slug, alias, `--all`, the operations below, `--dry-run`, and timeout. Multiple ops in one run are fine; order them: status (optional) → audio → picture → picture meta → notes → theme → clock → time → enable.
+1. Parse the prompt for a student name, slug, alias, `--all`, the operations below, `--dry-run`, and timeout. Multiple ops in one run are fine; order them: status (optional) → audio → picture → picture meta → audio meta → notes → theme → clock → time → days → enable.
 2. If a student is named, push only that student's alarm. If no student is named, push every student with both `agent_alarm.remote_url` and `agent_alarm.remote_token` configured. If more than one student is configured, report each result separately.
 3. When the run includes a picture, inspect that image and derive `--theme` before calling the helper. See *Theme from the picture*. Do not push a picture without `--theme`. Do not restore the default theme on the same run as a picture. If no image-understanding capability can inspect the pixels, stop and leave the tablet unchanged.
-4. From the repository root, use the helper (never embed the token in argv via shell `curl -H "Authorization: Bearer …"`):
+4. When the run includes a wake song, also pass `--composer` (UI: Credit) and `--audio-title` (UI: Title) if they are known — the same way `--artist` / `--title` go with a picture. `--artist` and `--title` remain picture-only; do not reuse them for the song. Do not invent credit or title. If omitted, the song still updates and those fields stay blank. Pass them on the same invocation as `--audio`.
+5. From the repository root, use the helper (never embed the token in argv via shell `curl -H "Authorization: Bearer …"`):
 
 ```bash
 .venv/bin/python skills/mindfeast-agent-alarm/scripts/push.py --student <student-slug-or-name> --status
@@ -45,6 +46,8 @@ agent_alarm:
 .venv/bin/python skills/mindfeast-agent-alarm/scripts/push.py \
   --student <student-slug-or-name> \
   --audio /path/to/wake.mp3 \
+  --composer "Composer Name" \
+  --audio-title "Song Title" \
   --picture /path/to/morning.jpg \
   --artist "Artist Name" \
   --title "Work Title" \
@@ -52,6 +55,7 @@ agent_alarm:
   --notes $'Line one.\nLine two.' \
   --theme '<JSON derived from inspecting the picture>' \
   --time 07:30 \
+  --days mon,tue,wed,thu,fri \
   --enable
 ```
 
@@ -67,7 +71,17 @@ Restore the app default theme (not with `--picture`):
 .venv/bin/python skills/mindfeast-agent-alarm/scripts/push.py --student <student-slug-or-name> --theme-restore-default
 ```
 
-5. Prefer the helper over hand-rolled HTTP. If you must use curl, write the Authorization header to a temp file (`Authorization: Bearer <token>`) and pass `--header @file`, then delete the file.
+Weekday schedule only (does not enable or disable):
+
+```bash
+.venv/bin/python skills/mindfeast-agent-alarm/scripts/push.py --student <student-slug-or-name> --days mon,tue,wed,thu,fri
+.venv/bin/python skills/mindfeast-agent-alarm/scripts/push.py --student <student-slug-or-name> --days all
+.venv/bin/python skills/mindfeast-agent-alarm/scripts/push.py --student <student-slug-or-name> --days none
+```
+
+`--days` accepts comma-separated `sun,mon,tue,wed,thu,fri,sat`, `all` (all seven), or `none` / `one-shot` / empty (posts `[]`). Empty days mean: when the alarm next fires, the app disables itself (one-shot). Default in the app is all seven days. `--days` never toggles enable; use `--enable` / `--disable` separately.
+
+6. Prefer the helper over hand-rolled HTTP. If you must use curl, write the Authorization header to a temp file (`Authorization: Bearer <token>`) and pass `--header @file`, then delete the file.
 
 ## API contract (v1)
 
@@ -86,6 +100,7 @@ All routes require `Authorization: Bearer <token>` and a LAN peer. Mutations ret
 | Theme restore | `POST /api/theme/restore-default` | `{}` |
 | Clock format | `POST /api/alarm/clock` | `{"use24Hour":true\|false}` (default app preference is 12-hour) |
 | Time | `POST /api/alarm/time` | `{"time":"07:30"}` or `{"hour":7,"minute":30}` |
+| Days | `POST /api/alarm/days` | `{"days":["mon","tue",…]}` and/or `{"daysMask":N}` (bit0=Sun … bit6=Sat). Empty `days` = one-shot (disable after next fire). Default all seven. Independent of enable. |
 | Enable | `POST /api/alarm/enable` | `{"enabled":true\|false}` |
 
 Limits worth respecting: audio ≤ 50 MiB; picture ≤ 10 MiB; JSON ≤ 4 KiB; notes ≤ 2 KiB UTF-8; heading/artist/title/composer/audio title ≤ 200 chars. Theme colors are `#RGB` / `#RRGGBB`; `cardAlpha` is 0–1. Accent-surface text is fixed white (not a token).
@@ -116,6 +131,6 @@ Report:
 - Endpoint host and path only (never the token)
 - Each operation attempted and HTTP success/failure
 - When a picture was pushed: the derived theme tokens
-- From status when useful: next fire, `audioPresent`, `pictureCustom`, `notesHeading`, `use24Hour`, theme tokens
+- From status when useful: next fire, `audioPresent`, `audioComposer`, `audioTitle`, `pictureCustom`, `notesHeading`, `use24Hour`, `days`, `daysMask`, `oneShot`, theme tokens
 
 If the listener is down, Wi-Fi differs, or auth fails, say so plainly and leave media on disk — do not claim the tablet updated.

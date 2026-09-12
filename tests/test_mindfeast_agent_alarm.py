@@ -260,6 +260,142 @@ def test_invalid_time():
         push.main(["--time", "25:00"])
 
 
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ("mon,tue,wed", ["mon", "tue", "wed"]),
+        ("Mon, TUE", ["mon", "tue"]),
+        ("all", ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]),
+        ("", []),
+        ("none", []),
+        ("one-shot", []),
+        ("oneshot", []),
+        ("mon,mon,tue", ["mon", "tue"]),
+    ],
+)
+def test_parse_days(value, expected):
+    push = load_push_module()
+    assert push.parse_days(value) == expected
+
+
+def test_parse_days_rejects_unknown_names():
+    push = load_push_module()
+    with pytest.raises(SystemExit, match="Invalid --days"):
+        push.parse_days("monday")
+
+
+def test_invalid_days():
+    push = load_push_module()
+    with pytest.raises(SystemExit, match="Invalid --days"):
+        push.main(["--days", "monday"])
+
+
+def test_days_posts_named_student_without_leaking_token(tmp_path, monkeypatch, capsys):
+    push = load_push_module()
+    registry = write_registry(tmp_path / "students.yaml", two_student_registry())
+    calls = []
+
+    def fake_request(method, url, headers, json, data, timeout):
+        calls.append(
+            {
+                "method": method,
+                "url": url,
+                "headers": headers,
+                "json": json,
+                "data": data,
+                "timeout": timeout,
+            }
+        )
+        return FakeResponse({"ok": True, "days": ["mon", "tue"]})
+
+    monkeypatch.setattr(push.requests, "request", fake_request)
+
+    code = push.main(
+        [
+            "--days",
+            "mon,tue,wed,thu,fri",
+            "--student",
+            "Alice",
+            "--students-file",
+            str(registry),
+            "--timeout",
+            "12",
+        ]
+    )
+    output = capsys.readouterr().out
+
+    assert code == 0
+    assert calls == [
+        {
+            "method": "POST",
+            "url": "http://alice-alarm.local:8787/api/alarm/days",
+            "headers": {
+                "Authorization": "Bearer alice-secret",
+                "Content-Type": "application/json",
+            },
+            "json": {"days": ["mon", "tue", "wed", "thu", "fri"]},
+            "data": None,
+            "timeout": 12.0,
+        },
+        {
+            "method": "GET",
+            "url": "http://alice-alarm.local:8787/api/status",
+            "headers": {"Authorization": "Bearer alice-secret"},
+            "json": None,
+            "data": None,
+            "timeout": 12.0,
+        },
+    ]
+    assert "alice-secret" not in output
+    assert "lockscreen-secret" not in output
+    assert "household-secret" not in output
+    payload = json.loads(output)
+    assert payload["results"][0]["student"] == "alice"
+    assert payload["results"][0]["operations"][0]["endpoint"] == (
+        "alice-alarm.local:8787/api/alarm/days"
+    )
+
+
+def test_days_none_posts_empty_list(tmp_path, monkeypatch, capsys):
+    push = load_push_module()
+    registry = write_registry(tmp_path / "students.yaml", two_student_registry())
+    bodies = []
+
+    def fake_request(method, url, headers, json, data, timeout):
+        bodies.append((method, url, json))
+        return FakeResponse({"ok": True, "days": []})
+
+    monkeypatch.setattr(push.requests, "request", fake_request)
+
+    code = push.main(["--days", "none", "--student", "alice", "--students-file", str(registry)])
+    payload = json.loads(capsys.readouterr().out)
+
+    assert code == 0
+    assert bodies[0] == (
+        "POST",
+        "http://alice-alarm.local:8787/api/alarm/days",
+        {"days": []},
+    )
+    assert "alice-secret" not in str(payload)
+
+
+def test_days_all_posts_sun_through_sat(tmp_path, monkeypatch):
+    push = load_push_module()
+    registry = write_registry(tmp_path / "students.yaml", two_student_registry())
+    bodies = []
+
+    def fake_request(method, url, headers, json, data, timeout):
+        bodies.append(json)
+        return FakeResponse({"ok": True})
+
+    monkeypatch.setattr(push.requests, "request", fake_request)
+
+    code = push.main(["--days", "all", "--student", "alice", "--students-file", str(registry)])
+
+    assert code == 0
+    assert bodies[0] == {"days": ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]}
+
+
 def test_nothing_to_do():
     push = load_push_module()
     with pytest.raises(SystemExit, match="Nothing to do"):

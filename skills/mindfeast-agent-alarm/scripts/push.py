@@ -17,6 +17,35 @@ import yaml
 
 TIME_RE = re.compile(r"^(\d{1,2}):(\d{2})$")
 
+DAY_NAMES = ("sun", "mon", "tue", "wed", "thu", "fri", "sat")
+
+
+def parse_days(value: str) -> list[str]:
+    """Parse --days into lowercase three-letter names for POST /api/alarm/days.
+
+    Accepts comma-separated names (mon,tue), ``all``, or empty/none/one-shot for [].
+    """
+    raw = value.strip().lower()
+    if raw in {"", "none", "one-shot", "oneshot"}:
+        return []
+    if raw == "all":
+        return list(DAY_NAMES)
+    parts = [p.strip().lower() for p in raw.replace(" ", "").split(",") if p.strip()]
+    if not parts:
+        return []
+    invalid = [p for p in parts if p not in DAY_NAMES]
+    if invalid:
+        raise SystemExit(
+            f"Invalid --days value(s): {', '.join(invalid)}. "
+            f"Use sun,mon,tue,wed,thu,fri,sat (comma-separated), all, or none/one-shot."
+        )
+    # Preserve first-seen order; API accepts any order / duplicates.
+    seen: list[str] = []
+    for p in parts:
+        if p not in seen:
+            seen.append(p)
+    return seen
+
 
 def load_students(path: Path) -> dict[str, Any]:
     if not path.is_file():
@@ -183,6 +212,7 @@ def mutation_requested(args: argparse.Namespace) -> bool:
             args.theme,
             args.theme_restore_default,
             args.time,
+            args.days is not None,
             args.enable,
             args.disable,
             args.use_24_hour,
@@ -316,6 +346,14 @@ def push_one(
             content_type="application/json",
         )
 
+    if args.days is not None:
+        run(
+            method="POST",
+            path="/api/alarm/days",
+            json_body={"days": args.days},
+            content_type="application/json",
+        )
+
     if args.enable or args.disable:
         run(
             method="POST",
@@ -359,6 +397,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--theme", help="JSON object of theme tokens")
     parser.add_argument("--theme-restore-default", action="store_true")
     parser.add_argument("--time", help="HH:MM local wake time")
+    parser.add_argument(
+        "--days",
+        help=(
+            "Repeat days for POST /api/alarm/days: comma-separated "
+            "sun,mon,tue,wed,thu,fri,sat; all; or none/one-shot for []. "
+            "Does not enable/disable the alarm."
+        ),
+    )
     parser.add_argument("--enable", action="store_true")
     parser.add_argument("--disable", action="store_true")
     parser.add_argument("--use-24-hour", action="store_true")
@@ -386,6 +432,8 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("Nothing to do; pass --status and/or push flags (see --help)")
 
     alarm_time = parse_time(args.time) if args.time else None
+    if args.days is not None:
+        args.days = parse_days(args.days)
     theme_obj = parse_theme(args)
     audio_path = resolve_media(args.audio, kind="Audio")
     picture_path = resolve_media(args.picture, kind="Picture")

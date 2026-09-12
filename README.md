@@ -13,7 +13,7 @@ Charlotte connects the files and tools a family already controls. It can turn sh
 - Query those records, send a weekly household digest of how learning went, and generate local visual dashboards.
 - Build lessons, units, curricula, field trips, and print-ready materials.
 - Use a configurable local pedagogy knowledge base; a public-domain Charlotte Mason pack is included.
-- Create, validate, sync, and trigger optional MindFeast tablet slides.
+- Create, validate, sync, and trigger optional MindFeast tablet slides, and push a student's MindFeast Agent Alarm.
 - Run directly in a coding agent or through the included always-on Hermes and OpenClaw adapters.
 
 Charlotte does not require MindFeast, Signal, a messaging gateway, or cloud-hosted family records. Enable only the workflows and external tools you want.
@@ -182,9 +182,13 @@ Syncs already-created tablet slide packages to the student's configured MindFeas
 
 Triggers a configured tablet to show a MindFeast slide now. Given a student, it reads `mindfeast.remote_url` and `mindfeast.remote_token` from `students.yaml`, POSTs once to `<remote_url>/api/trigger`, and reports the endpoint host/path, response summary, and returned `slideId` without printing the token. If no student is named, it triggers every student with complete MindFeast remote config.
 
+### MindFeast Agent Alarm (`/mindfeast-agent-alarm`)
+
+Pushes a morning atmosphere to a student's MindFeast Agent Alarm app over LAN. Given a student, it reads `agent_alarm.remote_url` and `agent_alarm.remote_token` from `students.yaml` (not `mindfeast.remote_*` lock-screen settings) and can set status, wake audio, a picture, notes, theme, clock format, wake time, repeat days, and enable/disable. Reports the student, endpoint host/path, and each operation without printing the token. If no student is named, it pushes every student with complete Agent Alarm config. Two students may share one URL when they share a tablet.
+
 ## Student registry
 
-Per-student metadata lives in `students.yaml` at the repo root. This is the single source of truth for display name, grade, aliases, concrete curriculum index files (with optional identity, aliases, and subject overrides), subjects, time-tracking spreadsheet path, tablet slide directory, MindFeast remote sync config, the optional capture `inbox`, and reading list config (spreadsheet path, sheet indices, its own optional `inbox`). Its top-level `schedules:` map registers shared forward-looking family schedules. Skills read this registry rather than hard-coding household paths, so the repo stays portable — another family can ship their own `students.yaml`.
+Household and per-student metadata lives in `students.yaml` at the repo root. This is the single source of truth for display name, grade, aliases, concrete curriculum index files (with optional identity, aliases, and subject overrides), subjects, time-tracking spreadsheet path, tablet slide directory, MindFeast remote sync config, MindFeast Agent Alarm config, the optional capture `inbox`, and reading list config (spreadsheet path, sheet indices, its own optional `inbox`). Its top-level `schedules:` map registers shared forward-looking family schedules. Skills read this registry rather than hard-coding household paths, so the repo stays portable — another family can ship their own `students.yaml`.
 
 Adding a student:
 
@@ -192,7 +196,7 @@ Adding a student:
 2. Put curriculum content under `curricula/` (`curricula/third-party/` for purchased/imported material) and list its concrete lookup entrypoint in the student's `curricula` map
 3. Skills that need the metadata will pick it up automatically
 
-MindFeast sync is configured per student:
+MindFeast lock-screen sync is configured per student:
 
 ```yaml
 mindfeast:
@@ -201,6 +205,16 @@ mindfeast:
 ```
 
 `remote_url` is the base URL for the tablet's MindFeast remote server. `remote_token` is the bearer token copied from MindFeast remote settings. Keep real tokens in local `students.yaml`, not in committed examples.
+
+MindFeast Agent Alarm is per student and a separate Android app from lock-screen MindFeast:
+
+```yaml
+agent_alarm:
+  remote_url: http://192.0.2.20:8787
+  remote_token: ""
+```
+
+`agent_alarm.remote_url` is scheme, host, and port only. `agent_alarm.remote_token` is the bearer token from Agent Alarm settings. Do not reuse `mindfeast.remote_*` values here. Two students may share one URL when they share a tablet.
 
 Shared schedules are a planning layer, not records of completed lessons. Use the human title as the map key; `path` is repository-relative and must be under `schedules/`. The Charlotte LAN page lists configured schedules and serves only those configured paths.
 
@@ -565,6 +579,12 @@ From a skill-aware harness, while in the project directory:
 /mindfeast-slide-trigger <student>                        # trigger a slide on one tablet
 /mindfeast-slide-trigger --all                            # trigger every configured tablet
 /mindfeast-slide-trigger <student> --dry-run              # validate trigger config without POSTing
+
+/mindfeast-agent-alarm <student> --status                 # Agent Alarm status for one student
+/mindfeast-agent-alarm --all --status                     # status for every configured alarm
+/mindfeast-agent-alarm <student> --audio path --time 07:30 --enable
+/mindfeast-agent-alarm <student> --days mon,tue,wed,thu,fri
+/mindfeast-agent-alarm <student> --dry-run --status       # validate config without POSTing
 ```
 
 Examples:
@@ -579,6 +599,7 @@ Examples:
 - `/ao-composer-study Make <student>'s next AO composer study.`
 - `/mindfeast-slide-sync <student>`
 - `/mindfeast-slide-trigger <student>`
+- `/mindfeast-agent-alarm <student> --status`
 
 ## Scripts
 
@@ -598,6 +619,7 @@ Examples:
 | `scripts/gemini_image.py` | Direct Google/Gemini image backend used by `scripts/charlotte_image.py` when configured |
 | `skills/mindfeast-slide-sync/scripts/sync.py` | Syncs existing MindFeast tablet slides through the per-student remote endpoint in `students.yaml` |
 | `skills/mindfeast-slide-trigger/scripts/trigger.py` | Triggers a configured MindFeast tablet to show a slide through the per-student remote endpoint in `students.yaml` |
+| `skills/mindfeast-agent-alarm/scripts/push.py` | Pushes MindFeast Agent Alarm settings through the per-student `agent_alarm` endpoint in `students.yaml` |
 | `skills/mindfeast-slide-builder/scripts/make_slide.py` | Creates a MindFeast slide folder with `slide.md` and optional copied media |
 | `skills/mindfeast-slide-builder/scripts/validate_slide.py` | Validates MindFeast slide folders before delivery |
 | `skills/ao-picture-study/scripts/rotation.py` | Parses AO's artist rotation and maintains the last-created cursor |
@@ -646,6 +668,7 @@ charlotte/
 │   ├── mindfeast-weekly-slides/ # weekly MindFeast slides from lesson logs (workbook fallback)
 │   ├── mindfeast-slide-sync/ # sync existing MindFeast slides to tablets
 │   ├── mindfeast-slide-trigger/ # trigger a MindFeast tablet slide remotely
+│   ├── mindfeast-agent-alarm/ # per-student MindFeast Agent Alarm LAN client
 │   ├── mindfeast-slide-builder/ # MindFeast slide generation skill
 │   │   └── scripts/
 │   │       ├── make_slide.py
