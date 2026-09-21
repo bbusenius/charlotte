@@ -20,11 +20,11 @@ This skill expects:
 
 ```yaml
 agent_alarm:
-  remote_url: http://192.0.2.20:8787
+  remote_url: "paste base URL from Agent Alarm → Welcome your agent"
   remote_token: "token from Agent Alarm → Welcome your agent"
 ```
 
-`remote_url` is scheme + host + port only (default listen port `8787`). `remote_token` is the app bearer token. If either is missing or blank, skip that student and report that Agent Alarm is not configured — do not fall back to `mindfeast.remote_*` (that is the lock-screen app).
+`remote_url` is scheme + host + port only, exactly as shown in the app — do not invent or assume the port. `remote_token` is the app bearer token. If either is missing or blank, skip that student and report that Agent Alarm is not configured — do not fall back to `mindfeast.remote_*` (that is the lock-screen app).
 
 ## Prerequisites on the tablet
 
