@@ -30,6 +30,22 @@ read_env_value() {
   done < "$file"
 }
 
+# Repo .env is the Charlotte wrapper source of truth and is passed into the
+# container. Hermes also loads ~/.hermes-charlotte/.env from the mounted
+# profile. Read the repo file first, then the profile, so either location can
+# enable the HTTP API without duplicating every key.
+read_repo_or_profile_env() {
+  local key="$1"
+  local value
+
+  value="$(read_env_value "$key" "$env_file")"
+  if [ -n "$value" ]; then
+    printf '%s' "$value"
+    return 0
+  fi
+  read_env_value "$key" "$hermes_home/.env"
+}
+
 detect_lan_ip() {
   local ip_address
 
@@ -240,6 +256,12 @@ info_port="${CHARLOTTE_INFO_PORT:-${env_info_port:-8788}}"
 s6_verbosity="${CHARLOTTE_HERMES_S6_VERBOSITY:-${env_s6_verbosity:-0}}"
 s6_logging="${CHARLOTTE_HERMES_S6_LOGGING:-${env_s6_logging:-0}}"
 tz="${CHARLOTTE_TZ:-${env_tz:-}}"
+env_api_bind="$(read_env_value CHARLOTTE_HERMES_API_BIND "$env_file")"
+api_enabled="${API_SERVER_ENABLED:-$(read_repo_or_profile_env API_SERVER_ENABLED)}"
+api_port="${API_SERVER_PORT:-$(read_repo_or_profile_env API_SERVER_PORT)}"
+api_port="${api_port:-8642}"
+api_key="${API_SERVER_KEY:-$(read_repo_or_profile_env API_SERVER_KEY)}"
+api_bind="${CHARLOTTE_HERMES_API_BIND:-${env_api_bind:-127.0.0.1}}"
 # Hermes' native write_file tool rejects paths outside HERMES_WRITE_SAFE_ROOT.
 # Keep the workspace source tree protected while allowing the mounted Charlotte
 # content roots and ephemeral workflow scratch space.
@@ -363,6 +385,31 @@ if enabled_value "$info_page"; then
 fi
 
 docker_args=("${base_docker_args[@]}")
+if enabled_value "$api_enabled"; then
+  if [ -z "$api_key" ]; then
+    echo "API_SERVER_ENABLED is set, but API_SERVER_KEY is empty." >&2
+    echo "Set a local bearer token in $env_file or $hermes_home/.env." >&2
+    exit 1
+  fi
+  case "$api_port" in
+    ''|*[!0-9]*)
+      echo "API_SERVER_PORT must be a port number, got: $api_port" >&2
+      exit 1
+      ;;
+  esac
+  # Hermes defaults to 127.0.0.1 inside the process. Docker publishes to the
+  # container's eth0 address, so the listener has to be 0.0.0.0 in this adapter.
+  # The host mapping stays on loopback unless CHARLOTTE_HERMES_API_BIND says
+  # otherwise.
+  docker_args+=(
+    -e "API_SERVER_HOST=0.0.0.0"
+    -p "$api_bind:$api_port:$api_port"
+  )
+  if [ "$api_bind" != "127.0.0.1" ] && [ "$api_bind" != "localhost" ] && [ "$api_bind" != "::1" ]; then
+    echo "Charlotte Hermes API published on $api_bind:$api_port (not loopback)." >&2
+  fi
+  echo "Charlotte Hermes API: http://$api_bind:$api_port"
+fi
 if [ -t 0 ] && [ -t 1 ]; then
   docker_args+=(-it)
 fi

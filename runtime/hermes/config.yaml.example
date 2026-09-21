@@ -34,6 +34,9 @@ stt:
   local:
     model: "base"
 
+# Used by Hermes voice replies and the optional Walkietalk speech companion.
+# Choose the provider/voice here in the live profile; the agent model and
+# Walkietalk STT backend are independent. Provider credentials stay in .env.
 tts:
   provider: "edge"
   edge:
@@ -71,6 +74,9 @@ curator:
 
 platform_toolsets:
   cli: [hermes-cli, browser, image_gen, delegation]
+  # API clients (including Walkietalk) use Charlotte's configured agent tools.
+  # Existing profiles: match your cli list; run.sh does not overwrite config.
+  api_server: [hermes-cli, browser, image_gen, delegation]
   telegram: [terminal, file, web, browser, vision, image_gen, tts, skills, todo, cronjob, delegation]
   discord: [hermes-discord, terminal, file, web, browser, vision, image_gen, tts, skills, todo, cronjob, delegation]
 

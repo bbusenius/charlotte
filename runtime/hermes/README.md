@@ -253,6 +253,256 @@ The wrapper quiets s6 supervisor chatter by default with `S6_VERBOSITY=0` and `S
 
 Override defaults with `CHARLOTTE_HERMES_IMAGE`, `CHARLOTTE_HERMES_HOME`, or `CHARLOTTE_HOME_MOUNTS`.
 
+## HTTP API
+
+Hermes can expose Charlotte as a local HTTP API on the same gateway process that serves Telegram and Discord. Clients reach Charlotte’s configured agent environment — workspace, `AGENTS.md`, skills, memory, and tools. They do not receive Charlotte’s provider credentials.
+
+This is opt-in. Uncomment the API keys in the repo-local `.env`, or set the same variables in the live profile `.env` at `~/.hermes-charlotte/.env` (or `$CHARLOTTE_HERMES_HOME/.env`):
+
+```env
+API_SERVER_ENABLED=true
+API_SERVER_PORT=8642
+API_SERVER_KEY=
+API_SERVER_MODEL_NAME=charlotte
+```
+
+Generate the bearer token with `openssl rand -hex 32`. The token is a local credential shared with API clients; keep it out of tracked files. Rotate it on both the server and every client.
+
+When the API is enabled, `runtime/hermes/run.sh` binds the listener on `0.0.0.0` inside the container (Docker port publishing cannot reach a container-local `127.0.0.1` bind) and publishes `127.0.0.1:8642` on the host. Override the host bind with `CHARLOTTE_HERMES_API_BIND` only when you have a trusted tunnel; the default keeps the API off the LAN. The bearer token is required.
+
+The example profile gives API clients the same tools as `cli`:
+
+```yaml
+platform_toolsets:
+  api_server: [hermes-cli, browser, image_gen, delegation]
+```
+
+`runtime/hermes/run.sh` installs `config.yaml.example` only when the live profile config is missing. Existing profiles need this `api_server` entry added by hand. Match your live `cli` list, including any MCP servers already configured there; those servers must exist in the profile.
+
+The API is served by the gateway. After changing these settings, restart it:
+
+```bash
+runtime/hermes/run.sh gateway run
+```
+
+A restart briefly interrupts Telegram and Discord. Do not start a second gateway against the same live profile.
+
+Clients use `http://127.0.0.1:8642`. OpenAI-compatible callers append `/v1`; Hermes-native run submission uses `POST /v1/runs` on the same listener. A cheap check:
+
+```bash
+curl -sS http://127.0.0.1:8642/health
+curl -sS -H "Authorization: Bearer $API_SERVER_KEY" http://127.0.0.1:8642/v1/models
+```
+
+See the [Hermes API server reference](https://hermes-agent.nousresearch.com/docs/user-guide/features/api-server) for the rest of the surface.
+
+## Walkietalk
+
+[Walkietalk](https://github.com/bbusenius/walkietalk) is a radio bridge that can
+use Charlotte for answers and, optionally, her configured Hermes speech
+provider for the voice. Charlotte retains her workspace instructions, skills,
+memory, tools, and chosen model. Walkietalk owns radio capture, wake matching,
+conversation limits, playback, and push-to-talk.
+
+Agent, speech recognition, and voice are independent settings in Walkietalk.
+Using Charlotte for answers does not require Hermes speech: you can keep Piper
+or another supported voice. This integration does not expose Hermes speech
+recognition; choose a supported Walkietalk STT backend separately.
+
+### Connect Walkietalk to Charlotte
+
+1. Enable the [HTTP API](#http-api), set a private `API_SERVER_KEY`, and add
+   `platform_toolsets.api_server` to an existing profile as described above.
+   Restart the gateway through your normal startup procedure after changing
+   its API settings. New profiles inherit the example's API toolset; existing
+   profiles are not overwritten by `run.sh`.
+2. Install [Walkietalk](https://github.com/bbusenius/walkietalk#readme) on the
+   radio host and configure its audio devices, PTT, wake phrase, and STT there.
+3. Set the following fields in Walkietalk's config. These are **selected fields**;
+   retain the other required fields from Walkietalk's `config.example.yaml`.
+
+   ```yaml
+   agent:
+     backend: "hermes"
+     hermes_url: "http://127.0.0.1:8642"
+     hermes_token_env: "WALKIETALK_HERMES_TOKEN"
+   ```
+
+4. Make the same bearer token available to the **Walkietalk process** as
+   `WALKIETALK_HERMES_TOKEN`. Charlotte reads `API_SERVER_KEY` on the server;
+   configuring that variable in Charlotte does not automatically export a
+   variable to a separate client process. For a terminal session, enter the
+   existing token without putting it in shell history:
+
+   ```bash
+   read -rsp 'Hermes connection token: ' WALKIETALK_HERMES_TOKEN
+   printf '\n'
+   export WALKIETALK_HERMES_TOKEN
+   ```
+
+   Skip this if your Walkietalk launch environment already supplies the token.
+   For persistent launches, supply it through your launcher's private environment
+   configuration (for example, an owner-readable systemd `EnvironmentFile`).
+   Walkietalk reads the variable named in its YAML; it does not automatically
+   discover Charlotte's `.env` or load arbitrary dotenv files. Never put the
+   token itself in YAML or a tracked file. This is a local connection credential;
+   Charlotte keeps the model-provider credentials.
+
+5. From the Walkietalk directory, check the connection without opening radio
+   hardware:
+
+   ```bash
+   .venv/bin/walkietalk -c config.local.yaml agent-check \
+     'Introduce yourself in one short sentence.'
+   ```
+
+   Expect a Hermes agent label and a short `Reply:` from Charlotte. Authentication
+   errors require checking the matching token on both sides. Connection errors
+   require checking the gateway, its published port, and the client URL.
+
+The loopback URL assumes both applications run on the same host. For a separate
+radio host, use an SSH tunnel or an authenticated HTTPS reverse proxy and set
+the client URL accordingly. Keep the default loopback Docker publishing unless
+you deliberately configure another access path.
+
+### Use the Hermes speech provider
+
+The Hermes agent API used here does not provide a speech endpoint. Optional
+`tts.backend: hermes` uses a separate, authenticated companion supplied by
+Walkietalk. It accepts final text, invokes Hermes's configured speech tool, and
+returns a bounded WAV. It does not run another agent turn or choose Charlotte's
+model. This companion is distinct from the gateway API on port 8642.
+
+Prerequisites:
+
+- A Walkietalk checkout containing
+  `src/walkietalk/hermes_speech_service.py`; see its
+  [Hermes speech documentation](https://github.com/bbusenius/walkietalk/blob/main/docs/HERMES-TTS.md).
+- A Charlotte Hermes image with `ffmpeg` and the dependencies for your speech
+  provider. The supplied Dockerfile includes `ffmpeg` and Edge TTS.
+- An explicit `tts.provider` in the **live Hermes profile's** `config.yaml`.
+  The example uses Edge with `en-US-AriaNeural`; keep or change that to your
+  chosen provider and voice. Provider keys belong in Charlotte's private
+  environment/profile, not in Walkietalk. Built-in and configured command
+  speech providers are supported by the companion; plugin-only providers are
+  not currently supported. Provider account limits and billing still apply.
+
+The following setup runs the speech companion in a separate container using
+Charlotte's image and profile mounts. It does not replace or restart the
+messaging gateway. The companion publishes only host loopback port 8643 and
+uses the existing `API_SERVER_KEY`. Its source is mounted read-only from the
+Walkietalk checkout; keep that checkout at the configured location.
+
+From the **Charlotte repository root**, identify the running gateway container:
+
+```bash
+docker ps --format 'table {{.Names}}\t{{.Image}}'
+```
+
+Set the gateway container name and an absolute path to your Walkietalk checkout,
+then start the companion. These values are installation-specific; the two
+repositories do not have to be adjacent.
+
+```bash
+CHARLOTTE_CONTAINER="your-running-charlotte-container"
+WALKIETALK_DIR="/absolute/path/to/walkietalk"
+CHARLOTTE_IMAGE="$(docker inspect --format '{{.Image}}' "$CHARLOTTE_CONTAINER")"
+
+speech_env=()
+if [ -f .env ]; then
+  speech_env+=(--env-file "$PWD/.env")
+fi
+
+docker run -d \
+  --name charlotte-walkietalk-speech \
+  --restart unless-stopped \
+  --user "$(id -u):$(id -g)" \
+  --volumes-from "$CHARLOTTE_CONTAINER" \
+  "${speech_env[@]}" \
+  -e HERMES_HOME=/opt/data \
+  -e HOME=/opt/data/home \
+  -p 127.0.0.1:8643:8643 \
+  --mount "type=bind,source=$WALKIETALK_DIR/src/walkietalk/hermes_speech_service.py,target=/opt/walkietalk/hermes_speech_service.py,readonly" \
+  --workdir /workspace \
+  --entrypoint /opt/hermes/.venv/bin/python \
+  "$CHARLOTTE_IMAGE" \
+  /opt/walkietalk/hermes_speech_service.py \
+  --hermes-root /opt/hermes --host 0.0.0.0
+```
+
+Run this as the user who owns the Hermes profile. `--volumes-from` reuses the
+existing gateway's profile and workspace mounts. The image ID selects the same
+built image; the helper uses Hermes's Python, not Charlotte's project venv.
+The repo `.env`, when present, supplies the same environment-file credentials as
+the gateway, and the helper also loads the mounted profile's `.env`. If your
+gateway obtains credentials from a different private environment file, pass
+that file instead. Configuration or packages changed only inside a running
+container are not part of its image; put required dependencies in your image
+before using them in the companion.
+
+Check startup with:
+
+```bash
+docker logs --tail 20 charlotte-walkietalk-speech
+```
+
+Expect `Hermes speech service listening on 0.0.0.0:8643`. A missing-token error
+means `API_SERVER_KEY` was not supplied through the companion's environment or
+profile. The helper refuses to start without a suitable token. A provider error
+means the selected Hermes speech provider, its dependencies, or its credentials
+need attention; Walkietalk does not substitute another backend.
+
+Set these **selected fields** in Walkietalk, retaining the rest of its required
+`tts` fields:
+
+```yaml
+tts:
+  backend: "hermes"
+  hermes_url: "http://127.0.0.1:8643"
+  hermes_token_env: "WALKIETALK_HERMES_TOKEN"
+```
+
+The voice and provider are set in Hermes, independently of `agent.backend` and
+Walkietalk's `tts.grok_*` settings. The same client token can authenticate both
+connections. From the Walkietalk directory, generate a WAV without opening radio
+hardware:
+
+```bash
+mkdir -p recordings
+.venv/bin/walkietalk -c config.local.yaml tts-check \
+  'Hello. This is the voice configured in Hermes.' \
+  --output recordings/hermes-voice.wav
+```
+
+Expect a Hermes voice label and `Speech WAV: ... 48000 Hz, mono PCM16 ... No
+hardware opened.` Choose a new output filename when repeating the check.
+Continue with Walkietalk's documented radio setup once both connections work.
+
+### Manage the speech companion
+
+The companion's restart policy restarts it with Docker unless you explicitly
+stop it. Its lifecycle is independent of the messaging gateway:
+
+```bash
+docker stop charlotte-walkietalk-speech
+docker start charlotte-walkietalk-speech
+```
+
+After upgrading its source/image, changing mount locations, or changing
+credentials supplied through Docker's environment file, stop and remove **only
+the companion**, then repeat the launch command with the current gateway name,
+image, and checkout path:
+
+```bash
+docker stop charlotte-walkietalk-speech
+docker rm charlotte-walkietalk-speech
+```
+
+Removing the companion does not remove the gateway or its bind-mounted profile.
+Do not use `docker rm -v` or delete the profile. To stop using Hermes speech,
+select another Walkietalk voice backend and remove the companion; Charlotte's
+agent API and messaging integrations can continue running.
+
 ## Telegram Gateway
 
 The first supported Telegram setup is direct-message only: open Telegram, message the bot, and treat every message as intended for Charlotte. Group chats and mention-based behavior are deferred.

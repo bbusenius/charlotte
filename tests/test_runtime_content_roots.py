@@ -107,17 +107,50 @@ def test_hermes_bakes_and_enables_direct_gemini_image_provider():
     assert "GEMINI_API_KEY" not in terminal
 
 
+def _platform_toolset(config: str, platform: str) -> str:
+    return next(
+        line
+        for line in config.splitlines()
+        if line.strip().startswith(f"{platform}:")
+    )
+
+
 def test_hermes_enables_browser_for_keyless_page_retrieval():
     config = read("runtime/hermes/config.yaml.example")
 
     assert "search_backend: ddgs" in config
-    for platform in ("cli", "telegram", "discord"):
-        line = next(
-            line
-            for line in config.splitlines()
-            if line.strip().startswith(f"{platform}:")
-        )
-        assert "browser" in line
+    for platform in ("cli", "api_server", "telegram", "discord"):
+        assert "browser" in _platform_toolset(config, platform)
+
+
+def test_hermes_http_api_matches_cli_tools_and_stays_opt_in():
+    config = read("runtime/hermes/config.yaml.example")
+    example_env = read(".env.example")
+    wrapper = read("runtime/hermes/run.sh")
+    readme = read("runtime/hermes/README.md")
+
+    cli_tools = _platform_toolset(config, "cli").split(":", 1)[1].strip()
+    api_tools = _platform_toolset(config, "api_server").split(":", 1)[1].strip()
+    assert api_tools == cli_tools
+
+    for key in (
+        "API_SERVER_ENABLED=true",
+        "API_SERVER_PORT=8642",
+        "API_SERVER_KEY=",
+        "API_SERVER_MODEL_NAME=charlotte",
+        "CHARLOTTE_HERMES_API_BIND=127.0.0.1",
+    ):
+        assert key in example_env
+    assert not re.search(r"^API_SERVER_ENABLED=", example_env, re.MULTILINE)
+
+    assert '-e "API_SERVER_HOST=0.0.0.0"' in wrapper
+    assert '-p "$api_bind:$api_port:$api_port"' in wrapper
+    assert 'api_bind="${CHARLOTTE_HERMES_API_BIND:-${env_api_bind:-127.0.0.1}}"' in wrapper
+    assert "read_repo_or_profile_env" in wrapper
+
+    assert "## HTTP API" in readme
+    assert "walkietalk.md" not in readme
+    assert not (ROOT / "runtime/hermes/walkietalk.md").exists()
 
 
 def test_hermes_disables_autonomous_skill_rewrites():
