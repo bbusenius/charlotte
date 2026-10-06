@@ -182,6 +182,10 @@ Syncs already-created tablet slide packages to the student's configured MindFeas
 
 Triggers a configured tablet to show a MindFeast slide now. Given a student, it reads `mindfeast.remote_url` and `mindfeast.remote_token` from `students.yaml`, POSTs once to `<remote_url>/api/trigger`, and reports the endpoint host/path, response summary, and returned `slideId` without printing the token. If no student is named, it triggers every student with complete MindFeast remote config.
 
+### Morning note (`/mindfeast-morning-note`)
+
+Writes one household morning note from recent lesson logs and pushes only that note to each configured Agent Alarm. The note is an idea from what the household is studying. Student names come from `students.yaml`. Picture, song, theme, alarm time, repeat days, and enable state stay as they are.
+
 ### MindFeast Agent Alarm (`/mindfeast-agent-alarm`)
 
 Pushes a morning atmosphere to a student's MindFeast Agent Alarm app over LAN. Given a student, it reads `agent_alarm.remote_url` and `agent_alarm.remote_token` from `students.yaml` (not `mindfeast.remote_*` lock-screen settings) and can set status, wake audio, a picture, notes, theme, clock format, wake time, repeat days, and enable/disable. Reports the student, endpoint host/path, and each operation without printing the token. If no student is named, it pushes every student with complete Agent Alarm config. Two students may share one URL when they share a tablet.
@@ -669,6 +673,7 @@ charlotte/
 │   ├── mindfeast-weekly-slides/ # weekly MindFeast slides from lesson logs (workbook fallback)
 │   ├── mindfeast-slide-sync/ # sync existing MindFeast slides to tablets
 │   ├── mindfeast-slide-trigger/ # trigger a MindFeast tablet slide remotely
+│   ├── mindfeast-morning-note/ # household morning note from lesson logs
 │   ├── mindfeast-agent-alarm/ # per-student MindFeast Agent Alarm LAN client
 │   ├── mindfeast-slide-builder/ # MindFeast slide generation skill
 │   │   └── scripts/

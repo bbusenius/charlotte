@@ -1,6 +1,6 @@
 ---
 name: mindfeast-agent-alarm
-description: Push a morning atmosphere to MindFeast Agent Alarm over LAN (status, wake audio, picture, notes/heading, theme, wake time, repeat days, enable, clock format). Use when the user asks to set the agent alarm, push a wake song, morning picture, morning note, theme, alarm time, or weekday schedule to a student's tablet. Reads per-student agent_alarm.remote_url and agent_alarm.remote_token from students.yaml; never prints the token.
+description: Push a morning atmosphere to MindFeast Agent Alarm over LAN (status, wake audio, picture, notes/heading, theme, wake time, repeat days, enable, clock format). Use when the user asks to set the agent alarm, push a wake song, morning picture, a morning note whose text is already written, theme, alarm time, or weekday schedule to a student's tablet. Reads per-student agent_alarm.remote_url and agent_alarm.remote_token from students.yaml; never prints the token. Composing the nightly note from lesson logs is mindfeast-morning-note.
 argument-hint: "[student name|slug|alias] [--all] [--status|--dry-run] [--audio PATH] [--composer TEXT] [--audio-title TEXT] [--picture PATH] [--artist TEXT] [--title TEXT] [--notes TEXT] [--notes-heading TEXT] [--theme JSON|--theme-restore-default] [--time HH:MM] [--days DAYS] [--enable|--disable] [--use-24-hour|--use-12-hour]"
 ---
 
@@ -8,7 +8,7 @@ argument-hint: "[student name|slug|alias] [--all] [--status|--dry-run] [--audio 
 
 Talk to the **MindFeast Agent Alarm** Android app on the LAN. This is separate from MindFeast lock-screen slide sync (`mindfeast.remote_*`). Each student with an alarm has their own `agent_alarm` endpoint. Two students may share one URL when they share a tablet.
 
-Use this skill when the user asks to set the agent alarm, push wake audio, a morning picture, morning notes, theme colors, alarm time, weekday repeat days, or enable/disable.
+Use this skill when the user asks to set the agent alarm, push wake audio, a morning picture, a morning note whose text is already written, theme colors, alarm time, weekday repeat days, or enable/disable. Composing the household morning note from lesson logs is `mindfeast-morning-note`. This skill pushes the note text it is given.
 
 Do not invent the tablet IP or token. Never print the bearer token. Never use MindFeast lock-screen `/api/sync` or `/api/trigger` here. Do not create slides or generate media in this skill; push existing files.
 

@@ -3,7 +3,7 @@
 # This file is the single source of truth for household and per-student
 # metadata used by skills in this project (mason-materials-builder,
 # mindfeast-slide-builder, mindfeast-weekly-slides, mindfeast-slide-sync,
-# mindfeast-slide-trigger, mindfeast-agent-alarm, hsd-time-log, hsd-book-log,
+# mindfeast-slide-trigger, mindfeast-agent-alarm, mindfeast-morning-note, hsd-time-log, hsd-book-log,
 # mason-lesson-plan-builder, mason-field-trip-planner, mason-unit-builder,
 # mason-curriculum-builder).
 #
