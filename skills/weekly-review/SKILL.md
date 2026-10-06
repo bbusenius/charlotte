@@ -14,10 +14,11 @@ argument-hint: "[student-name] [from YYYY-MM-DD] [to YYYY-MM-DD]"
 # Weekly Review
 
 A short digest of the week's lesson logs for the household's adults. The logs
-are the durable record; this is a refocus — what stood out, and what to give
-attention to next.
+are the durable record. This message is the few things worth noticing across
+the week.
 
-One message. Not a class-by-class recap. Not a file.
+One message, scannable on a phone. A few bullets. Not a class-by-class recap,
+not a reconstruction of the pages, and not a file.
 
 ## Usage
 
@@ -70,9 +71,8 @@ Leave other sessions on the condensed list. Do not pull curriculum files,
 captured pages, or video transcripts unless a flagged session's "how it went"
 is too thin to stand on and the extra context would change the note.
 
-5. Read the week's observations as a whole, not as a pile of classes. Write
-   one digest covering everyone in the run. When more than one student is
-   covered, group highlights and attention items by child.
+5. Read the week's observations as a whole. Most of what you read stays out of
+   the message. Write one digest covering everyone in the run.
 
 6. Reply with that digest in the current conversation. That is delivery,
    including on a scheduled run — the harness posts it back to the
@@ -84,34 +84,34 @@ Do not fall back to spreadsheet rows.
 
 ## Editorial contract
 
-Write for the household's adults. Do not assume how many there are, or that
-the reader was in every lesson. Give enough concrete context that someone who
-was not there can follow the observation. Do not recap the timetable.
+Write for the household's adults. One concrete locator is enough for a
+co-parent to know which work you mean. Do not retell the lesson.
 
-Keep it short enough to read as a single chat message. If the runtime has a
-message length limit, stay under it.
-
-Shape:
+The message is bullets under three headings, after a one-line frame. A bullet is one sentence. Do not write a paragraph under a heading.
 
 1. **Frame** — who is covered and the date range. Not a greeting.
-2. **Highlights** — the few things that were genuinely notable. Skip routine
-   work that went as expected.
-3. **Needs attention** — the point of the skill. Concrete, named, and specific.
-   Group related issues across sessions. "Spelling is the running trouble this
-   week — family, because, again, and the doubling in shipped/getting/running"
-   is the right grain. "Math needs work" is not. When more than one child is
-   covered, say whose observation it is.
-4. **Carry-forward** — what to actually do next, drawn from "What comes next"
-   and from patterns across the week. Short. Actionable.
+2. **Highlights** — at most 3 bullets for the whole run. Skip routine work
+   that went as expected.
+3. **Needs attention** — at most 2 bullets per student. This is the point of
+   the skill. Name the pattern and one example. "Spelling in her own sentences
+   is the running trouble — because, and the doubling in shipped — not the
+   copied lists" is the right grain. "Math needs work" is not. A walk through
+   every letter, every problem, or every blank is not.
+4. **Next** — at most 2 bullets per student. The action to take, drawn from
+   "What comes next" and from the patterns above. Not a plan of the coming
+   lessons.
+
+When more than one student is covered, name the student inside the bullet.
+Use the display name from `students.yaml`. Never hard-code a household.
 
 Rules:
 
-- A locator is not a recap: "in the Lesson 1 nouns/verbs/adjectives work, she
-  defaulted to 'nouns' for mixed boxes" is the right amount of scene-setting.
+- Most of what you read stays out of the message. Do not list every
+  misspelling, every problem, every blank, or every unfinished page.
 - Do not invent observations. If a session has no "how it went" signal, it is
   not a highlight and not a problem.
-- Name the child as a person doing specific work, not as a deficit.
-- Quiet weeks are valid. Say so in a few sentences rather than padding.
+- Name the student as a person doing specific work, not as a deficit.
+- A quiet week is valid. Fewer bullets, not padding.
 - Do not include hours, spreadsheet paths, session paths, or how material was
   ingested.
 - Do not read `schedules/` or flag subjects that were "supposed" to happen.
