@@ -6,7 +6,7 @@ argument-hint: "[student-name] [--week-start YYYY-MM-DD] [--no-sync]"
 
 # MindFeast Weekly Slides
 
-Create a small, judgment-driven set of MindFeast slides from a student's week of logged homeschool work. The goal is useful review, not coverage. A normal week should produce fewer than 8 slides, and quiet weeks may produce 0.
+Create a small, judgment-driven set of MindFeast slides from a student's week of logged homeschool work. The goal is useful review of what the week taught, not coverage. A normal week should produce fewer than 8 slides, and quiet weeks may produce 0.
 
 This skill orchestrates:
 
@@ -76,7 +76,7 @@ If the week predates lesson logging and `list` returns nothing, fall back to the
 Omit `--week-start` to use the seven-day period ending today. That helper outputs JSON grouped from the workbook, including optional `Notes`/`Note` column values when present. Its rows are one-line descriptions, so expect thinner material than a log.
 
 3. Read the curriculum **in addition** to the logs, never instead of them. Walk every item in `lesson.sources` and use `scripts/curriculum_read.py read` to recover that exact bounded Markdown, text, or PDF source. Use `pdf_pages`, `lines`, or `section` from the source item when present; render selected PDF pages to a temporary scratch directory when layout or imagery matters, inspect them, and delete the scratch directory afterward. Do not re-resolve an exact logged source by subject. Also read any other lesson material explicitly named. Skip material lookup only when the source is unavailable or its recorded location remains ambiguous.
-4. Read the enriched sessions as a whole week. Consider subject, what was covered, recovered curriculum material, captured page text, video transcripts, observations, time spent, and repetition across the week.
+4. Read the enriched sessions as a whole week before judging any one session. What was taught — the written account, recovered curriculum material, captured page text, and video transcripts — is the content under review. Also note subject, how it went, time spent, and repetition across the week.
 5. Decide whether slides are warranted. It is valid and sometimes best to create no slides.
 6. Build a slide plan before writing files. Keep the plan small: usually 3-6 slides, hard cap 8 unless the user explicitly asks for more.
 7. Use `mindfeast-slide-builder` to create each planned slide in the student's `tablet_slides_dir`.
@@ -86,14 +86,16 @@ Omit `--week-start` to use the seven-day period ending today. That helper output
 
 ## Selection Heuristics
 
-Create slides for durable ideas, weak spots, rich images, memory-worthy facts, and concepts that benefit from spaced review. Prefer the week's actual learning over generic quiz content.
+Choose slides as an educator reviewing the week. The content that was taught decides what is worth a slide. A smooth session is still material: no note of trouble does not mean the student holds it. Prefer the week's actual learning over generic quiz content, and prefer the central idea of a lesson over a side detail.
 
-Prioritize:
+Main ideas are the body of the set. A main idea is the idea, episode, person, place, work, vocabulary, observation, or skill the lesson was about, taken from the log, the captured pages, a transcript, or the curriculum source. Include it because of that content. Listening, reading along, and other sessions that went smoothly are often where those ideas are, and they still need review.
 
-- Sessions whose **How it went** mentions struggle, confusion, retrying, needs practice, missed items, or parent concern. This is the single best signal in the whole record.
-- New vocabulary, people, places, works of art, composers, scientific observations, math ideas, scripture, poetry, phonics, and history episodes.
-- Sessions with concrete content in the log, the captured page text, or a video transcript.
-- Subjects with observations or dense conceptual work, even if that means several slides from one subject and none from another.
+Two other opportunities belong in the set when the week actually contains them. They add to the main ideas; they do not replace them:
+
+- **Strengths.** Something specific the student did well and can practice again. Practicing a strength reinforces it.
+- **Struggle.** Confusion, retrying, missed items, needs practice, or a parent concern in **How it went**. Include the underlying idea so the student can work it again. This is one reason to choose a slide, not the filter for the set.
+
+Do not skip a subject because its log records no complaint. Main ideas still stand when the week has no noted struggle and no specific strength to practice. When the set must be cut to the cap, keep the most important ideas, and keep a real strength or a real struggle inside that set rather than dropping the ideas to make room for more weak spots. Several slides may come from one subject and none from another. Do not represent every subject, and do not create a fixed number of slides.
 
 Skip:
 
@@ -102,8 +104,6 @@ Skip:
 - Sessions where nothing specific can be recovered from the log, the captured pages, the video transcripts, or the configured curriculum files.
 - Content that would create fake or trivial questions.
 - Weeks where summer break or light review means slides would add noise.
-
-Do not try to represent every subject. Do not create a fixed number of slides.
 
 ## Slide Type Rules
 
