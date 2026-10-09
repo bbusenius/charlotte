@@ -54,7 +54,7 @@ The note is one of these kinds: a fact, a cause, a person, a mechanism, or an in
 
 5. Read that note's source before writing. `show` the chosen session. When its `lesson.sources` names a path, read that exact source with `scripts/curriculum_read.py read` for the recorded student, using `pdf_pages`, `lines`, or `section` when the source item has them. The condensed log line is a lead. The note comes from what the material teaches. Skip the source only when it is missing or its location is ambiguous. Do not invent a claim the log and that source do not support. An inspirational thought has to come from that material too.
 
-6. Write one note, a few plain sentences, well under 2000 characters.
+6. Write one note. At most 3 sentences, and at most 250 characters. A sentence ends at a period, question mark, or exclamation mark. Count the sentences and the characters. If the draft is over either limit, shorten it and count again. Push only a note that is within both limits.
 
 They already know what they did. Do not narrate the session, the outing, the weather, who held what, or who said what. Do not summarize the day. Do not name the students. A person in the material may be named.
 
