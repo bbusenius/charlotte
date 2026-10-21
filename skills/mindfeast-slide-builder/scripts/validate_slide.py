@@ -25,13 +25,19 @@ VALID_TYPES = {
     "conversation",
 }
 FREE_FORM_TYPES = {"essay", "gratitude", "narration", "conversation"}
-KNOWN_EXTENSIONS = {
-    "image": {".jpg", ".jpeg", ".png", ".webp"},
-    "audio": {".mp3", ".m4a", ".wav", ".ogg", ".flac", ".aac"},
-    "script": {".txt"},
-    "passage": {".txt"},
-    "context": {".txt"},
+AUDIO_EXTENSIONS = {".mp3", ".m4a", ".wav", ".ogg", ".flac", ".aac"}
+TEXT_EXTENSIONS = {".txt"}
+# Files checked strictly for the new types only; other types keep the
+# general image/audio checks below.
+STRICT_FILES = {
+    "narration": {
+        "audio": AUDIO_EXTENSIONS,
+        "script": TEXT_EXTENSIONS,
+        "passage": TEXT_EXTENSIONS,
+    },
+    "conversation": {"context": TEXT_EXTENSIONS},
 }
+TEXT_FIELDS = {"script", "passage", "context"}
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 
 
@@ -115,29 +121,40 @@ def validate(slide_dir: Path) -> tuple[list[str], list[str]]:
         if "context" not in data:
             errors.append("context missing")
 
-    for key, extensions in KNOWN_EXTENSIONS.items():
-        if key in data:
-            filename = data[key]
-            if not isinstance(filename, str) or not filename.strip():
-                errors.append(f"{key} must be a non-blank filename")
-                continue
-            if Path(filename).name != filename or "/" in filename or "\\" in filename:
+    strict_files = STRICT_FILES.get(slide_type, {})
+    for key, filename in (("image", image), ("audio", audio)):
+        if key in strict_files:
+            continue
+        if filename:
+            if Path(str(filename)).name != str(filename):
                 errors.append(f"{key} must be a filename, not a path")
-                continue
-            file_path = slide_dir / filename
-            if not file_path.is_file():
+            elif not (slide_dir / str(filename)).is_file():
                 errors.append(f"{key} file missing: {filename}")
-                continue
-            if file_path.suffix.lower() not in extensions:
-                warnings.append(f"{key} file has an unknown extension: {filename}")
-            if key in {"script", "passage", "context"}:
-                try:
-                    text = file_path.read_text(encoding="utf-8")
-                except (UnicodeError, OSError):
-                    errors.append(f"{key} file must be readable UTF-8 text: {filename}")
-                else:
-                    if not text.strip():
-                        errors.append(f"{key} file is blank: {filename}")
+
+    for key, extensions in strict_files.items():
+        if key not in data:
+            continue
+        filename = data[key]
+        if not isinstance(filename, str) or not filename.strip():
+            errors.append(f"{key} must be a non-blank filename")
+            continue
+        if Path(filename).name != filename or "/" in filename or "\\" in filename:
+            errors.append(f"{key} must be a filename, not a path")
+            continue
+        file_path = slide_dir / filename
+        if not file_path.is_file():
+            errors.append(f"{key} file missing: {filename}")
+            continue
+        if file_path.suffix.lower() not in extensions:
+            warnings.append(f"{key} file has an unknown extension: {filename}")
+        if key in TEXT_FIELDS:
+            try:
+                text = file_path.read_text(encoding="utf-8")
+            except (UnicodeError, OSError):
+                errors.append(f"{key} file must be readable UTF-8 text: {filename}")
+            else:
+                if not text.strip():
+                    errors.append(f"{key} file is blank: {filename}")
 
     orientation = str(data.get("orientation", "landscape")).strip().lower()
     if orientation not in VALID_ORIENTATIONS:
@@ -190,9 +207,7 @@ def validate(slide_dir: Path) -> tuple[list[str], list[str]]:
     if slide_type == "question" and len(paragraphs) > 1 and len(paragraphs[1]) > 180:
         warnings.append("hint is long for the lock-screen panel")
     if slide_type in FREE_FORM_TYPES and len(paragraphs) > 1:
-        warnings.append(
-            f"{slide_type} slides use only the first body paragraph as the prompt"
-        )
+        warnings.append(f"{slide_type} slides use only the first body paragraph as the prompt")
     if slide_type == "informational" and len(paragraphs) > 1:
         warnings.append("informational slides display only the first body paragraph")
 

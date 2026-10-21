@@ -45,24 +45,6 @@
     "orientation": {
       "enum": ["landscape", "portrait"],
       "default": "landscape"
-    },
-    "script": {
-      "$ref": "#/$defs/filename"
-    },
-    "passage": {
-      "$ref": "#/$defs/filename"
-    },
-    "context": {
-      "$ref": "#/$defs/filename"
-    },
-    "intent": {
-      "type": "string",
-      "minLength": 1,
-      "pattern": "\\S"
-    },
-    "turns": {
-      "type": "integer",
-      "minimum": 1
     }
   },
   "additionalProperties": true,
@@ -118,6 +100,17 @@
         "required": ["type"]
       },
       "then": {
+        "properties": {
+          "audio": {
+            "$ref": "#/$defs/sourceFilename"
+          },
+          "script": {
+            "$ref": "#/$defs/sourceFilename"
+          },
+          "passage": {
+            "$ref": "#/$defs/sourceFilename"
+          }
+        },
         "oneOf": [
           {
             "required": ["audio"]
@@ -141,7 +134,21 @@
         "required": ["type"]
       },
       "then": {
-        "required": ["intent", "turns", "context"]
+        "required": ["intent", "turns", "context"],
+        "properties": {
+          "intent": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "turns": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "context": {
+            "$ref": "#/$defs/sourceFilename"
+          }
+        }
       }
     }
   ],
@@ -149,8 +156,13 @@
     "filename": {
       "type": "string",
       "minLength": 1,
-      "description": "A basename for a file stored directly in the slide directory.",
-      "pattern": "^(?!\\.{1,2}$)(?=.*\\S)[^/\\\\]+$"
+      "description": "A basename for a file stored directly in the slide directory."
+    },
+    "sourceFilename": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!\\.{1,2}$)(?=.*\\S)[^/\\\\]+$",
+      "description": "A non-blank basename for a narration or conversation source file, without path separators."
     }
   }
 }

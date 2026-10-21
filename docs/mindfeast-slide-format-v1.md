@@ -125,7 +125,7 @@ This section gives package authors context for future app implementation. These 
 
 `image`, `audio`, `script`, `passage`, and `context` values are local filenames, not paths. The referenced file must exist beside `slide.md`. Known-good image extensions are `.jpg`, `.jpeg`, `.png`, and `.webp`. Known-good audio extensions are `.mp3`, `.m4a`, `.wav`, `.ogg`, `.flac`, and `.aac`.
 
-The known-good text extension for `script`, `passage`, and `context` is `.txt`. Text files must contain non-blank UTF-8 plain text. The validator reports unknown extensions as warnings, not errors.
+The known-good text extension for `script`, `passage`, and `context` is `.txt`. Text files must contain non-blank UTF-8 plain text. For narration sources and the conversation context file, the validator reports unknown extensions as warnings, not errors.
 
 Question, essay, and gratitude slides require at least one image or audio file. Informational slides may be text-only. Narration requires exactly one audio or text source, with an optional decorative image. Conversation requires a context text file, with optional image and audio files. A package may contain both image and audio.
 
@@ -141,7 +141,7 @@ A conforming version 1 producer:
 
 MindFeast retains compatibility with older packages whose `type` is missing or contains category metadata: it interprets them as question slides. New packages should put category metadata in `subject` and use a supported `type`.
 
-The companion [frontmatter schema](mindfeast-slide-frontmatter-v1.schema.json) validates the YAML mapping after it has been parsed as JSON-compatible data. The schema requires exactly one narration source and all three conversation fields. It checks filename syntax, non-blank intent, and the minimum turn count. Unknown fields remain allowed through `additionalProperties: true`.
+The companion [frontmatter schema](mindfeast-slide-frontmatter-v1.schema.json) validates the YAML mapping after it has been parsed as JSON-compatible data. The schema requires exactly one narration source and all three conversation fields. It checks filename syntax for narration sources and the conversation context file, non-blank intent, and the minimum turn count. Unknown fields remain allowed through `additionalProperties: true`.
 
 Charlotte's `mindfeast-slide-builder` validator checks directory layout, file existence, UTF-8 text content, and Markdown body rules. It rejects blank text files and warns about ignored answer fields. The validator also rejects float values for `turns`, including `3.0`. JSON Schema treats a number with no fractional part as an integer, so the schema alone cannot reject `3.0`.
 
