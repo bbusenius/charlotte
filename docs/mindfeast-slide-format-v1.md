@@ -46,7 +46,7 @@ What is the capital of France?
 It is also called the City of Light.
 ```
 
-The first body paragraph is the visible question, prompt, or informational text. For question slides only, the second paragraph is an optional hint. MindFeast ignores additional paragraphs. Essay, gratitude, and narration prompts must be non-blank. Conversation opening questions must also be non-blank. The narration prompt appears only in phase 2. Informational body text is optional when media is present.
+The first body paragraph is the visible question, prompt, or informational text. For question slides only, the second paragraph is an optional hint. MindFeast ignores additional paragraphs. Essay, gratitude, and narration prompts and conversation opening questions must be non-blank. Informational body text is optional when media is present.
 
 ## Frontmatter fields
 
@@ -55,12 +55,12 @@ The first body paragraph is the visible question, prompt, or informational text.
 | `id` | Required | Stable slide identifier; must equal the directory name. |
 | `type` | Required for conforming packages | `question`, `informational`, `essay`, `gratitude`, `narration`, or `conversation`. MindFeast treats a missing or unrecognized legacy value as `question`. |
 | `image` | Conditionally required | Image filename in the slide directory. |
-| `audio` | Conditionally required | Audio filename in the slide directory. One possible narration source. |
-| `script` | One possible source for `narration` | Filename of non-blank UTF-8 plain text for on-device text-to-speech. |
-| `passage` | One possible source for `narration` | Filename of non-blank UTF-8 plain text for the child to read on screen. |
-| `intent` | Required for `conversation` | Non-blank string of parent instructions to the AI, hidden from the child. |
-| `turns` | Required for `conversation` | Integer of at least 1. One turn is one child reply plus one AI reply. Booleans, strings, and floats are invalid. |
-| `context` | Required for `conversation` | Filename of non-blank UTF-8 text sent only to the AI, never shown to the child. |
+| `audio` | Conditionally required | Audio filename in the slide directory. For `narration`, the audio of the passage. |
+| `script` | One possible source for `narration` | Text filename in the slide directory. The passage text, meant to be read aloud. |
+| `passage` | One possible source for `narration` | Text filename in the slide directory. The passage text, meant to be read on screen. |
+| `intent` | Required for `conversation` | Instructions for the AI. Not shown to the learner. |
+| `turns` | Required for `conversation` | Number of turns, an integer of at least 1. One turn is one learner reply plus one AI reply. |
+| `context` | Required for `conversation` | Text filename in the slide directory. Background text for the AI. Not shown to the learner. |
 | `answer` | Required for `question` | Correct free-text answer. Ignored by other slide types. |
 | `accept` | Optional for `question` | List of alternate accepted free-text answers. Ignored by other slide types. |
 | `choices` | Optional for `question` | Multiple-choice options. Ignored by other slide types. |
@@ -90,36 +90,23 @@ MindFeast ships with a standard recurring gratitude starter slide. The `gratitud
 
 ### Narration
 
-A narration slide requires a non-blank first body paragraph and exactly one of `audio`, `script`, or `passage`. An optional `image` is decorative.
+A narration slide asks the learner to take in a passage, then narrate it back. It requires a non-blank first body paragraph, which is the narration prompt, and exactly one passage source:
 
-The slide has two phases in a single pass:
+- `audio`: audio of the passage;
+- `script`: passage text meant to be read aloud;
+- `passage`: passage text meant to be read on screen.
 
-1. Phase 1 presents the passage from the declared source. The app plays `audio`, reads `script` aloud with on-device text-to-speech, or displays `passage` for the child to read.
-2. Phase 2 hides the passage and shows the first body paragraph as the narration prompt. The child tells back the passage by typing or keyboard voice typing, as on an essay slide.
-
-Once phase 2 starts, the passage cannot be reopened or replayed. Narration has no AI interaction or turns. It accepts any non-blank response. The app records the response like an essay response and deactivates the slide until a parent reactivates it. `answer`, `accept`, and `choices` are ignored.
+`image` is optional. `answer`, `accept`, and `choices` are ignored.
 
 ### Conversation
 
-A conversation slide requires a non-blank first body paragraph as its visible opening question. It also requires `intent`, `turns`, and `context`. Both `image` and `audio` are optional.
+A conversation slide asks the learner an opening question, followed by a conversation with an AI. The first body paragraph is the opening question and must be non-blank. The slide also requires:
 
-`intent` contains the parent's instructions to the AI, such as "draw out the right answer" or "explain and inform". The child never sees this field. `context` names a UTF-8 text file sent only to the AI, never displayed to the child. Both the intent and the context file must be non-blank.
+- `intent`: instructions for the AI, such as "draw out the right answer" or "explain and inform". It is not shown to the learner.
+- `turns`: the number of turns, an integer of at least 1. One turn is one learner reply plus one AI reply. The opening question is not a turn.
+- `context`: a text file of background for the AI. It is not shown to the learner.
 
-`turns` specifies the number of exchanges after the opening question. One turn consists of one child reply followed by one AI reply. The opening question does not count as a turn. The conversation finishes after the AI reply in the final turn. `turns` must be an integer of at least 1. Booleans, strings, and floats are invalid.
-
-The AI follows the intent and context, including when the child replies "I don't know". There is no special handling for that reply. `answer`, `accept`, and `choices` are ignored.
-
-## Expected app behavior (non-normative)
-
-This section gives package authors context for future app implementation. These behaviors are not package validation requirements and do not describe implemented app support.
-
-- Conversation slides are enabled only through a parent-only settings switch that displays a consent notice. Until enabled, conversation slides cannot be created, and synced conversation slides are not shown.
-- A conversation slide cannot be created on the device unless an AI key is configured there.
-- If the AI cannot run, the slide displays a clear warning with the reason, then offers a written answer. Reasons include no key, no connection, or an AI service report that zero data retention is not in effect for the request. The app records the answer as a written response, not a conversation. It never falls back silently.
-- Voice is a per-device setting. Voice input uses on-device speech recognition, and replies use on-device text-to-speech. Only text is sent to the AI.
-- Each finished conversation produces one stats entry that holds all its turns. An interrupted conversation restarts from the beginning. Unfinished conversations are not saved.
-- Each AI reply has a flag control that opens a prefilled email to the publisher for the parent to send.
-- Narration is a single pass. Once phase 2 starts, the passage cannot be reopened or replayed.
+`image` and `audio` are optional. `answer`, `accept`, and `choices` are ignored.
 
 ## Media and text files
 
@@ -127,7 +114,7 @@ This section gives package authors context for future app implementation. These 
 
 The known-good text extension for `script`, `passage`, and `context` is `.txt`. Text files must contain non-blank UTF-8 plain text. For narration sources and the conversation context file, the validator reports unknown extensions as warnings, not errors.
 
-Question, essay, and gratitude slides require at least one image or audio file. Informational slides may be text-only. Narration requires exactly one audio or text source, with an optional decorative image. Conversation requires a context text file, with optional image and audio files. A package may contain both image and audio.
+Question, essay, and gratitude slides require at least one image or audio file. Informational slides may be text-only. Narration requires exactly one audio or text source, with an optional image. Conversation requires a context text file, with optional image and audio files. A package may contain both image and audio.
 
 ## Validation and compatibility
 
@@ -198,7 +185,7 @@ This example deliberately uses an id other than the bundled starter slide's `dai
 
 ### Narration
 
-This example requires `passage.txt` containing the passage for the child to read.
+This example requires `passage.txt` containing the passage text.
 
 ```markdown
 ---
