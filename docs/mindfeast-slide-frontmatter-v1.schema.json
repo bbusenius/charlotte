@@ -11,7 +11,7 @@
       "pattern": "^[a-z0-9][a-z0-9-]*$"
     },
     "type": {
-      "enum": ["question", "informational", "essay", "gratitude"]
+      "enum": ["question", "informational", "essay", "gratitude", "narration", "conversation"]
     },
     "subject": {
       "type": "string"
@@ -89,6 +89,67 @@
           }
         ]
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "narration"
+          }
+        },
+        "required": ["type"]
+      },
+      "then": {
+        "properties": {
+          "audio": {
+            "$ref": "#/$defs/sourceFilename"
+          },
+          "script": {
+            "$ref": "#/$defs/sourceFilename"
+          },
+          "passage": {
+            "$ref": "#/$defs/sourceFilename"
+          }
+        },
+        "oneOf": [
+          {
+            "required": ["audio"]
+          },
+          {
+            "required": ["script"]
+          },
+          {
+            "required": ["passage"]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "conversation"
+          }
+        },
+        "required": ["type"]
+      },
+      "then": {
+        "required": ["intent", "turns", "context"],
+        "properties": {
+          "intent": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "turns": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "context": {
+            "$ref": "#/$defs/sourceFilename"
+          }
+        }
+      }
     }
   ],
   "$defs": {
@@ -96,6 +157,12 @@
       "type": "string",
       "minLength": 1,
       "description": "A basename for a file stored directly in the slide directory."
+    },
+    "sourceFilename": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!\\.{1,2}$)(?=.*\\S)[^/\\\\]+$",
+      "description": "A non-blank basename for a narration or conversation source file, without path separators."
     }
   }
 }
