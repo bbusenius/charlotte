@@ -173,9 +173,9 @@ def slide_case(
 CONVERSATION_FIELDS = {
     "intent": "Explain how roots help a plant grow.",
     "turns": 3,
-    "context": "context.txt",
+    "context": "context.md",
 }
-TEXT_FILES = {"context.txt": b"Roots absorb water and anchor a plant."}
+TEXT_FILES = {"context.md": b"Roots absorb water and anchor a plant."}
 NEW_TYPE_CASES = [
     slide_case(
         "narration-audio",
@@ -186,35 +186,35 @@ NEW_TYPE_CASES = [
     slide_case(
         "narration-script",
         "narration",
-        {"script": "script.txt"},
-        {"script.txt": b"A seed grows roots."},
+        {"script": "script.md"},
+        {"script.md": b"A seed grows roots."},
     ),
     slide_case(
         "narration-passage",
         "narration",
-        {"passage": "passage.txt"},
-        {"passage.txt": b"A seed grows roots."},
+        {"passage": "passage.md"},
+        {"passage.md": b"A seed grows roots."},
     ),
     slide_case("conversation", "conversation", CONVERSATION_FIELDS, TEXT_FILES),
     slide_case(
         "narration-two-sources",
         "narration",
-        {"audio": "audio.mp3", "script": "script.txt"},
-        {"audio.mp3": b"audio", "script.txt": b"Text"},
+        {"audio": "audio.mp3", "script": "script.md"},
+        {"audio.mp3": b"audio", "script.md": b"Text"},
         "exactly one",
     ),
     slide_case(
         "narration-two-text-sources",
         "narration",
-        {"script": "script.txt", "passage": "passage.txt"},
-        {"script.txt": b"Text", "passage.txt": b"Text"},
+        {"script": "script.md", "passage": "passage.md"},
+        {"script.md": b"Text", "passage.md": b"Text"},
         "exactly one",
     ),
     slide_case(
         "narration-three-sources",
         "narration",
-        {"audio": "audio.mp3", "script": "script.txt", "passage": "passage.txt"},
-        {"audio.mp3": b"audio", "script.txt": b"Text", "passage.txt": b"Text"},
+        {"audio": "audio.mp3", "script": "script.md", "passage": "passage.md"},
+        {"audio.mp3": b"audio", "script.md": b"Text", "passage.md": b"Text"},
         "exactly one",
     ),
     slide_case("narration-no-source", "narration", {}, {}, "exactly one"),
@@ -230,7 +230,7 @@ NEW_TYPE_CASES = [
         slide_case(
             f"{field}-missing-file",
             "narration",
-            {field: "missing.txt"},
+            {field: "missing.md"},
             {},
             f"{field} file missing",
             schema_valid=True,
@@ -242,11 +242,11 @@ NEW_TYPE_CASES = [
             f"blank-{field}",
             "conversation" if field == "context" else "narration",
             (
-                {**CONVERSATION_FIELDS, "context": "text.txt"}
+                {**CONVERSATION_FIELDS, "context": "text.md"}
                 if field == "context"
-                else {field: "text.txt"}
+                else {field: "text.md"}
             ),
-            {"text.txt": b" \n\t"},
+            {"text.md": b" \n\t"},
             f"{field} file is blank",
             schema_valid=True,
         )
@@ -255,8 +255,8 @@ NEW_TYPE_CASES = [
     slide_case(
         "empty-script",
         "narration",
-        {"script": "script.txt"},
-        {"script.txt": b""},
+        {"script": "script.md"},
+        {"script.md": b""},
         "script file is blank",
         schema_valid=True,
     ),
@@ -274,14 +274,14 @@ NEW_TYPE_CASES = [
         )
         for field in ("audio", "script", "passage", "context")
         for separator, filename in (
-            ("slash", "nested/file.txt"),
-            ("backslash", "nested\\file.txt"),
+            ("slash", "nested/file.md"),
+            ("backslash", "nested\\file.md"),
         )
     ],
     slide_case(
         "conversation-no-intent",
         "conversation",
-        {"turns": 3, "context": "context.txt"},
+        {"turns": 3, "context": "context.md"},
         TEXT_FILES,
         "intent must be a non-blank string",
     ),
@@ -303,7 +303,7 @@ NEW_TYPE_CASES = [
     slide_case(
         "conversation-no-turns",
         "conversation",
-        {"intent": "Explain.", "context": "context.txt"},
+        {"intent": "Explain.", "context": "context.md"},
         TEXT_FILES,
         "turns must be an integer >= 1",
     ),
@@ -373,11 +373,11 @@ NEW_TYPE_CASES = [
             f"{field}-invalid-utf8",
             "conversation" if field == "context" else "narration",
             (
-                {**CONVERSATION_FIELDS, "context": "text.txt"}
+                {**CONVERSATION_FIELDS, "context": "text.md"}
                 if field == "context"
-                else {field: "text.txt"}
+                else {field: "text.md"}
             ),
-            {"text.txt": b"\xff"},
+            {"text.md": b"\xff"},
             f"{field} file must be readable UTF-8 text",
             schema_valid=True,
         )
@@ -386,8 +386,8 @@ NEW_TYPE_CASES = [
     slide_case(
         "narration-blank-prompt",
         "narration",
-        {"script": "script.txt"},
-        {"script.txt": b"Text"},
+        {"script": "script.md"},
+        {"script.md": b"Text"},
         "prompt body missing",
         schema_valid=True,
         body=" \n\t",
@@ -453,7 +453,7 @@ def test_new_types_allow_optional_media_and_warn_about_ignored_fields(
 ):
     validator = load_module("validate_slide.py", "validator_optional_media")
     fields = (
-        {"script": "script.txt"}
+        {"script": "script.md"}
         if slide_type == "narration"
         else {**CONVERSATION_FIELDS, "audio": "audio.mp3"}
     )
@@ -473,7 +473,7 @@ def test_new_types_allow_optional_media_and_warn_about_ignored_fields(
         *(f"{key}: {json.dumps(value)}" for key, value in fields.items()),
         media=True,
     )
-    for filename in ("script.txt", "context.txt", "audio.mp3"):
+    for filename in ("script.md", "context.md", "audio.mp3"):
         (slide_dir / filename).write_text("Text", encoding="utf-8")
 
     errors, warnings = validator.validate(slide_dir)
@@ -485,13 +485,14 @@ def test_new_types_allow_optional_media_and_warn_about_ignored_fields(
     }
 
 
+@pytest.mark.parametrize("filename", ["text.unknown", "text.txt"])
 @pytest.mark.parametrize("field", ["audio", "script", "passage", "context"])
-def test_unknown_source_extension_is_a_warning(tmp_path, field):
+def test_unknown_source_extension_is_a_warning(tmp_path, field, filename):
     validator = load_module("validate_slide.py", "validator_extensions")
     fields = (
-        {**CONVERSATION_FIELDS, "context": "text.unknown"}
+        {**CONVERSATION_FIELDS, "context": filename}
         if field == "context"
-        else {field: "text.unknown"}
+        else {field: filename}
     )
     slide_dir = write_package(
         tmp_path,
@@ -500,9 +501,9 @@ def test_unknown_source_extension_is_a_warning(tmp_path, field):
         "Tell what you know.",
         *(f"{key}: {json.dumps(value)}" for key, value in fields.items()),
     )
-    (slide_dir / "text.unknown").write_text("Text", encoding="utf-8")
+    (slide_dir / filename).write_text("Text", encoding="utf-8")
 
     errors, warnings = validator.validate(slide_dir)
 
     assert errors == []
-    assert warnings == [f"{field} file has an unknown extension: text.unknown"]
+    assert warnings == [f"{field} file has an unknown extension: {filename}"]

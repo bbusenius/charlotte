@@ -26,7 +26,7 @@ VALID_TYPES = {
 }
 FREE_FORM_TYPES = {"essay", "gratitude", "narration", "conversation"}
 AUDIO_EXTENSIONS = {".mp3", ".m4a", ".wav", ".ogg", ".flac", ".aac"}
-TEXT_EXTENSIONS = {".txt"}
+TEXT_EXTENSIONS = {".md"}
 # Files checked strictly for the new types only; other types keep the
 # general image/audio checks below.
 STRICT_FILES = {

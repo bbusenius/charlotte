@@ -13,9 +13,9 @@ Each slide is one directory containing `slide.md` and any files it references. T
   slide.md
   image.jpg
   audio.mp3
-  script.txt
-  passage.txt
-  context.txt
+  script.md
+  passage.md
+  context.md
 ```
 
 The directory name must equal the frontmatter `id`. A slide id uses lowercase ASCII letters, digits, and hyphens, begins with a letter or digit, and does not contain `/` or `\` or begin with `.`. Referenced files live directly in the slide directory and are named by basename, not by a path.
@@ -56,11 +56,11 @@ The first body paragraph is the visible question, prompt, or informational text.
 | `type` | Required for conforming packages | `question`, `informational`, `essay`, `gratitude`, `narration`, or `conversation`. MindFeast treats a missing or unrecognized legacy value as `question`. |
 | `image` | Conditionally required | Image filename in the slide directory. |
 | `audio` | Conditionally required | Audio filename in the slide directory. For `narration`, the audio of the passage. |
-| `script` | One possible source for `narration` | Text filename in the slide directory. The passage text, meant to be read aloud. |
-| `passage` | One possible source for `narration` | Text filename in the slide directory. The passage text, meant to be read on screen. |
+| `script` | One possible source for `narration` | Markdown filename in the slide directory. The passage text, meant to be read aloud. |
+| `passage` | One possible source for `narration` | Markdown filename in the slide directory. The passage text, meant to be read on screen. |
 | `intent` | Required for `conversation` | Instructions for the AI. Not shown to the learner. |
 | `turns` | Required for `conversation` | Number of turns, an integer of at least 1. One turn is one learner reply plus one AI reply. |
-| `context` | Required for `conversation` | Text filename in the slide directory. Background text for the AI. Not shown to the learner. |
+| `context` | Required for `conversation` | Markdown filename in the slide directory. Background text for the AI. Not shown to the learner. |
 | `answer` | Required for `question` | Correct free-text answer. Ignored by other slide types. |
 | `accept` | Optional for `question` | List of alternate accepted free-text answers. Ignored by other slide types. |
 | `choices` | Optional for `question` | Multiple-choice options. Ignored by other slide types. |
@@ -104,17 +104,17 @@ A conversation slide asks the learner an opening question, followed by a convers
 
 - `intent`: instructions for the AI, such as "draw out the right answer" or "explain and inform". It is not shown to the learner.
 - `turns`: the number of turns, an integer of at least 1. One turn is one learner reply plus one AI reply. The opening question is not a turn.
-- `context`: a text file of background for the AI. It is not shown to the learner.
+- `context`: a Markdown file of background text for the AI. It is not shown to the learner.
 
 `image` and `audio` are optional. `answer`, `accept`, and `choices` are ignored.
 
-## Media and text files
+## Media and Markdown files
 
 `image`, `audio`, `script`, `passage`, and `context` values are local filenames, not paths. The referenced file must exist beside `slide.md`. Known-good image extensions are `.jpg`, `.jpeg`, `.png`, and `.webp`. Known-good audio extensions are `.mp3`, `.m4a`, `.wav`, `.ogg`, `.flac`, and `.aac`.
 
-The known-good text extension for `script`, `passage`, and `context` is `.txt`. Text files must contain non-blank UTF-8 plain text. For narration sources and the conversation context file, the validator reports unknown extensions as warnings, not errors.
+`script`, `passage`, and `context` name Markdown files with the `.md` extension. These files must contain non-blank UTF-8 text. For narration sources and the conversation context file, the validator reports any other extension, including `.txt`, as a warning, not an error.
 
-Question, essay, and gratitude slides require at least one image or audio file. Informational slides may be text-only. Narration requires exactly one audio or text source, with an optional image. Conversation requires a context text file, with optional image and audio files. A package may contain both image and audio.
+Question, essay, and gratitude slides require at least one image or audio file. Informational slides may be text-only. Narration requires exactly one audio or Markdown source, with an optional image. Conversation requires a Markdown context file, with optional image and audio files. A package may contain both image and audio.
 
 ## Validation and compatibility
 
@@ -130,7 +130,7 @@ MindFeast retains compatibility with older packages whose `type` is missing or c
 
 The companion [frontmatter schema](mindfeast-slide-frontmatter-v1.schema.json) validates the YAML mapping after it has been parsed as JSON-compatible data. The schema requires exactly one narration source and all three conversation fields. It checks filename syntax for narration sources and the conversation context file, non-blank intent, and the minimum turn count. Unknown fields remain allowed through `additionalProperties: true`.
 
-Charlotte's `mindfeast-slide-builder` validator checks directory layout, file existence, UTF-8 text content, and Markdown body rules. It rejects blank text files and warns about ignored answer fields. The validator also rejects float values for `turns`, including `3.0`. JSON Schema treats a number with no fractional part as an integer, so the schema alone cannot reject `3.0`.
+Charlotte's `mindfeast-slide-builder` validator checks directory layout, file existence, UTF-8 text content, and Markdown body rules. It rejects blank Markdown files and warns about ignored answer fields. The validator also rejects float values for `turns`, including `3.0`. JSON Schema treats a number with no fractional part as an integer, so the schema alone cannot reject `3.0`.
 
 ## Examples
 
@@ -185,14 +185,14 @@ This example deliberately uses an id other than the bundled starter slide's `dai
 
 ### Narration
 
-This example requires `passage.txt` containing the passage text.
+This example requires `passage.md` containing the passage text.
 
 ```markdown
 ---
 id: seed-narration
 type: narration
 subject: nature-study
-passage: passage.txt
+passage: passage.md
 orientation: portrait
 ---
 
@@ -201,7 +201,7 @@ Tell back what you read about how a seed begins to grow.
 
 ### Conversation
 
-This example requires `context.txt` containing the factual background for the AI, such as how roots absorb water and anchor a plant.
+This example requires `context.md` containing the factual background for the AI, such as how roots absorb water and anchor a plant.
 
 ```markdown
 ---
@@ -210,7 +210,7 @@ type: conversation
 subject: nature-study
 intent: Draw out how roots help a plant grow.
 turns: 3
-context: context.txt
+context: context.md
 orientation: portrait
 ---
 
