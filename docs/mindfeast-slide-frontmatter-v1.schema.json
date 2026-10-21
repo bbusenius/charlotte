@@ -11,7 +11,7 @@
       "pattern": "^[a-z0-9][a-z0-9-]*$"
     },
     "type": {
-      "enum": ["question", "informational", "essay", "gratitude"]
+      "enum": ["question", "informational", "essay", "gratitude", "narration", "conversation"]
     },
     "subject": {
       "type": "string"
@@ -45,6 +45,24 @@
     "orientation": {
       "enum": ["landscape", "portrait"],
       "default": "landscape"
+    },
+    "script": {
+      "$ref": "#/$defs/filename"
+    },
+    "passage": {
+      "$ref": "#/$defs/filename"
+    },
+    "context": {
+      "$ref": "#/$defs/filename"
+    },
+    "intent": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "turns": {
+      "type": "integer",
+      "minimum": 1
     }
   },
   "additionalProperties": true,
@@ -89,13 +107,50 @@
           }
         ]
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "narration"
+          }
+        },
+        "required": ["type"]
+      },
+      "then": {
+        "oneOf": [
+          {
+            "required": ["audio"]
+          },
+          {
+            "required": ["script"]
+          },
+          {
+            "required": ["passage"]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "conversation"
+          }
+        },
+        "required": ["type"]
+      },
+      "then": {
+        "required": ["intent", "turns", "context"]
+      }
     }
   ],
   "$defs": {
     "filename": {
       "type": "string",
       "minLength": 1,
-      "description": "A basename for a file stored directly in the slide directory."
+      "description": "A basename for a file stored directly in the slide directory.",
+      "pattern": "^(?!\\.{1,2}$)(?=.*\\S)[^/\\\\]+$"
     }
   }
 }
