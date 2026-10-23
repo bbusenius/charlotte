@@ -112,7 +112,13 @@ Let the content dictate the slide type:
 - `informational`: a brief context card, reminder, quote, or observation prompt that should be dismissed rather than answered.
 - Multiple-choice `question`: use when a closed set helps, spelling would get in the way, the answer is a name with accents or uncommon spelling, or the student is young. Put `choices` in final display order and vary correct-answer positions across the set.
 - Free-text `question`: use for short recall where typing the answer is reasonable.
-- `essay`: use for narration, observation, reflection, or a one-to-three-sentence response when the material calls for the student to answer in their own words. Parent-visible responses are part of the MindFeast workflow.
+- `narration`: use when the student takes in a supplied passage, then retells it in their own words. Write script or passage text from the week's material. Choose `script` for reading aloud, especially for younger learners or pre-readers; choose `passage` for reading on screen. Use `audio` only when a provided, licensed audio file exists. Never invent or synthesize copyrighted audio.
+- `conversation`: use for a short guided exchange with the app's AI to explore an idea or resolve confusion. Start with one concrete opening question.
+- `essay`: use for observation, reflection, or a one-to-three-sentence response from memory without a supplied passage or guided exchange. Parent-visible responses are part of the MindFeast workflow.
+
+For conversation, write a hidden `intent` that names what the AI should draw out or explain, the learner's level, and the tone. For example, "Help an early reader explain how roots support a plant. Use gentle, concrete language." Use a small `turns` value, usually 2 or 3. The opening question is not a turn; one turn is one learner reply plus one AI reply. The app asks for short replies and one question at a time. On the final turn it adds a wrap-up rule, usually ending with a statement, fact, or warm goodbye; an open question fits only a thought-provoking intent.
+
+Write `context.md` as accurate factual background from the week's material that the AI can use. It is hidden from the learner and contains facts, not instructions. Keep teaching directions in `intent`. Narration and conversation need no image.
 
 Write for the student's `grade` and reading level. Keep question text short enough for the lock-screen panel. Hints should reopen attention to the material, not give away the answer. If a slide comes from a specific book and the page, chapter, section, or lesson is known, the hint may point the student back to that source, such as "Look at page 42 of The Burgess Bird Book" or "Check the section on guide words in Lesson 112."
 

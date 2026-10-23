@@ -507,3 +507,193 @@ def test_unknown_source_extension_is_a_warning(tmp_path, field, filename):
 
     assert errors == []
     assert warnings == [f"{field} file has an unknown extension: {filename}"]
+
+
+def run_builder(monkeypatch, output, slide_type, *flags):
+    builder = load_module("make_slide.py", "builder_cli")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "make_slide.py", "--out", str(output), "--id", "example-slide",
+            "--type", slide_type, "--orientation", "portrait",
+            "--question", "What did you learn about roots?", *flags,
+        ],
+    )
+    return builder.main()
+
+
+@pytest.mark.parametrize("field", ["script", "passage", "context", "audio"])
+@pytest.mark.parametrize("from_file", [False, True])
+@pytest.mark.parametrize("with_media", [False, True])
+def test_builder_new_sources_validate_and_preserve_content(
+    tmp_path, monkeypatch, field, from_file, with_media
+):
+    import wave
+
+    validator = load_module("validate_slide.py", "validator_builder_sources")
+    output = tmp_path / "slides"
+    content = "# Roots\n\nRoots absorb **water** and anchor the plant.\n\nMore roots grow.\n"
+    source = tmp_path / "source.txt"
+    source.write_text(content, encoding="utf-8")
+    audio = tmp_path / "provided.wav"
+    with wave.open(str(audio), "wb") as wav:
+        wav.setparams((1, 2, 8000, 0, "NONE", "not compressed"))
+        wav.writeframes(b"\x00\x00" * 800)
+    slide_type = "conversation" if field == "context" else "narration"
+    flags = (
+        ["--audio", str(audio)] if field == "audio" else
+        [f"--{field}-file", str(source)] if from_file else
+        [f"--{field}-text", content]
+    )
+    if slide_type == "conversation":
+        flags += ["--intent", "Explain roots to an early reader.", "--turns", "1"]
+    if with_media:
+        image = tmp_path / "image.png"
+        image.write_bytes(b"test fixture")
+        flags += ["--image", str(image)]
+        if slide_type == "conversation":
+            flags += ["--audio", str(audio)]
+
+    assert run_builder(monkeypatch, output, slide_type, *flags) == 0
+    slide_dir = output / "example-slide"
+    assert validator.validate(slide_dir) == ([], [])
+    markdown = (slide_dir / "slide.md").read_text(encoding="utf-8")
+    data, body = validator.parse_frontmatter(markdown)
+    assert body == "What did you learn about roots?"
+    assert data[field] == ("provided.wav" if field == "audio" else f"{field}.md")
+    if field == "audio":
+        assert (slide_dir / "provided.wav").read_bytes() == audio.read_bytes()
+    else:
+        assert (slide_dir / f"{field}.md").read_text(encoding="utf-8") == content
+    if with_media:
+        assert (slide_dir / "image.png").read_bytes() == image.read_bytes()
+        if slide_type == "conversation":
+            assert (slide_dir / "provided.wav").read_bytes() == audio.read_bytes()
+    else:
+        assert "image" not in data
+    keys = ["id", "type"] + (["image"] if with_media else [])
+    if slide_type == "conversation":
+        keys += (["audio"] if with_media else []) + ["intent", "turns", "context"]
+    else:
+        keys += [field]
+    assert list(data) == keys + ["difficulty", "orientation"]
+    jsonschema = pytest.importorskip("jsonschema")
+    schema = json.loads((ROOT / "docs/mindfeast-slide-frontmatter-v1.schema.json").read_text())
+    jsonschema.validate(data, schema)
+
+
+def test_builder_intent_round_trips_yaml_and_frontmatter_delimiters(tmp_path, monkeypatch):
+    intent = 'Explain "roots": # facts\\notes\n---\r\t- café\x01\x7f\x85\u2028\u2029'
+    output = tmp_path / "slides"
+    assert run_builder(
+        monkeypatch, output, "conversation", "--context-text", "Roots absorb water.",
+        "--intent", intent, "--turns", "3",
+    ) == 0
+    validator = load_module("validate_slide.py", "validator_intent")
+    slide_dir = output / "example-slide"
+    markdown = (slide_dir / "slide.md").read_text(encoding="utf-8")
+    data, _ = validator.parse_frontmatter(markdown)
+    assert data["intent"] == intent
+    assert markdown.count("---") == 2
+    assert '\\u002d\\u002d\\u002d' in markdown
+    assert validator.validate(slide_dir) == ([], [])
+
+
+@pytest.mark.parametrize(
+    "slide_type,flags,error",
+    [
+        ("narration", [], "exactly one"),
+        ("narration", ["--script-text", "Roots.", "--passage-text", "Roots."], "exactly one"),
+        ("narration", ["--audio", "missing.wav", "--script-text", "Roots."], "exactly one"),
+        ("narration", ["--audio", "missing.wav", "--passage-text", "Roots."], "exactly one"),
+        ("narration", ["--audio", "missing.wav", "--script-text", "Roots.", "--passage-text", "Roots."], "exactly one"),
+        ("narration", ["--audio", "missing.wav"], "media file not found"),
+        ("narration", ["--audio", ""], "media file not found"),
+        ("narration", ["--script-text", " \n\t"], "non-blank Markdown"),
+        ("narration", ["--passage-text", ""], "non-blank Markdown"),
+        ("narration", ["--script-text", "Roots.", "--question", " "], "non-blank --question"),
+        ("narration", ["--script-text", "Roots.", "--text", " "], "non-blank --question"),
+        ("conversation", ["--intent", "Explain.", "--turns", "1"], "provide --context"),
+        ("conversation", ["--intent", "Explain.", "--turns", "1", "--context-text", " "], "non-blank Markdown"),
+        ("conversation", ["--context-text", "Roots.", "--turns", "1"], "non-blank --intent"),
+        ("conversation", ["--context-text", "Roots.", "--turns", "1", "--intent", " "], "non-blank --intent"),
+        ("conversation", ["--context-text", "Roots.", "--intent", "Explain."], "integer >= 1"),
+        ("conversation", ["--context-text", "Roots.", "--intent", "Explain.", "--turns", "0"], "integer >= 1"),
+        ("conversation", ["--context-text", "Roots.", "--intent", "Explain.", "--turns", "-1"], "integer >= 1"),
+        ("conversation", ["--turns", "3.0"], "invalid int value"),
+        ("conversation", ["--turns", "two"], "invalid int value"),
+        ("conversation", ["--question", " "], "non-blank --question"),
+    ],
+)
+@pytest.mark.parametrize("existing", [False, True])
+def test_builder_rejects_invalid_input_before_writing(
+    tmp_path, monkeypatch, capsys, slide_type, flags, error, existing
+):
+    output = tmp_path / "slides"
+    slide_dir = output / "example-slide"
+    if existing:
+        slide_dir.mkdir(parents=True)
+        (slide_dir / "slide.md").write_text("Original package", encoding="utf-8")
+        (slide_dir / "context.md").write_text("Original context", encoding="utf-8")
+    before = {p.relative_to(output): p.read_bytes() for p in output.rglob("*") if p.is_file()}
+    with pytest.raises(SystemExit) as exc:
+        run_builder(monkeypatch, output, slide_type, *flags, "--force")
+    assert error in str(exc.value) + capsys.readouterr().err
+    after = {p.relative_to(output): p.read_bytes() for p in output.rglob("*") if p.is_file()}
+    assert before == after
+    assert output.exists() is existing
+
+
+@pytest.mark.parametrize("field", ["script", "passage", "context"])
+@pytest.mark.parametrize("content", [b" \n\t", b"\xff", None])
+def test_builder_rejects_blank_unreadable_or_missing_source_files(
+    tmp_path, monkeypatch, field, content
+):
+    source = tmp_path / "source.md"
+    if content is not None:
+        source.write_bytes(content)
+    output = tmp_path / "slides"
+    slide_type = "conversation" if field == "context" else "narration"
+    flags = [f"--{field}-file", str(source)]
+    if field == "context":
+        flags += ["--intent", "Explain.", "--turns", "2"]
+    with pytest.raises(SystemExit, match="non-blank Markdown|cannot read"):
+        run_builder(monkeypatch, output, slide_type, *flags)
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("field", ["script", "passage", "context"])
+def test_builder_rejects_both_text_and_file(tmp_path, monkeypatch, capsys, field):
+    output = tmp_path / "slides"
+    slide_type = "conversation" if field == "context" else "narration"
+    with pytest.raises(SystemExit):
+        run_builder(monkeypatch, output, slide_type, f"--{field}-text", "Roots.", f"--{field}-file", "source.md")
+    assert "not allowed with argument" in capsys.readouterr().err
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("slide_type", ["narration", "conversation"])
+@pytest.mark.parametrize("flag", ["--answer", "--accept", "--choice", "--hint"])
+def test_builder_new_types_reject_question_only_flags(tmp_path, monkeypatch, slide_type, flag):
+    output = tmp_path / "slides"
+    with pytest.raises(SystemExit, match="slides do not use"):
+        run_builder(monkeypatch, output, slide_type, flag, "Unused")
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("slide_type", ["narration", "conversation"])
+def test_builder_new_types_require_force_to_overwrite(tmp_path, monkeypatch, slide_type):
+    output = tmp_path / "slides"
+    flags = (
+        ["--script-text", "Roots absorb water."] if slide_type == "narration" else
+        ["--context-text", "Roots absorb water.", "--intent", "Explain.", "--turns", "2"]
+    )
+    assert run_builder(monkeypatch, output, slide_type, *flags) == 0
+    slide_md = output / "example-slide" / "slide.md"
+    original = slide_md.read_bytes()
+    with pytest.raises(SystemExit, match="already exists; pass --force"):
+        run_builder(monkeypatch, output, slide_type, *flags, "--question", "Tell me more.")
+    assert slide_md.read_bytes() == original
+    assert run_builder(monkeypatch, output, slide_type, *flags, "--question", "Tell me more.", "--force") == 0
+    assert slide_md.read_text().endswith("\n\nTell me more.\n")
