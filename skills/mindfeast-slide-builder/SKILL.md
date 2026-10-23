@@ -1,12 +1,12 @@
 ---
 name: mindfeast-slide-builder
-description: Use for any request to make a slide, tablet slide, lock-screen slide, unlock question, or MindFeast slide package. Generates MindFeast question, essay, or informational slides and supports MindFeast's special gratitude package type; resolves the output directory per student from students.yaml (`tablet_slides_dir`); creates `<dir>/<id>/` folders containing slide.md plus optional image/audio media; validates the MindFeast package contract; uses provided prompt images when available; and can generate images in the configured aesthetic register when none are provided. Do not route slide requests through mason-materials-builder or mason-print-design unless the user separately asks for a printable/PDF material.
-argument-hint: <slide request in prose, optionally referencing a student, lesson, provided image, or media> [--out PATH] [--id SLUG] [--image quality|fast|provided] [--difficulty easy|medium|hard] [--type question|essay|gratitude|informational] [--subject SUBJECT]
+description: Use for any request to make a slide, tablet slide, lock-screen slide, unlock question, or MindFeast slide package. Generates MindFeast question, essay, informational, narration, or conversation slides and supports MindFeast's special gratitude package type; resolves the output directory per student from students.yaml (`tablet_slides_dir`); creates `<dir>/<id>/` folders containing slide.md plus optional image/audio media; validates the MindFeast package contract; uses provided prompt images when available; and can generate images in the configured aesthetic register when none are provided. Do not route slide requests through mason-materials-builder or mason-print-design unless the user separately asks for a printable/PDF material.
+argument-hint: <slide request in prose, optionally referencing a student, lesson, provided image, or media> [--out PATH] [--id SLUG] [--image quality|fast|provided] [--difficulty easy|medium|hard] [--type question|essay|gratitude|informational|narration|conversation] [--subject SUBJECT]
 ---
 
 # MindFeast Slide Builder
 
-Create one or more MindFeast question, essay, or informational slides, with support for MindFeast's special gratitude package type. A slide is not a printable material; it is an app package synced from a configured slide directory. Output directory is resolved per student from `students.yaml`; see *Output resolution* below.
+Create one or more MindFeast question, essay, informational, narration, or conversation slides, with support for MindFeast's special gratitude package type. A slide is not a printable material; it is an app package synced from a configured slide directory. Output directory is resolved per student from `students.yaml`; see *Output resolution* below.
 
 Use this skill when the user asks for a slide, tablet slide, lock-screen slide, screen-lock challenge, unlock question, essay prompt, informational unlock slide, or MindFeast slide. A bare request such as "make Alice a slide about toads" means this skill.
 
@@ -31,10 +31,11 @@ Each slide lives in its own directory under the resolved output path:
 ```text
 <resolved-out>/<slide-id>/
   slide.md
-  image.png | image.jpg | audio.mp3
+  image.png | image.jpg | audio.mp3  (optional by type)
+  script.md | passage.md | context.md  (required by type)
 ```
 
-The folder name must exactly match the frontmatter `id`. The app imports only files directly inside each slide folder. Question, essay, and gratitude slides must declare at least one of `image` or `audio`; informational slides must include at least one of body text, `image`, or `audio`. Every declared media file must exist in that folder.
+The folder name must exactly match the frontmatter `id`. The app imports only files directly inside each slide folder. Question, essay, and gratitude slides must declare at least one of `image` or `audio`; informational slides must include at least one of body text, `image`, or `audio`. Narration slides require exactly one of `audio`, `script`, or `passage`. Conversation slides require `intent`, `turns`, and `context`. Neither new type needs an image; conversation audio is optional. Every referenced file must exist directly in that folder.
 
 Question `slide.md` format:
 
@@ -112,12 +113,12 @@ orientation: landscape
 What do you notice first in this painting? Write two or three sentences.
 ```
 
-Required fields: `id`, `type`. Use `type: question` for answerable challenge slides, `type: essay` for one-time free-response prompts that accept any non-blank student response, `type: gratitude` for recurring free-response prompts recorded in the gratitude journal, and `type: informational` for dismissible information slides. Use `subject` for category metadata such as `painting`, `composer`, `geography`, or `science`.
+Required fields: `id`, `type`. Use `type: question` for answerable challenge slides, `type: essay` for one-time free-response prompts that accept any non-blank student response, `type: gratitude` for recurring free-response prompts recorded in the gratitude journal, and `type: informational` for dismissible information slides. Use `type: narration` to supply a passage for the student to retell, and `type: conversation` for a short guided exchange with the app's AI. Use `subject` for category metadata such as `painting`, `composer`, `geography`, or `science`.
 
 Optional fields:
 
 - `subject` — content category metadata. The app currently ignores it, but keep it useful for humans and future tooling.
-- `answer` — required for question slides; omit for essay, gratitude, and informational slides.
+- `answer` — required for question slides; omit for all other types.
 - `accept` — alternate free-text answers for question slides. Include spelling/plain-ASCII variants when names include accents.
 - `choices` — multiple-choice options for question slides. If present, the app shows buttons instead of free text.
 - `difficulty` — `easy`, `medium`, or `hard`; default to `easy`.
@@ -130,6 +131,7 @@ Markdown body:
 - For essay slides, the first paragraph is the question/prompt shown to the student. There is no answer, choices, accept list, or hint.
 - For gratitude slides, the first paragraph is the recurring prompt shown to the student. There is no answer, choices, accept list, or hint.
 - For informational slides, the first paragraph is optional display text. There is no answer, choices, or hint.
+- For narration slides, the first paragraph is the retelling prompt. For conversation slides, it is the opening question. Both must be non-blank; neither type uses answer fields or a hint.
 - Keep visible text short enough for the bottom panel of a tablet lock screen.
 
 ## Workflow
@@ -137,7 +139,7 @@ Markdown body:
 1. Parse the prompt for slide type, subject, student, lesson reference, requested slide count, image/audio input, answer style, and difficulty.
 2. Read `students.yaml` and resolve the output directory per *Output resolution* above. Bind it to `<out>` for the rest of the workflow. If a student or lesson is referenced, also read the lesson content before writing the challenge.
 3. If an image is provided in the prompt, use that image as the slide media. Copy it into the slide folder with a slugged filename and preserve the extension when practical.
-4. If no image is provided and the slide is not audio-only, choose `orientation` from the image composition and expected UI load before generating the image, then generate one using the image generation rules below. Prompt for no text, no labels, no captions.
+4. Narration and conversation slides need no image. For other slides, if no image is provided and the slide is not audio-only, choose `orientation` from the image composition and expected UI load before generating the image, then generate one using the image generation rules below. Prompt for no text, no labels, no captions.
 5. If the request is for music/listening, prefer audio when the user provides an audio file. Do not invent or download copyrighted audio.
 6. Choose a stable `id` slug from the subject unless `--id` is given. Use lowercase ASCII letters, digits, and hyphens only.
 7. Write `slide.md` and media into `<out>/<id>/`. Prefer the skill-local scaffold script for ordinary single-slide packages — pass the resolved `<out>` as `--out`:
@@ -185,6 +187,47 @@ For essay slides:
   --question "What do you notice first? Write two or three sentences."
 ```
 
+For narration, use `--question` for a short retelling prompt and exactly one source: `--audio`, `--script-text`/`--script-file`, or `--passage-text`/`--passage-file`. The `-text` flags accept literal Markdown; the `-file` flags read an existing UTF-8 file. Each pair is mutually exclusive. The script writes the text to `script.md` or `passage.md`, preserving its content. Audio keeps the provided file's basename.
+
+Script narration, read aloud by the app:
+
+```bash
+.venv/bin/python skills/mindfeast-slide-builder/scripts/make_slide.py \
+  --out <out> --id seed-script --type narration --orientation portrait \
+  --question "Tell back how the seed began to grow." \
+  --script-text "The seed absorbed water. A root emerged and grew into the soil."
+```
+
+Passage narration, read on screen:
+
+```bash
+.venv/bin/python skills/mindfeast-slide-builder/scripts/make_slide.py \
+  --out <out> --id seed-passage --type narration --orientation portrait \
+  --question "Tell back what you read about the seed." \
+  --passage-file path/to/seed-passage.md
+```
+
+Audio narration, using a provided, licensed recording:
+
+```bash
+.venv/bin/python skills/mindfeast-slide-builder/scripts/make_slide.py \
+  --out <out> --id seed-audio --type narration --orientation landscape \
+  --question "Tell back what you heard about the seed." \
+  --audio path/to/seed-recording.wav
+```
+
+For a conversation, supply an opening `--question`, non-blank `--intent`, integer `--turns` of at least 1, and `--context-text` or `--context-file`. Context uses the same text/file convention and is written to `context.md`. Intent and context are hidden from the learner.
+
+```bash
+.venv/bin/python skills/mindfeast-slide-builder/scripts/make_slide.py \
+  --out <out> --id roots-conversation --type conversation --orientation portrait \
+  --question "How do roots help a plant?" \
+  --intent "Draw out how roots absorb water and anchor plants. Use gentle, concrete language for an early reader." \
+  --turns 3 --context-text "Roots absorb water and minerals from soil and anchor the plant."
+```
+
+All four examples work without an image. Optional `--image` works for both types; optional `--audio` also works for conversation. The builder rejects blank prompts or source text, invalid conversation fields, and `--answer`, `--accept`, `--choice`, or `--hint` before writing the package.
+
 8. Run the bundled validator before delivery:
 
 ```bash
@@ -230,6 +273,14 @@ Use `type: essay` when the student should respond in their own words. Essay slid
 - Prefer observation, narration, reflection, and short written-response prompts.
 - Keep the prompt specific enough that the student knows what to write, but open enough that many valid responses are possible.
 - A good essay prompt usually asks for one to three sentences, one observation plus one inference, or a short narration from memory.
+
+## Narration and conversation design
+
+Use narration when the student takes in a supplied passage and then retells it. Ask for a retelling in the student's own words. Put the passage in the source file, keeping the visible prompt short. Choose `script` for listening, especially for younger learners or pre-readers, and `passage` for reading on screen. Use `audio` only for a provided, licensed recording. Neither type needs a decorative image.
+
+Start a conversation with one concrete question. In `intent`, name what the AI should draw out or explain, the learner's level, and the tone. Put accurate factual background in `context.md`, not directions to the AI. Usually choose 2 or 3 turns. A turn is one learner reply plus one AI reply; the opening question does not count. The app asks for short replies and one question at a time, then adds a wrap-up rule on the final turn.
+
+Essay still fits observation, reflection, or a short written response from memory without a supplied passage or guided exchange.
 
 ## Gratitude Packages
 
@@ -338,12 +389,14 @@ The Android parser effectively enforces:
 
 - YAML frontmatter begins and ends with `---`.
 - `id` and `type` are present.
-- `type` is `question`, `essay`, `gratitude`, or `informational`. Put category metadata in `subject`, not `type`.
+- `type` is `question`, `essay`, `gratitude`, `informational`, `narration`, or `conversation`. Put category metadata in `subject`, not `type`.
 - Question slides include `answer` and at least one of `image` or `audio`.
 - Essay slides include a body prompt and at least one of `image` or `audio`; they do not use answer fields.
 - Gratitude slides include a body prompt and at least one of `image` or `audio`; they do not use answer fields.
 - Informational slides include at least one of body text, `image`, or `audio`.
-- Declared `image`/`audio` files exist in the same folder.
+- Narration slides include a non-blank prompt and exactly one of `audio`, `script`, or `passage`.
+- Conversation slides include a non-blank opening question and `intent`, integer `turns` of at least 1, and `context`.
+- Referenced files use basenames and exist in the same folder. `script`, `passage`, and `context` contain non-blank UTF-8 Markdown in `.md` files.
 - `orientation` is exactly `landscape` or `portrait` if present.
 - The folder name equals `id`.
 - Slide folder names cannot contain `/`, `\`, or start with `.`.
