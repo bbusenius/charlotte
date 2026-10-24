@@ -26,6 +26,15 @@ def test_selection_is_driven_by_week_content():
     assert "single best signal" not in heuristics.lower()
 
 
+def test_narration_and_conversation_get_images():
+    skill = SKILL.read_text(encoding="utf-8")
+    assert "need no image" not in skill
+    assert (
+        "Narration and conversation slides get an image from `mindfeast-slide-builder`, the same as the other types, unless an image is provided or the slide is audio-only."
+        in skill
+    )
+
+
 def test_unnamed_run_requires_complete_remote():
     skill = SKILL.read_text(encoding="utf-8")
     assert (

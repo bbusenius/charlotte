@@ -12,6 +12,16 @@ ROOT = Path(__file__).resolve().parents[1]
 BUILDER_DIR = ROOT / "skills" / "mindfeast-slide-builder" / "scripts"
 
 
+def test_narration_and_conversation_slides_get_images():
+    skill = (ROOT / "skills" / "mindfeast-slide-builder" / "SKILL.md").read_text(encoding="utf-8")
+    workflow = skill.split("## Workflow", 1)[1].split("## Question Slide Design", 1)[0]
+    design = skill.split("## Narration and conversation design", 1)[1].split("## Gratitude Packages", 1)[0]
+    assert "need no image" not in skill
+    assert "decorative image" not in skill
+    assert "Do this for narration and conversation slides as well as the other types." in workflow
+    assert "Generate an image for both types" in design
+
+
 def load_module(filename: str, module_name: str):
     spec = importlib.util.spec_from_file_location(module_name, BUILDER_DIR / filename)
     assert spec is not None
