@@ -35,7 +35,7 @@ Each slide lives in its own directory under the resolved output path:
   script.md | passage.md | context.md  (required by type)
 ```
 
-The folder name must exactly match the frontmatter `id`. The app imports only files directly inside each slide folder. Question, essay, and gratitude slides must declare at least one of `image` or `audio`; informational slides must include at least one of body text, `image`, or `audio`. Narration slides require exactly one of `audio`, `script`, or `passage`. Conversation slides require `intent`, `turns`, and `context`. Neither new type needs an image; conversation audio is optional. Every referenced file must exist directly in that folder.
+The folder name must exactly match the frontmatter `id`. The app imports only files directly inside each slide folder. Question, essay, and gratitude slides must declare at least one of `image` or `audio`; informational slides must include at least one of body text, `image`, or `audio`. Narration slides require exactly one of `audio`, `script`, or `passage`. Conversation slides require `intent`, `turns`, and `context`. A missing image does not fail validation for either type, and conversation audio is optional. Every referenced file must exist directly in that folder.
 
 Question `slide.md` format:
 
@@ -139,7 +139,7 @@ Markdown body:
 1. Parse the prompt for slide type, subject, student, lesson reference, requested slide count, image/audio input, answer style, and difficulty.
 2. Read `students.yaml` and resolve the output directory per *Output resolution* above. Bind it to `<out>` for the rest of the workflow. If a student or lesson is referenced, also read the lesson content before writing the challenge.
 3. If an image is provided in the prompt, use that image as the slide media. Copy it into the slide folder with a slugged filename and preserve the extension when practical.
-4. Narration and conversation slides need no image. For other slides, if no image is provided and the slide is not audio-only, choose `orientation` from the image composition and expected UI load before generating the image, then generate one using the image generation rules below. Prompt for no text, no labels, no captions.
+4. If no image is provided and the slide is not audio-only, choose `orientation` from the image composition and expected UI load before generating the image, then generate one using the image generation rules below. Do this for narration and conversation slides as well as the other types. Prompt for no text, no labels, no captions.
 5. If the request is for music/listening, prefer audio when the user provides an audio file. Do not invent or download copyrighted audio.
 6. Choose a stable `id` slug from the subject unless `--id` is given. Use lowercase ASCII letters, digits, and hyphens only.
 7. Write `slide.md` and media into `<out>/<id>/`. Prefer the skill-local scaffold script for ordinary single-slide packages — pass the resolved `<out>` as `--out`:
@@ -194,6 +194,7 @@ Script narration, read aloud by the app:
 ```bash
 .venv/bin/python skills/mindfeast-slide-builder/scripts/make_slide.py \
   --out <out> --id seed-script --type narration --orientation portrait \
+  --image path/to/image.png \
   --question "Tell back how the seed began to grow." \
   --script-text "The seed absorbed water. A root emerged and grew into the soil."
 ```
@@ -203,11 +204,12 @@ Passage narration, read on screen:
 ```bash
 .venv/bin/python skills/mindfeast-slide-builder/scripts/make_slide.py \
   --out <out> --id seed-passage --type narration --orientation portrait \
+  --image path/to/image.png \
   --question "Tell back what you read about the seed." \
   --passage-file path/to/seed-passage.md
 ```
 
-Audio narration, using a provided, licensed recording:
+Audio narration, using a provided, licensed recording. This is the audio-only case, so it has no image:
 
 ```bash
 .venv/bin/python skills/mindfeast-slide-builder/scripts/make_slide.py \
@@ -221,12 +223,13 @@ For a conversation, supply an opening `--question`, non-blank `--intent`, intege
 ```bash
 .venv/bin/python skills/mindfeast-slide-builder/scripts/make_slide.py \
   --out <out> --id roots-conversation --type conversation --orientation portrait \
+  --image path/to/image.png \
   --question "How do roots help a plant?" \
   --intent "Draw out how roots absorb water and anchor plants. Use gentle, concrete language for an early reader." \
   --turns 3 --context-text "Roots absorb water and minerals from soil and anchor the plant."
 ```
 
-All four examples work without an image. Optional `--image` works for both types; optional `--audio` also works for conversation. The builder rejects blank prompts or source text, invalid conversation fields, and `--answer`, `--accept`, `--choice`, or `--hint` before writing the package.
+Script, passage, and conversation slides take the generated or provided file with `--image`. An audio narration slide can stay audio-only. Optional `--audio` also works for conversation. The builder rejects blank prompts or source text, invalid conversation fields, and `--answer`, `--accept`, `--choice`, or `--hint` before writing the package.
 
 8. Run the bundled validator before delivery:
 
@@ -276,7 +279,7 @@ Use `type: essay` when the student should respond in their own words. Essay slid
 
 ## Narration and conversation design
 
-Use narration when the student takes in a supplied passage and then retells it. Ask for a retelling in the student's own words. Put the passage in the source file, keeping the visible prompt short. Choose `script` for listening, especially for younger learners or pre-readers, and `passage` for reading on screen. Use `audio` only for a provided, licensed recording. Neither type needs a decorative image.
+Use narration when the student takes in a supplied passage and then retells it. Ask for a retelling in the student's own words. Put the passage in the source file, keeping the visible prompt short. Choose `script` for listening, especially for younger learners or pre-readers, and `passage` for reading on screen. Use `audio` only for a provided, licensed recording. Generate an image for both types, using the image rules below, unless an image is provided or the slide is audio-only. Show the passage's scene, or the concrete subject of the conversation.
 
 Start a conversation with one concrete question. In `intent`, name what the AI should draw out or explain, the learner's level, and the tone. Put accurate factual background in `context.md`, not directions to the AI. Usually choose 2 or 3 turns. A turn is one learner reply plus one AI reply; the opening question does not count. The app asks for short replies and one question at a time, then adds a wrap-up rule on the final turn.
 
