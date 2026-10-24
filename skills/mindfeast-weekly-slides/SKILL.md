@@ -118,7 +118,7 @@ Let the content dictate the slide type:
 
 For conversation, write a hidden `intent` that names what the AI should draw out or explain, the learner's level, and the tone. For example, "Help an early reader explain how roots support a plant. Use gentle, concrete language." Use a small `turns` value, usually 2 or 3. The opening question is not a turn; one turn is one learner reply plus one AI reply. The app asks for short replies and one question at a time. On the final turn it adds a wrap-up rule, usually ending with a statement, fact, or warm goodbye; an open question fits only a thought-provoking intent.
 
-Write `context.md` as accurate factual background from the week's material that the AI can use. It is hidden from the learner and contains facts, not instructions. Keep teaching directions in `intent`. Narration and conversation need no image.
+Write `context.md` as accurate factual background from the week's material that the AI can use. It is hidden from the learner and contains facts, not instructions. Keep teaching directions in `intent`. Narration and conversation slides get an image from `mindfeast-slide-builder`, the same as the other types, unless an image is provided or the slide is audio-only.
 
 Write for the student's `grade` and reading level. Keep question text short enough for the lock-screen panel. Hints should reopen attention to the material, not give away the answer. If a slide comes from a specific book and the page, chapter, section, or lesson is known, the hint may point the student back to that source, such as "Look at page 42 of The Burgess Bird Book" or "Check the section on guide words in Lesson 112."
 
