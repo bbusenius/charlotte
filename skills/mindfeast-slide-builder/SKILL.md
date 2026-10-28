@@ -1,7 +1,7 @@
 ---
 name: mindfeast-slide-builder
 description: Use for any request to make a slide, tablet slide, lock-screen slide, unlock question, or MindFeast slide package. Generates MindFeast question, essay, informational, narration, or conversation slides and supports MindFeast's special gratitude package type; resolves the output directory per student from students.yaml (`tablet_slides_dir`); creates `<dir>/<id>/` folders containing slide.md plus optional image/audio media; validates the MindFeast package contract; uses provided prompt images when available; and can generate images in the configured aesthetic register when none are provided. Do not route slide requests through mason-materials-builder or mason-print-design unless the user separately asks for a printable/PDF material.
-argument-hint: <slide request in prose, optionally referencing a student, lesson, provided image, or media> [--out PATH] [--id SLUG] [--image quality|fast|provided] [--difficulty easy|medium|hard] [--type question|essay|gratitude|informational|narration|conversation] [--subject SUBJECT]
+argument-hint: <slide request in prose, optionally referencing a student, lesson, provided image, or media> [--out PATH] [--id SLUG] [--image generate|provided] [--difficulty easy|medium|hard] [--type question|essay|gratitude|informational|narration|conversation] [--subject SUBJECT]
 ---
 
 # MindFeast Slide Builder
@@ -291,76 +291,19 @@ MindFeast ships with a standard recurring gratitude starter slide. The `gratitud
 
 ## Image Generation
 
-Use the same image route policy as `mason-materials-builder`, but with slide-specific aspect ratios and output paths.
+Generate slide images with the `image_generate` tool. The runtime configuration decides which provider answers. Do not check which provider answered, and do not reject a result because of its provider.
 
-Image generation for this skill is route-based. Use the normal `quality` route unless the user explicitly asks for a fast/cheap slide image; `image-generation.yaml` decides which provider/model supplies that route.
+1. Choose `orientation` first. Use landscape when the visual composition needs width: broad scenes, maps, diagrams, groups, or side-by-side relationships. Use portrait when the visual composition or the slide UI needs vertical room: single people, portraits, book-page-like images, tall objects, composer/author/painter likenesses, artwork/document study, dense informational text, longer essay prompts, or multiple-choice slides with four or more choices.
+2. Build the prompt from the content request and the prompt rules below. End it with the configured aesthetics register: the `#### Image-router summary` section of the aesthetics skill named by `pedagogy.aesthetics` in `runtime.yaml` (default `skills/mason-aesthetics/SKILL.md`), or that skill's illustration-style guidance when it has no such section. Add it once. The tool adds no style of its own.
+3. Call `image_generate` with that prompt and `aspect_ratio: landscape` or `aspect_ratio: portrait`, matching `orientation`.
+4. Copy the file named by the result's `image` field into `<out>/<slide-id>/`, keeping its extension, and set `image:` to the copied filename. If `image` is a URL, download it into the slide folder instead.
+5. In delivery, name the `provider` and `model` that the result reports.
 
-- Prefer a runtime-native file-producing image capability when it explicitly identifies itself as Charlotte-backed and reports route/source/model/prompt-mode provenance. Otherwise use the repo-local router below from the project root through `.venv/bin/python`.
-- If the repo-local router exits `2`, no configured script-callable image provider is available. Report that image generation is unavailable unless a Charlotte-backed runtime-native capability exists.
-- If the router exits `3`, stop. That is a policy/safety rejection; do not try another provider.
-- Never bypass a failed Charlotte route with a direct provider call, handwritten HTTP request, or unrelated image tool.
+If the tool fails or reports a policy or safety rejection, report it and stop. Do not retry through a direct provider call, a handwritten HTTP request, or a script.
 
 ### Provided image
 
 If the user attaches or names an image, use it. Do not generate a replacement unless the user asks for one. Copy it into the slide folder and set `image:` to the copied filename.
-
-### Default route: quality
-
-When no image is provided and an image slide is needed, first choose the slide orientation, then use the shared image router from the repo root. Use landscape when the visual composition needs width: broad scenes, maps, diagrams, groups, or side-by-side relationships.
-
-```bash
-.venv/bin/python scripts/charlotte_image.py \
-  --prompt "..." \
-  --out "<out>/<slide-id>/<slide-id>.png" \
-  --size 1K \
-  --aspect-ratio 16:9 \
-  --kind slide-background \
-  --route quality \
-  --json
-```
-
-Use `--aspect-ratio 16:9` for `orientation: landscape`. Use `--aspect-ratio 3:4` for `orientation: portrait`.
-
-Use portrait when the visual composition or the slide UI needs vertical room: single people, portraits, book-page-like images, tall objects, composer/author/painter likenesses, artwork/document study, dense informational text, longer essay prompts, or multiple-choice slides with four or more choices.
-
-```bash
-.venv/bin/python scripts/charlotte_image.py \
-  --prompt "..." \
-  --out "<out>/<slide-id>/<slide-id>.png" \
-  --size 1K \
-  --aspect-ratio 3:4 \
-  --kind slide-background \
-  --route quality \
-  --json
-```
-
-The router reads `image-generation.yaml`. Use the JSON `path` in the result as the actual media file path; some providers return `.jpg` even when the requested path ended in `.png`. Use the JSON `route`, `source`, `model`, and `prompt_mode` fields when naming what generated the image.
-
-Use `--dry-run --json` on the same command to inspect the resolved route and final provider prompt without calling an image provider or writing files.
-
-Exit codes:
-
-- `0` success. Use the JSON output to name the source/model in delivery.
-- `1` configured providers were called but failed. Report the failure; do not hide it.
-- `2` no script-callable provider is configured or available. Use a runtime-native image tool if available.
-- `3` policy/safety rejection. Stop.
-
-### Fast route
-
-If the user explicitly asks for a fast/cheap/simple generated image, use `--route fast`:
-
-```bash
-.venv/bin/python scripts/charlotte_image.py \
-  --prompt "..." \
-  --out "<out>/<slide-id>/<slide-id>.png" \
-  --size 1K \
-  --aspect-ratio 16:9 \
-  --kind slide-background \
-  --route fast \
-  --json
-```
-
-The route named `fast` receives the configured aesthetics skill's compact image summary when the file provides one (the optional `#### Image-router summary` section), and the full skill text otherwise. Other routes always receive the full aesthetics skill text as image prompt context unless `--prompt-mode` is explicitly overridden. The aesthetics skill is set by `pedagogy.aesthetics` in `runtime.yaml` (default `skills/mason-aesthetics`).
 
 ### Prompt rules
 
@@ -370,7 +313,7 @@ The route named `fast` receives the configured aesthetics skill's compact image 
 - **Compose for the panel overlay, don't reserve space for it.** The app's translucent question panel overlays the lower portion of the image. Anchor the focal subject in the upper or center portion of the frame so the panel falls over painted-but-less-essential content (foreground, ground plane, table surface, grass) — keep that region painted, just not where the focal subject lives. **Do not** ask for "empty space," "room for text," or "a text panel" at the bottom — image models interpret that literally and paint a blank rectangle into the image.
 - Use enough contrast that the subject still reads once the panel overlays the bottom.
 - Prefer calm, specific, non-novelty imagery aligned with the configured aesthetics skill.
-- Name the image source/model in delivery, or say that the user provided the image.
+- Name the image provider and model from the tool result in delivery, or say that the user provided the image.
 
 ## Media Rules
 
@@ -412,4 +355,4 @@ This skill owns the app-specific slide package. Use `mason-materials-builder` on
 
 ## Delivery
 
-Report the slide id, full path, type, subject if present, media filename, visible text/question, answer when present, whether choices were used, and validation result. For essay slides, note that the response is free-form and parent-visible in Stats after submission. For gratitude slides, note that the response is free-form, recorded in the gratitude journal, and the slide remains active. Name the resolved student (or "no student / fallback") and which resolution rule applied (`--out`, student's `tablet_slides_dir`, or fallback). If an image was generated, name the image source/model.
+Report the slide id, full path, type, subject if present, media filename, visible text/question, answer when present, whether choices were used, and validation result. For essay slides, note that the response is free-form and parent-visible in Stats after submission. For gratitude slides, note that the response is free-form, recorded in the gratitude journal, and the slide remains active. Name the resolved student (or "no student / fallback") and which resolution rule applied (`--out`, student's `tablet_slides_dir`, or fallback). If an image was generated, name the provider and model the image tool reported.

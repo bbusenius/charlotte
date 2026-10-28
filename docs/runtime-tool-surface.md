@@ -8,7 +8,7 @@ Charlotte skills assume a small set of runtime capabilities. Runtime adapters ca
 | --- | --- | --- |
 | Workspace file read/write | All generation skills | Runtime filesystem access to the repo and ignored content roots |
 | Python project CLIs | Logging, slides, sync, image routing | `.venv` installed from `pyproject.toml` |
-| Image generation | Materials, tablet slides, standalone image requests | `scripts/charlotte_image.py` plus `image-generation.yaml` routes |
+| Image generation | Materials, tablet slides, composer studies, standalone image requests | The runtime's `image_generate` tool; skills put the aesthetics register in the prompt. In Hermes, `image_gen.provider` selects `gemini` (Charlotte's plugin over `scripts/charlotte_image.py` and `image-generation.yaml` routes) or `xai` |
 | HTML to PDF | `mason-print-design`, `mason-materials-builder` | WeasyPrint from `pyproject.toml` |
 | SVG to PDF/PNG | `mason-print-design`, `mason-materials-builder` | System `inkscape` |
 | Native curriculum PDF read | `lesson-log`, `mindfeast-weekly-slides`, `mason-materials-builder` | System Poppler utilities (`pdftotext`, `pdftoppm`) through `scripts/curriculum_read.py` |
@@ -31,7 +31,6 @@ Charlotte skills assume a small set of runtime capabilities. Runtime adapters ca
 | Web search/fetch | `mason-field-trip-planner`, book lookup fallback, general research | Runtime web tools or equivalent MCP |
 | Vision over local images | `lesson-log`, `hsd-book-log` | Active runtime's configured vision capability |
 | Live search fallback | `hsd-book-log` | Runtime web search |
-| Runtime-native image fallback | `mason-materials-builder`, `mindfeast-slide-builder` | Optional runtime image tool used only after `charlotte_image.py` exits `2` |
 
 Skills should name the capability they need, not a host-specific installation path. Runtime adapters own the mapping from capability to tool names, MCP servers, environment variables, and permission policy.
 

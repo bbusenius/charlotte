@@ -144,8 +144,8 @@ Also a planning/creation skill rather than a Signal-driven pipeline. Given a pro
 1. Resolves the student (if any) via `students.yaml` and, if curriculum files are referenced, reads the relevant lessons from the paths `students.yaml` resolves them to
 2. Invokes `mason-aesthetics` (peer skill) for aesthetic direction — typography tradition, palette direction, illustration register, font-availability check
 3. Invokes `mason-print-design` (peer skill) for the rendering toolchain (WeasyPrint for HTML→PDF, Inkscape for SVG→PDF/PNG) and print-fidelity rules, including a lettering carve-out so hand-lettered or decorative text can be baked into the image when lettering *is* the art
-4. Generates illustrations through `scripts/charlotte_image.py`, using the image routes configured in local `image-generation.yaml`
-5. Writes the finished material to the current working directory (or `--out PATH`), naming the image route, source, and model in the final message
+4. Generates illustrations with the runtime's `image_generate` tool, ending each prompt with the configured aesthetics register
+5. Writes the finished material to the current working directory (or `--out PATH`), naming the image provider and model in the final message
 
 Material types include printable worksheets, copywork pages, flashcards, narration templates, picture-study cards, period maps, posters, and tablet-first illustrations. Grounded in the same Charlotte Mason wiki at `pedagogies/charlotte-mason/wiki/`, `mason-aesthetics` roots its guidance in [[concepts/children-are-born-persons]], [[concepts/education-is-atmosphere-discipline-life]], [[concepts/knowledge-as-food]], [[concepts/living-books]], [[concepts/science-of-relations]], and [[concepts/narration]].
 
@@ -329,7 +329,7 @@ Image-generation route settings live in local `image-generation.yaml`, which is 
 cp image-generation.yaml.example image-generation.yaml
 ```
 
-The default route is `quality`. Route `fast` is reserved for fast/cheap/simple generation and receives the configured aesthetics skill's compact image summary when the file provides one (the full text otherwise); all other routes receive the full aesthetics skill text as image prompt context unless the caller overrides `--prompt-mode`.
+The default route is `quality`. Route `fast` is reserved for fast/cheap/simple generation.
 
 In the Hermes Docker runtime, `runtime/hermes/run.sh` also serves a small local Charlotte info page over plain HTTP (default port `8788`) and prints a scannable QR so a tablet on the same LAN can open it. The `charlotte-url` skill re-shares that URL and QR on demand.
 
@@ -344,9 +344,9 @@ Currently used keys can include direct provider keys such as `GEMINI_API_KEY` an
 
 ### Image routing
 
-Standalone image requests and skill-generated illustrations go through `scripts/charlotte_image.py`. The router reads ignored `image-generation.yaml`, selects the named route, builds the Charlotte prompt, and calls that route's configured source/model. The example configuration uses `quality` for the default high-quality route and `fast` for lower-cost/simple generation.
+Standalone image requests and skill-generated illustrations use the runtime's `image_generate` tool. The skill builds the whole prompt: the user's requested subject and constraints, any composition rules the workflow needs, and then the configured aesthetics register, which is the `#### Image-router summary` section of the aesthetics skill (`pedagogy.aesthetics` in `runtime.yaml`, default `skills/mason-aesthetics/SKILL.md`), or that skill's illustration-style guidance when it has no such section. Agents should not invent style adjectives, lighting, camera language, scenery, props, or emotional tone unless the user asked for them. The runtime configuration picks the provider; see [runtime/hermes/README.md](runtime/hermes/README.md) for switching Hermes between Gemini and Grok.
 
-Agents should pass the user's requested subject and constraints plainly to `--prompt`; they should not invent style adjectives, lighting, camera language, scenery, props, or emotional tone unless the user asked for them. All non-fast routes receive the full text of the configured aesthetics skill (`pedagogy.aesthetics` in `runtime.yaml`, default `skills/mason-aesthetics/SKILL.md`) as prompt context — any markdown file works as-is. Route `fast` uses the aesthetics file's `#### Image-router summary` section when one exists (a short profile originally added for weaker image models that follow long prompts poorly); when the file has no such section, the fast route receives the full text like every other route. If fast-route results degrade with a ported aesthetics file, adding that section is the fix. The script reports the actual saved path because providers may return a different image format than the requested file extension, and JSON includes the resolved `route`, `source`, `model`, and `prompt_mode`.
+`scripts/charlotte_image.py` is the backend behind Hermes's `gemini` provider. It reads ignored `image-generation.yaml`, selects the named route, and calls that route's configured source/model. The provider passes `--prompt-mode none`, so the router sends the prompt unchanged. Run on its own, the router can still add the aesthetics text with its other prompt modes. It reports the actual saved path because providers may return a different image format than the requested file extension, and its JSON includes the resolved `route`, `source`, `model`, and `prompt_mode`.
 
 Use `--dry-run` to inspect the resolved route and final provider prompt without calling an image provider or writing files:
 
@@ -377,7 +377,7 @@ Time records are a projection of the lesson logs, not a parallel record. `hsd-ti
 
 `mason-materials-builder` additionally relies on:
 
-- **Image routes** in ignored `image-generation.yaml` when a material needs generated images. `scripts/charlotte_image.py` uses the configured route; direct Google via `scripts/gemini_image.py` is one available backend, not a required default.
+- **An image provider** for the runtime's `image_generate` tool when a material needs generated images. In Hermes, the `gemini` provider uses the routes in ignored `image-generation.yaml`; the `xai` provider needs a Grok plan sign-in or `XAI_API_KEY`.
 - **WeasyPrint** — HTML → PDF rendering, invoked from `mason-print-design`. Installed by `.venv/bin/python -m pip install -e .`; system libraries such as `libpango` and `libcairo` may still be required depending on the platform.
 - **Inkscape** — SVG → PDF/PNG rendering. Install from your package manager (`apt install inkscape`).
 - **Poppler utilities** — native PDF text extraction and selected-page rendering for `curriculum_read.py` (`pdftotext` and `pdftoppm`; install `poppler-utils` on Debian/Ubuntu).
@@ -402,7 +402,7 @@ These are separate, reusable tools that this project relies on:
 | [Homeschool-Dashboard](https://github.com/bbusenius/Homeschool-Dashboard) | Installed from Git URL in `pyproject.toml` | Generates visual dashboard HTML from time-tracking spreadsheets |
 | Vision/search-capable runtime tools | Configured in the active harness | Analyze screenshot and cover images; last-resort book lookups use the runtime's web search. |
 | Google Maps MCP | Configured in the active harness | Geocoding, places search, place details, and directions for field trip planning |
-| Image capability router | `scripts/charlotte_image.py` + ignored `image-generation.yaml` | Routes image generation through configured sources such as direct Google/Gemini, direct xAI/Grok, or NanoGPT |
+| Image capability router | `scripts/charlotte_image.py` + ignored `image-generation.yaml` | Backend for Hermes's `gemini` image provider; routes generation through configured sources such as direct Google/Gemini, direct xAI/Grok, or NanoGPT |
 | Gemini (`google-genai` SDK) | `scripts/gemini_image.py` | Direct Google/Gemini image backend used when configured as a route |
 | WeasyPrint | Installed from `pyproject.toml` | HTML → PDF rendering; invoked from `mason-print-design` |
 | Inkscape | system package | SVG → PDF/PNG rendering; invoked from `mason-print-design` |
@@ -620,7 +620,7 @@ Examples:
 | `scripts/hsd_project.py` | Finds logged sessions with no Homeschool-Dashboard row and appends the missing ones; never updates an existing row |
 | `scripts/hsd_read.py` | Reads configured Homeschool-Dashboard-compatible time and reading-list spreadsheets as compact JSON |
 | `scripts/hsd_dashboard.py` | Generates visual Homeschool Dashboard HTML for a configured student |
-| `scripts/charlotte_image.py` | Routes image generation through configured sources in `image-generation.yaml`; supports `--dry-run` prompt inspection; exits 2 when no script-callable provider is available |
+| `scripts/charlotte_image.py` | Routes image generation through configured sources in `image-generation.yaml`; backend for Hermes's `gemini` image provider; supports `--dry-run` prompt inspection; exits 2 when no script-callable provider is available |
 | `scripts/gemini_image.py` | Direct Google/Gemini image backend used by `scripts/charlotte_image.py` when configured |
 | `skills/mindfeast-slide-sync/scripts/sync.py` | Syncs existing MindFeast tablet slides through the per-student remote endpoint in `students.yaml` |
 | `skills/mindfeast-slide-trigger/scripts/trigger.py` | Triggers a configured MindFeast tablet to show a slide through the per-student remote endpoint in `students.yaml` |

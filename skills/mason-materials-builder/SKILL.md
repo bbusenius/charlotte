@@ -1,7 +1,7 @@
 ---
 name: mason-materials-builder
-description: Build printable or standalone homeschool materials — maps, timelines, flashcards, copywork sheets, nature-notebook pages, narration templates, picture-study and composer cards, vocabulary and memory-verse cards, math/phonics/handwriting practice, PDFs, SVGs, PNG illustrations, and similar resources — grounded in the project's pedagogy wiki. Invokes mason-aesthetics for visual direction and mason-print-design for rendering. Generates images through the configured Charlotte image router. Do not use for Android lock-screen slides, MindFeast slides, unlock questions, or app slide packages; use mindfeast-slide-builder for those.
-argument-hint: <material description in prose, optionally referencing a student or lesson> [--out PATH] [--image quality|fast] [--format pdf|html|svg|png|md] [--size 1K|2K|4K]
+description: Build printable or standalone homeschool materials — maps, timelines, flashcards, copywork sheets, nature-notebook pages, narration templates, picture-study and composer cards, vocabulary and memory-verse cards, math/phonics/handwriting practice, PDFs, SVGs, PNG illustrations, and similar resources — grounded in the project's pedagogy wiki. Invokes mason-aesthetics for visual direction and mason-print-design for rendering. Generates images with the `image_generate` tool. Do not use for Android lock-screen slides, MindFeast slides, unlock questions, or app slide packages; use mindfeast-slide-builder for those.
+argument-hint: <material description in prose, optionally referencing a student or lesson> [--out PATH] [--format pdf|html|svg|png|md]
 ---
 
 # Materials Builder
@@ -29,9 +29,7 @@ For MindFeast challenge slides synced from `tablet-slides/`, use `mindfeast-slid
 ### Flags
 
 - `--out PATH` — directory (or file path for single outputs) to write to. Default: current working directory. The future mason-lesson-plan-builder will set this explicitly; for now the user is in control.
-- `--image quality|fast` — image route. Default: `quality`. See "Image generation" below for route behavior.
 - `--format pdf|html|svg|png|md` — output format. If omitted, pick the sensible default for the material type (see below).
-- `--size 1K|2K|4K` — when generating images through the image router. Default: `1K` unless the material is a wall card / large-format poster, in which case `2K`.
 
 ## Inputs (parsed from the prompt)
 
@@ -101,55 +99,17 @@ When the prompt implies a material not in the table, pick the closest analogue a
 
 ## Image generation
 
-Image generation for this skill is route-based. This skill asks for the normal `quality` route unless the user explicitly asks for a fast/cheap image; `image-generation.yaml` decides which provider/model supplies that route.
+Generate images with the `image_generate` tool. The runtime configuration decides which provider answers. Do not check which provider answered, and do not reject a result because of its provider.
 
-- Keep using `mason-aesthetics` and `mason-print-design` before image generation. The router applies the Charlotte image prompt profile for the selected route; it does not replace material design or print-design constraints.
-- Use the repo-local router below, invoked from the project root through `.venv/bin/python`.
-- If the router exits `2`, no configured script-callable image provider is available. At that point, use a runtime-native image tool if the active harness exposes one. If no runtime image tool exists, report that image generation is unavailable.
-- If the router exits `3`, stop. That is a policy/safety rejection; do not try another provider.
+- Keep using `mason-aesthetics` and `mason-print-design` before image generation. They shape the material's design and print constraints.
+- Build the prompt from the content request and the illustration prompt rules below. End it with the configured aesthetics register: the `#### Image-router summary` section of the aesthetics skill named by `pedagogy.aesthetics` in `runtime.yaml` (default `skills/mason-aesthetics/SKILL.md`), or that skill's illustration-style guidance when it has no such section. Add it once. The tool adds no style of its own.
+- Pass `aspect_ratio` as `landscape`, `portrait`, or `square`, whichever fits the material.
+- Copy the file named by the result's `image` field to the material's output location, keeping its extension. If `image` is a URL, download it there instead.
+- If the tool fails or reports a policy or safety rejection, report it and stop. Do not retry through a direct provider call, a handwritten HTTP request, or a script.
 
-### Default route: quality
+### Naming the image in the delivery
 
-Use the router with `--route quality`:
-
-```bash
-.venv/bin/python scripts/charlotte_image.py \
-  --prompt "…" --out path/to/file.png \
-  --size 1K --aspect-ratio 4:3 \
-  --kind illustration \
-  --route quality --json
-```
-
-Run from the project root. The `--out` path can be relative to the project root or absolute.
-
-The router reads `image-generation.yaml`. Use the JSON `path` in the result as the actual media file path; some providers return `.jpg` even when the requested path ended in `.png`. Use the JSON `route`, `source`, `model`, and `prompt_mode` fields when naming what generated the image.
-
-Use `--dry-run --json` on the same command to inspect the resolved route and final provider prompt without calling an image provider or writing files.
-
-Exit codes:
-
-- `0` success. Use the JSON output to name the source/model in delivery.
-- `1` configured providers were called but failed. Report the failure; do not hide it.
-- `2` no script-callable provider is configured or available. Use a runtime-native image tool if available.
-- `3` policy/safety rejection. Stop.
-
-### Fast route
-
-If the user explicitly asks for a fast/cheap/simple image, use `--route fast`:
-
-```bash
-.venv/bin/python scripts/charlotte_image.py \
-  --prompt "…" --out path/to/file.png \
-  --size 1K --aspect-ratio 4:3 \
-  --kind illustration \
-  --route fast --json
-```
-
-The route named `fast` receives the compact Mason image summary. Other routes receive the full `mason-aesthetics` skill as image prompt context unless `--prompt-mode` is explicitly overridden.
-
-### Naming the image route in the delivery
-
-The delivery message always names which route/source/model generated any images included in the material. A short line is enough: *"Illustration generated via route `quality`, Google, `<model>`"* or *"Illustration generated via route `fast`, Google, Imagen 4, 1K"*.
+The delivery message always names the provider and model that the tool reported for any images included in the material. A short line is enough: *"Illustration generated by `<provider>`, `<model>`"*.
 
 ### Illustration prompt rules
 
@@ -212,7 +172,7 @@ Specific rules this skill adds on top of the two peer skills:
 
 ### Step 7 — Generate any illustrations
 
-Use `scripts/charlotte_image.py` with the selected route. Place the image in the final composition via `<img>` (HTML) or `<image>` (SVG); text stays vector unless the lettering carve-out applies.
+Generate them with `image_generate` as described in *Image generation*. Place the image in the final composition via `<img>` (HTML) or `<image>` (SVG); text stays vector unless the lettering carve-out applies.
 
 ### Step 8 — Save
 
@@ -235,7 +195,7 @@ Output a short summary of what was produced and where it was saved. Include:
 
 - Material type and what's in it (in one line)
 - File path(s)
-- **Image source/model named** when any image was generated (e.g. "illustration via NanoGPT using `<model>`" or "illustration via Google using Imagen 4, 1K")
+- **Image provider and model named** when any image was generated, as the image tool reported them
 - A single one-line note if anything about the request sits in real tension with the pedagogy — offered as an alternative, never as a correction, never more than once.
 
 Example:
@@ -252,8 +212,7 @@ Example:
 - **Student data lives in `students.yaml`.** This skill never hard-codes student names, aliases, curriculum file paths, grade, or lesson-header patterns. All of that comes from the registry at runtime.
 - **Living-book and curriculum sources beat generic content.** When a passage, word, or problem can come from a real source the student has been working in, it comes from there.
 - **Image prompts state the register.** Never a vague prompt. Always "no text, no labels" unless the lettering carve-out applies.
-- **Image source/model is named in delivery.** Always.
-- **Image route is explicit.** Use the configured `quality` route by default. Use `fast` only when the user explicitly asks for fast/cheap/simple image generation.
+- **Image provider and model are named in delivery.** Always.
 - **No twaddle in language.** The material's copy addresses a person.
 - **Date.** Use today's date from the env. Never guess.
 - **No hallucinated sources.** If a passage, title, author, or historical fact goes on the page, it's real and correctly attributed. Don't invent a quote; open the book (or the curriculum file) and use a real passage, or ask the user to supply one.

@@ -31,12 +31,13 @@ runtime/hermes/run.sh gateway run
 # Check that the rebuilt image can see Charlotte scripts
 runtime/hermes/run.sh .venv/bin/python scripts/charlotte_image.py --help
 
-# Inspect the resolved route and final provider prompt without generating
+# Inspect the resolved route and the prompt the Gemini backend sends, without generating
 runtime/hermes/run.sh .venv/bin/python scripts/charlotte_image.py \
   --prompt "simple watercolor oak leaf, no text, no labels" \
   --out /tmp/charlotte-image-test.png \
   --kind illustration \
   --route quality \
+  --prompt-mode none \
   --dry-run \
   --json
 
@@ -114,15 +115,35 @@ GEMINI_API_KEY=
 
 With `agent.image_input_mode: auto`, a vision-capable main model inspects images directly and the auxiliary model is not called. Provider credentials do not belong in `terminal.env_passthrough`; Hermes deliberately scrubs them from model-authored subprocesses.
 
-The custom image backend baked into the Charlotte Hermes image registers as `image_gen.provider: gemini`. It runs `scripts/charlotte_image.py` from Hermes's trusted provider process, so `image-generation.yaml`, the configured aesthetics skill, and route provenance remain authoritative without exposing the Gemini key to terminal commands. The shipped profile selects the `quality` route:
+### Image generation
+
+Charlotte's skills make every image with Hermes's `image_generate` tool and put the aesthetics register in the prompt themselves. `image_gen.provider` in the profile config decides which provider answers:
+
+- `gemini`: the custom backend baked into the Charlotte Hermes image. It runs `scripts/charlotte_image.py` from Hermes's trusted provider process with `--prompt-mode none`, so the prompt reaches Google unchanged and the Gemini key never enters terminal commands. `image_gen.model` names the `image-generation.yaml` route, `quality` or `fast`.
+- `xai`: Hermes's built-in Grok provider. It signs in with a Grok plan first and falls back to `XAI_API_KEY`.
+
+The shipped profile selects Gemini:
 
 ```yaml
 image_gen:
   provider: "gemini"
   model: "quality"
+  xai:
+    storage:
+      enabled: false
 ```
 
-For quality-first image generation, keep the local `quality` route pointed at the desired direct Google model. Use the `fast` route for fast/simple generation. The provider rejects any result that does not report the requested route, `source: google`, and the expected aesthetics prompt mode.
+To switch to Grok, set `provider: "xai"` in the live profile config, `~/.hermes-charlotte/config.yaml`, and restart the gateway. Set it back to `"gemini"` to switch back. Leave `model: "quality"` in place: the xai provider ignores it. To choose a Grok image model, set `image_gen.xai.model`, for example `grok-imagine-image-quality`.
+
+To use a Grok plan, sign in once:
+
+```bash
+runtime/hermes/run.sh auth add xai-oauth --no-browser
+```
+
+The command prints a link and a code to approve in a browser. Hermes stores the tokens in the mounted profile and refreshes them itself.
+
+By default the xai provider uploads each image to xAI file storage and returns a public URL. Keep `image_gen.xai.storage.enabled: false` so images stay local.
 
 `GOOGLE_MAPS_API_KEY` is for Maps-capable MCP/runtime tools. It is separate from Gemini image-generation keys and is only useful when the active Hermes toolset exposes a Google Maps capability.
 

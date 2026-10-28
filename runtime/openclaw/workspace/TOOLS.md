@@ -5,8 +5,11 @@ full contract; these are the container-specific notes.
 
 - Project Python lives at `/workspace/.venv`. Run Charlotte scripts as
   `/workspace/.venv/bin/python /workspace/scripts/<script>.py ...`.
-- Standalone images go through the router, never a creative fallback first:
-  `/workspace/.venv/bin/python /workspace/scripts/charlotte_image.py --prompt "..." --out /workspace/generated-images/<slug>.png --kind illustration --route quality --json`
+- This runtime has no `image_generate` tool. Where `AGENTS.md` or a skill
+  calls it, run the router instead, never a creative fallback first. The
+  prompt already ends with the aesthetics register, so pass `--prompt-mode none`:
+  `/workspace/.venv/bin/python /workspace/scripts/charlotte_image.py --prompt "..." --out /workspace/generated-images/<slug>.png --kind illustration --route quality --prompt-mode none --json`
+  Use the JSON `path` as the image file, and `source` and `model` as the provider and model.
 - Deliver files to chat with `MEDIA:<absolute path>` — absolute paths only;
   relative `MEDIA:` paths are dropped silently by some channels.
 - Writable content roots (bind mounts): `/workspace/curricula`,

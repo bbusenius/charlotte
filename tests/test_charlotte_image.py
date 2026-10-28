@@ -20,10 +20,12 @@ def load_charlotte_image_module():
 def test_project_instructions_make_configured_aesthetics_authoritative():
     instructions = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
 
-    assert "For every Charlotte-backed image generation call" in instructions
+    assert "For every image generation call" in instructions
     assert "standalone or inside any skill or workflow" in instructions
     assert "Do not invent medium, style adjectives, lighting, palette" in instructions
     assert "The configured `pedagogy.aesthetics` skill owns" in instructions
+    assert "comes from the `image_generate` tool" in instructions
+    assert "Charlotte-backed" not in instructions
 
 
 def test_compact_prompt_uses_short_router_summary_without_examples():
