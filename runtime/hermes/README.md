@@ -170,23 +170,8 @@ platform, add its raw server name—not `mcp-<server>`—to
 
 ```yaml
 platform_toolsets:
-  cli: [hermes-cli, browser, image_gen, delegation, google_maps, grok_mcp]
-  telegram: [terminal, file, web, browser, vision, image_gen, tts, skills, todo, cronjob, delegation, google_maps, grok_mcp]
-```
-
-One useful local pattern is to mount a home-relative MCP server checkout with `CHARLOTTE_HOME_MOUNTS`, then point the MCP command at the corresponding `/opt/data/...` path:
-
-```env
-CHARLOTTE_HOME_MOUNTS=Documents/Homeschool:path/to/local-grok-mcp
-```
-
-```yaml
-mcp_servers:
-  grok_mcp:
-    command: "uv"
-    args: ["run", "--directory", "/opt/data/path/to/local-grok-mcp", "python", "-m", "src.server"]
-    env:
-      XAI_API_KEY: "${XAI_API_KEY}"
+  cli: [hermes-cli, browser, image_gen, delegation, google_maps]
+  telegram: [terminal, file, web, browser, vision, image_gen, tts, skills, todo, cronjob, delegation, google_maps]
 ```
 
 Keep real MCP credentials out of tracked repo files. Because `runtime/hermes/run.sh` only installs `runtime/hermes/config.yaml.example` when the live profile config is missing, changes to this example do not overwrite an existing `~/.hermes-charlotte/config.yaml`.
@@ -544,7 +529,7 @@ tts:
 
 The default Charlotte profile sets `voice.auto_tts: true`, so voice-originating gateway messages get spoken replies by default. Typed messages still get plain text replies. Use `/voice off` in a chat to opt out, `/voice on` to opt back in, or `/voice tts` only when you intentionally want every reply spoken.
 
-The Docker image installs `faster-whisper` and `edge-tts` into Hermes' own runtime venv, and installs `ffmpeg` for audio handling. Charlotte's shared project environment installs `yt-dlp` from `pyproject.toml`; the image supplies Node.js as its JavaScript runtime for full YouTube extraction support. It also installs `libopus0` so the image has the codec needed for future Discord voice-channel support. After changing this runtime image, rebuild and restart the gateway:
+The Docker image records the `stt-whisper`, `edge-tts`, and `ddgs` extras in Hermes' runtime environment, and the base image supplies `ffmpeg` for audio handling. `uv` is linked onto `PATH`. Charlotte's shared project environment installs `yt-dlp` from `pyproject.toml`; the image supplies Node.js as its JavaScript runtime for full YouTube extraction support. It also installs `libopus0` so the image has the codec needed for future Discord voice-channel support. After changing this runtime image, rebuild and restart the gateway:
 
 ```bash
 docker build -f runtime/hermes/Dockerfile -t charlotte-hermes:local .
@@ -585,7 +570,7 @@ host:      ~/.hermes-charlotte/cache/audio/
 container: /opt/data/cache/audio/
 ```
 
-Inbound Telegram and Discord voice recordings are saved as files such as `audio_*.ogg`. Gateway TTS replies are saved as files such as `tts_*.mp3` or `tts_*.ogg`. Grok MCP does not store local audio files in the Charlotte setup; it may be called by the agent for reasoning/search, but Hermes handles STT/TTS through the gateway cache above.
+Inbound Telegram and Discord voice recordings are saved as files such as `audio_*.ogg`. Gateway TTS replies are saved as files such as `tts_*.mp3` or `tts_*.ogg`. Hermes handles STT and TTS through the gateway cache above.
 
 Delete all cached gateway audio:
 

@@ -170,35 +170,24 @@ OpenClaw has no in-loop MCP client; the supported route is the bundled
 what un-gates that skill). MCP servers are declared in
 `~/.openclaw-charlotte/mcporter/mcporter.json`, installed once from
 `runtime/openclaw/mcporter.json.example` and mounted at `~/.mcporter` in the
-container. The example registers the same two servers the Hermes adapter
+container. The example registers the Google Maps server the Hermes adapter
 documents:
 
 - **`google_maps`** (`mason-field-trip-planner`): the reference Google Maps
   MCP server via `npx`. Needs `GOOGLE_MAPS_API_KEY` in `.env`.
-- **`grok`** (vision over Signal screenshots and book covers for
-  `hsd-time-log` / `hsd-book-log`; live-search fallback for `hsd-book-log`):
-  a local Grok MCP checkout run with `uv`. Mount the checkout home-relative
-  with `CHARLOTTE_HOME_MOUNTS` and keep the `--directory` path in
-  `mcporter.json` pointing at the `/home/node/...` location. Needs
-  `XAI_API_KEY` in `.env`. The server entry pins `UV_PROJECT_ENVIRONMENT`
-  to a profile-mounted path so uv never rebuilds the host checkout's own
-  `.venv` with a container interpreter.
 
 The config file carries no secrets: stdio servers inherit the container
 environment, which gets its keys from `--env-file .env`.
 
-Smoke test from the host (all three should succeed before blaming a skill):
+Smoke test from the host:
 
 ```bash
 docker run --rm --env-file .env \
   -v ~/.openclaw-charlotte/mcporter:/home/node/.mcporter \
-  -v ~/Documents/Code/MCP/Grok-MCP:/home/node/Documents/Code/MCP/Grok-MCP \
   -e HOME=/home/node --entrypoint mcporter charlotte-openclaw:local list
 
-# then a real call each way
 ... --entrypoint mcporter charlotte-openclaw:local \
   call 'google_maps.maps_geocode(address: "Field Museum, Chicago")'
-... --entrypoint mcporter charlotte-openclaw:local call 'grok.list_models()'
 ```
 
 Web search/fetch uses OpenClaw's native web tools. If a needed capability is

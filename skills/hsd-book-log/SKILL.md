@@ -97,14 +97,14 @@ Pass `--author` whenever you have one (from the vision tool or from the message 
 The script returns a `confidence` tier:
 
 - `high` → use all fields as-is. Lexile (Level column) stays blank. Done.
-- `medium` → use title/author/language/isbn, then send to Grok for **confirmation** (step 6c).
-- `low` → fall through to Grok **fresh search** (step 6c).
+- `medium` → use title/author/language/isbn, then send to web search for **confirmation** (step 6c).
+- `low` → fall through to a **fresh search** (step 6c).
 
-Exit 2 (`no_results`) → fall through to Grok.
+Exit 2 (`no_results`) → fall through to web search.
 
 #### 6c. Search-capable tool (last resort)
 
-Use a search-capable runtime tool. Grok live search MCP is the preferred implementation when available, but an equivalent live/web search tool is acceptable. Never use a generative model to supply a Lexile number; leave Lexile blank in this path.
+Use the runtime's web search tool. Never use a generative model to supply a Lexile number; leave Lexile blank in this path.
 
 - **Confirmation** (following a medium OL result): prompt the search-capable tool something like:
   > "Confirm this book exists and give its ISBN-13. Title: `<X>`. Author: `<Y>`. Language: `<english|spanish>`. Respond strictly as JSON: `{\"confirmed\": true|false, \"isbn\": \"<isbn13>\" or null, \"corrected_title\": \"<...>\" or null, \"corrected_author\": \"<...>\" or null}`."
@@ -159,13 +159,13 @@ After all entries are logged successfully, mark all handled message IDs as proce
 Report what was logged:
 
 - Per child: how many books, which sheet each went to.
-- For each book: title, author, language, ISBN (present or absent), Lexile (present or absent), flags, and which source supplied the data (lexile / openlibrary / grok).
+- For each book: title, author, language, ISBN (present or absent), Lexile (present or absent), flags, and which source supplied the data (lexile / openlibrary / search).
 - Any messages that couldn't be resolved or had conflicting sources — flag these clearly so they can be reviewed.
 
 ## Important notes
 
 - Sheet selection is by **position**, not name — sheet names can change without breaking the skill. Resolve the name at runtime with `get-sheet-name.py`.
-- Never use Grok to supply a Lexile number. If the Lexile API doesn't have it, leave the Level column blank.
+- Never fill the Lexile column from web search or a generative answer. If the Lexile API doesn't have it, leave the Level column blank.
 - Only mark messages as processed after their row has been successfully appended.
 - Casual chat in the book groups that isn't about a book should be marked processed and skipped.
 - If you cannot confidently identify a book from a message, skip it and leave it unprocessed so it can be retried later.

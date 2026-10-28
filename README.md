@@ -400,7 +400,7 @@ These are separate, reusable tools that this project relies on:
 | [signal-sieve](https://github.com/bbusenius/signal-sieve) | Installed from Git URL in `pyproject.toml` | Captures Signal messages into SQLite |
 | [xlsx-append](https://github.com/bbusenius/xlsx-append) | Installed from Git URL in `pyproject.toml` | Appends rows to Excel spreadsheets |
 | [Homeschool-Dashboard](https://github.com/bbusenius/Homeschool-Dashboard) | Installed from Git URL in `pyproject.toml` | Generates visual dashboard HTML from time-tracking spreadsheets |
-| Vision/search-capable runtime tools | Configured in the active harness | Analyze screenshot and cover images; last-resort book lookups. Grok MCP is one supported implementation. |
+| Vision/search-capable runtime tools | Configured in the active harness | Analyze screenshot and cover images; last-resort book lookups use the runtime's web search. |
 | Google Maps MCP | Configured in the active harness | Geocoding, places search, place details, and directions for field trip planning |
 | Image capability router | `scripts/charlotte_image.py` + ignored `image-generation.yaml` | Routes image generation through configured sources such as direct Google/Gemini, direct xAI/Grok, or NanoGPT |
 | Gemini (`google-genai` SDK) | `scripts/gemini_image.py` | Direct Google/Gemini image backend used when configured as a route |

@@ -32,11 +32,9 @@ full contract; these are the container-specific notes.
   is stripped from the visible text). The body is required: a bare `[[tts:]]`
   is ignored by the parser and shows up as literal text. Never add a tts
   directive when the user typed.
-- Google Maps and Grok vision/search capabilities go through MCP via the
-  `mcporter` CLI (configured in `~/.mcporter/mcporter.json`). Examples:
+- Google Maps goes through MCP via the `mcporter` CLI (configured in
+  `~/.mcporter/mcporter.json`). Examples:
   - `mcporter call 'google_maps.maps_search_places(query: "children museums near Chicago")'`
   - `mcporter call 'google_maps.maps_geocode(address: "...")'`
-  - `mcporter call 'grok.chat_with_vision(image_path: "/home/node/...", prompt: "...")'`
-  - `mcporter call 'grok.live_search(query: "...")'`
   Use `mcporter list` to see every server and tool. If a call fails because a
   server or key is missing, say so instead of guessing.
