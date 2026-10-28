@@ -110,7 +110,7 @@ When generating illustrations for a material (via Gemini, Grok, or any source), 
 
 #### Image-router summary
 
-Render the user's requested subject exactly, with no unrelated animals, people, props, or scenery. Use a calm Charlotte Mason visual register: natural-history illustration, watercolor wash with ink linework, pen-and-ink drawing, botanical or zoological plate, Victorian or Edwardian nature study, vintage textbook plate, or wood engraving when it fits the subject. Favor careful observation over drama, restrained natural color, quiet composition, and a paper-like or book-plate atmosphere when appropriate. Avoid 3D cartoon, generic clip-art, stock children, emoji, stickers, neon colors, glossy AI-poster lighting, and corporate vector style. No text or labels unless explicitly requested.
+Render the user's requested subject exactly, with no unrelated animals, people, props, or scenery. Use a calm Charlotte Mason visual register: natural-history illustration, watercolor wash with ink linework, pen-and-ink drawing, botanical or zoological plate, Victorian or Edwardian nature study, vintage textbook plate, or wood engraving when it fits the subject. These name the drawing style, not the layout. Favor careful observation over drama, restrained natural color, quiet composition, and a paper-like texture within the painting when appropriate. The illustration fills the whole canvas edge to edge, with no painted border, frame, mat, margin, or paper edge, unless the request explicitly asks for one. Avoid 3D cartoon, generic clip-art, stock children, emoji, stickers, neon colors, glossy AI-poster lighting, and corporate vector style. No text or labels unless explicitly requested.
 
 ### 5. Layout
 
