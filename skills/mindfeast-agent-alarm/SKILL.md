@@ -96,16 +96,38 @@ All routes require `Authorization: Bearer <token>` and a LAN peer. Mutations ret
 | Picture meta | `POST /api/picture/meta` | `{"artist":"…","title":"…"}` (empty strings allowed) |
 | Notes | `POST /api/notes` | `notes` and/or `notesHeading` (at least one) |
 | Notes heading only | `POST /api/notes/heading` | `{"notesHeading":"…"}` |
-| Theme | `POST /api/theme` | partial object: `text`, `textSecondary`, `card`, `cardAlpha`, `accent` |
+| Theme | `POST /api/theme` | partial object: `text`, `textSecondary`, `card`, `cardAlpha`, `accent`, `ringingBackground`, `ringingText`, `ringingTextSecondary`, `ringingButton`, `ringingButtonText` |
 | Theme restore | `POST /api/theme/restore-default` | `{}` |
 | Clock format | `POST /api/alarm/clock` | `{"use24Hour":true\|false}` (default app preference is 12-hour) |
 | Time | `POST /api/alarm/time` | `{"time":"07:30"}` or `{"hour":7,"minute":30}` |
 | Days | `POST /api/alarm/days` | `{"days":["mon","tue",…]}` and/or `{"daysMask":N}` (bit0=Sun … bit6=Sat). Empty `days` = one-shot (disable after next fire). Default all seven. Independent of enable. |
 | Enable | `POST /api/alarm/enable` | `{"enabled":true\|false}` |
 
-Limits worth respecting: audio ≤ 50 MiB; picture ≤ 10 MiB; JSON ≤ 4 KiB; notes ≤ 2 KiB UTF-8; heading/artist/title/composer/audio title ≤ 200 chars. Theme colors are `#RGB` / `#RRGGBB`; `cardAlpha` is 0–1. Accent-surface text is fixed white (not a token).
+Limits worth respecting: audio ≤ 50 MiB; picture ≤ 10 MiB; JSON ≤ 4 KiB; notes ≤ 2 KiB UTF-8; heading/artist/title/composer/audio title ≤ 200 chars. Theme colors are `#RGB` / `#RRGGBB`; `cardAlpha` is 0–1. An invalid hex color, an unknown key, or an empty theme object returns `400`. Accent-surface text is fixed white (not a token).
 
 Helper flags for wake-sound attribution: `--composer` (credit) and `--audio-title` (title) map to `POST /api/audio/meta` (`composer` / `title` JSON). Status exposes stable keys `audioComposer` and `audioTitle` (UI: Credit / Title). Importing or clearing audio clears those fields; empty strings are allowed. Default picture title is English **Sunset**.
+
+### Ringing screen colors
+
+The five `ringing*` theme fields are optional. Send any subset in `POST /api/theme`, and omitted fields keep their saved values. The ringing screen is a solid `ringingBackground` fill. It does not show the picture and does not use `text`, `card`, or `accent`.
+
+| Field | Default | Controls |
+| --- | --- | --- |
+| `ringingBackground` | `#B92E0D` | Ringing screen background; also the fill of the wake-screen **Alarm is ringing · Open controls** button |
+| `ringingText` | `#FFFFFF` | Greeting, clock, **Snooze for 9 minutes**, and the error line |
+| `ringingTextSecondary` | `#F6EDE3` | **A NEW DAY AWAITS**, the wake-sound title, and the caption |
+| `ringingButton` | `#F6EDE3` | **Start my day** button fill |
+| `ringingButtonText` | `#B92E0D` | **Start my day** button label |
+
+The wake-screen button label is the first of `ringingText`, `ringingButtonText`, and `ringingButton` that reaches 4.5:1 on `ringingBackground`. If none does, the app uses the one with the highest contrast.
+
+The app draws these colors as saved and does not correct them for contrast, so Charlotte must keep them readable. WCAG AA asks for 4.5:1 for small text and 3:1 for large text.
+
+- `ringingText` and `ringingTextSecondary` each need 4.5:1 on `ringingBackground`. Both color small text, such as the snooze button and the caption.
+- `ringingButton` needs 3:1 on `ringingBackground`, so the **Start my day** fill stands out from the screen.
+- `ringingButtonText` needs 4.5:1 on `ringingButton`. The 18sp label counts as small text.
+
+The defaults pass. `ringingText` is 6.07:1 on `ringingBackground`, and each of the other three pairs is 5.24:1. When `ringingText` meets its rule, the wake-screen button label does too.
 
 ## Theme from the picture
 
@@ -119,9 +141,10 @@ From that inspection, build one coherent overlay that belongs to this image:
 - Choose light type on a dark card or dark type on a light card from the picture's value structure, not from habit. `text` must read at a glance on `card`; `textSecondary` is quieter and still readable.
 - `card` is a muted field from the picture (shadow, paper, wall, sky). `accent` is a smaller distinct note from the picture (a garment, flower, roof, or highlight), not a decorative extra.
 - Set `text`, `textSecondary`, `card`, `cardAlpha`, and `accent` together. `cardAlpha` should hold the type while still letting the painting be the atmosphere.
+- Set the five `ringing*` fields on the same push, so the previous picture's ringing colors do not carry over. `ringingBackground` is one strong color sampled from the picture. The default is the red-orange where the sun breaks through in the default painting. Pick the other four to meet the rules in *Ringing screen colors*. If the sampled color cannot reach those ratios, darken or lighten it and keep its hue.
 - Settings chrome on the phone stays high-contrast regardless of theme.
 
-Pass the result as `--theme '{"text":"#RRGGBB","textSecondary":"#RRGGBB","card":"#RRGGBB","cardAlpha":0.72,"accent":"#RRGGBB"}'` with the hex values you derived. If inspection is unavailable, stop rather than guessing colors or pushing the picture unthemed.
+Pass the result as `--theme '{"text":"#RRGGBB","textSecondary":"#RRGGBB","card":"#RRGGBB","cardAlpha":0.72,"accent":"#RRGGBB","ringingBackground":"#RRGGBB","ringingText":"#RRGGBB","ringingTextSecondary":"#RRGGBB","ringingButton":"#RRGGBB","ringingButtonText":"#RRGGBB"}'` with the hex values you derived. If inspection is unavailable, stop rather than guessing colors or pushing the picture unthemed.
 
 ## Delivery
 
@@ -130,7 +153,7 @@ Report:
 - Student display name or slug
 - Endpoint host and path only (never the token)
 - Each operation attempted and HTTP success/failure
-- When a picture was pushed: the derived theme tokens
-- From status when useful: next fire, `audioPresent`, `audioComposer`, `audioTitle`, `pictureCustom`, `notesHeading`, `use24Hour`, `days`, `daysMask`, `oneShot`, theme tokens
+- When a picture was pushed: the derived theme tokens, including the five `ringing*` fields
+- From status when useful: next fire, `audioPresent`, `audioComposer`, `audioTitle`, `pictureCustom`, `notesHeading`, `use24Hour`, `days`, `daysMask`, `oneShot`, theme tokens (including the `ringing*` fields)
 
 If the listener is down, Wi-Fi differs, or auth fails, say so plainly and leave media on disk — do not claim the tablet updated.
