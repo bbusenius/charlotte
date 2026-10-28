@@ -15,12 +15,13 @@ auxiliary:
     timeout: 120
     download_timeout: 30
 
-# Generate images directly through Google with the same Gemini key. The
-# provider runs Charlotte's configured image route inside Hermes's trusted
-# process, so provider credentials never enter model-authored terminal commands.
-# Set provider to "xai" to use Hermes's built-in Grok image provider instead,
-# and back to "gemini" to switch back. `model` is the Gemini route (quality or
-# fast); the xai provider ignores it.
+# Pick the provider for the image_generate tool: "gemini" (Charlotte's plugin,
+# direct Google with the same Gemini key) or "xai" (Hermes's built-in Grok
+# provider). Switch by changing `provider` and restarting. The Gemini plugin
+# runs Charlotte's configured image route inside Hermes's trusted process, so
+# provider credentials never enter model-authored terminal commands. Skills put
+# the aesthetics register in the prompt; neither provider adds style.
+# `model` is the Gemini route (quality or fast); the xai provider ignores it.
 image_gen:
   provider: "gemini"
   model: "quality"

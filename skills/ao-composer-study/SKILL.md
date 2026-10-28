@@ -96,16 +96,16 @@ Before calling TTS, complete a transcript preflight: count the words, estimate t
 
 ### 5. Create the two generated images
 
-Generate two distinct full-bleed images through the configured Charlotte image router on its quality route. The capability order is mandatory: when the runtime exposes a file-producing image capability that explicitly identifies itself as Charlotte-backed, call it directly for both images and do not probe or attempt `scripts/charlotte_image.py` first. Invoke that script only when no such runtime-native capability exists. Runtime-managed image caches are valid working locations; the writer persists the returned files beside the study.
+Generate two distinct full-bleed images with the `image_generate` tool. Build each prompt from the content and composition requirements below, then end it with the configured aesthetics register: the `#### Image-router summary` section of the aesthetics skill named by `pedagogy.aesthetics` in `runtime.yaml` (default `skills/mason-aesthetics/SKILL.md`), or that skill's illustration-style guidance when it has no such section. Add it once. The tool adds no style of its own. Runtime-managed image caches are valid working locations; the writer persists the returned files beside the study.
 
-Require each result to report `route: quality`, the source and model configured for that route, and `prompt_mode: full`. Never call a provider directly, write an ad-hoc HTTP request, or try an unrelated image tool after the configured route fails. Stop before persistence, slide creation, sync, selection, and cursor commit if either image fails these checks.
+Record the `provider` and `model` each result reports. Do not reject a result because of its provider. Never call a provider directly, write an ad-hoc HTTP request, or run an image script after the tool fails. Stop before persistence, slide creation, sync, selection, and cursor commit if either image fails.
 
 - **Work image:** an understated visual grounded in the work's period, subject, setting, or artistic world. It may convey verified programmatic, literary, biblical, or historical subject matter, but must not dictate a single private mental image for abstract music.
 - **Podcast image:** a visual grounded in the composer and the episode's verified living story.
 
 Neither image contains text, musical notation, notation labels, UI, or explanatory callouts. Use the active pedagogy's configured visual register without invoking print-material skills. Choose slide orientation from the generated composition.
 
-Inspect the actual pixels of both generated images through the active environment's image-understanding capability before persistence. Reject and regenerate an image through the same configured Charlotte route if it contains forbidden text, notation, or UI; conflicts with the requested subject or composition; introduces an obvious factual anachronism; or fails to leave usable space for the compact slide label. Correct only the failed content or composition constraint in the retry prompt; do not add aesthetic direction.
+Inspect the actual pixels of both generated images through the active environment's image-understanding capability before persistence. Reject and regenerate an image with `image_generate` if it contains forbidden text, notation, or UI; conflicts with the requested subject or composition; introduces an obvious factual anachronism; or fails to leave usable space for the compact slide label. Correct only the failed content or composition constraint in the retry prompt; do not add aesthetic direction.
 
 ### 6. Create podcast audio
 

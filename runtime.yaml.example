@@ -22,12 +22,9 @@ pedagogy:
   # and materials. A path to a skill directory containing SKILL.md (or
   # directly to a markdown file). Any markdown file works as-is — swap in
   # your own to change how every generated illustration looks.
-  # scripts/charlotte_image.py injects the full text into image prompts on
-  # every route. Optionally, a `#### Image-router summary` section provides
-  # a short profile used instead of the full text on the cheap `fast` route
-  # (helpful for weaker image models that follow long prompts poorly);
-  # without one, the fast route receives the full text like every other
-  # route. If fast-route results look off, add that section.
+  # Image-generating skills end each image prompt with its
+  # `#### Image-router summary` section, or with its illustration-style
+  # guidance when it has no such section.
   aesthetics: skills/mason-aesthetics
 
 logging:

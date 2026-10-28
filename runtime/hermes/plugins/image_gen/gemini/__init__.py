@@ -1,8 +1,9 @@
 """Direct Google Gemini image generation through Charlotte's image router.
 
 This provider runs inside Hermes's trusted process, where provider credentials
-remain available. It delegates prompt construction, pedagogy aesthetics, route
-selection, file handling, and provenance to ``charlotte_image.py``.
+remain available. It delegates route selection and file handling to
+``charlotte_image.py`` and sends the caller's prompt unchanged: Charlotte's
+skills put the aesthetics register in the prompt themselves.
 """
 
 from __future__ import annotations
@@ -205,6 +206,8 @@ class GeminiImageGenProvider(ImageGenProvider):
             "slide-background",
             "--route",
             requested_route,
+            "--prompt-mode",
+            "none",
             "--json",
         ]
         child_env = os.environ.copy()
@@ -258,17 +261,15 @@ class GeminiImageGenProvider(ImageGenProvider):
                 aspect_ratio=aspect,
             )
 
-        expected_prompt_mode = "compact" if requested_route == "fast" else "full"
         if (
             result.get("route") != requested_route
             or result.get("source") != "google"
-            or result.get("prompt_mode") != expected_prompt_mode
+            or result.get("prompt_mode") != "none"
         ):
             return error_response(
                 error=(
                     "Charlotte image route verification failed: expected "
-                    f"route={requested_route}, source=google, "
-                    f"prompt_mode={expected_prompt_mode}"
+                    f"route={requested_route}, source=google, prompt_mode=none"
                 ),
                 error_type="route_mismatch",
                 provider=provider,

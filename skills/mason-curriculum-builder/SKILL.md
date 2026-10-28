@@ -249,9 +249,9 @@ Write this table mentally before anything hits disk — you'll need it for the m
 
 Pass it this prompt:
 
-> Illustration for a homeschool curriculum on `<curriculum theme>`. Landscape 4:3. `<one sentence on visual subject — an image that holds the whole arc, not one unit's worth>`. No text, no labels. Save to `curricula/<curriculum-slug>/images/<curriculum-slug>-hero.png`.
+> Illustration for a homeschool curriculum on `<curriculum theme>`. Landscape. `<one sentence on visual subject — an image that holds the whole arc, not one unit's worth>`. No text, no labels. Save to `curricula/<curriculum-slug>/images/<curriculum-slug>-hero.png`.
 
-Let mason-materials-builder decide the register and configured image route. Record the returned route/source/model for the delivery message.
+Let mason-materials-builder decide the register and generate the image. Record the returned provider and model for the delivery message.
 
 The curriculum hero is **unique** — not reused for any unit or lesson. Each unit will generate its own unit hero; each lesson its own lesson hero.
 
@@ -351,16 +351,16 @@ relations_opened: [<from: persons, nature, art, country, past, present, mathemat
 >
 > This unit is part of the <curriculum human name> curriculum at `../curriculum.md`. <If an overarching spine covers this unit's weeks:> The curriculum's overarching spine for weeks N1–N2 (which contains this unit) is "<book title>" by <book author>, [link](OL url here) — use it as this unit's spine as well, unless the specific unit theme genuinely cannot be carried by it (in which case pick a per-unit spine and note why). <If no overarching spine covers this unit's weeks:> The curriculum has no overarching spine for this unit's weeks — pick a per-unit spine normally.
 >
-> Use --auto and --lessons <count>. Return the saved unit.md path, the N saved lesson paths, and the unit hero image's route/source/model.
+> Use --auto and --lessons <count>. Return the saved unit.md path, the N saved lesson paths, and the unit hero image's provider and model.
 
-Each spawn returns a summary that includes the saved `unit.md` path, the N lesson paths, and the unit hero's route/source/model. Verify on the returned data and by reading the file:
+Each spawn returns a summary that includes the saved `unit.md` path, the N lesson paths, and the unit hero's provider and model. Verify on the returned data and by reading the file:
 
 - `unit.md` exists at `curricula/<curriculum-slug>/<unit-slug>/unit.md`.
 - The unit's `unit.md` frontmatter has `parent_curriculum: ../curriculum.md`.
 - The unit's `unit.md` body carries a "Part of: [<Curriculum Name>](../curriculum.md)" header line.
 - Each lesson file under the unit has UP-links to both `unit.md` and `../curriculum.md`. (mason-lesson-plan-builder writes these per its rules; verify post-hoc — this skill never watched the spawn write them.)
 
-Record route/source/model for each unit's hero image if different routes or providers were used.
+Record the provider and model for each unit's hero image if different providers or models were used.
 
 ### Step 8 — Generate field trips (only if requested)
 
@@ -399,7 +399,7 @@ If any link is missing or any invariant is violated, patch it before delivery. R
 Print a short summary:
 
 - Path of `curriculum.md`.
-- Path of the curriculum hero image and its route/source/model.
+- Path of the curriculum hero image and its provider and model.
 - Paths of all generated `unit.md` files.
 - Total count of lessons generated, grouped by unit.
 - Paths of all field-trip files (if any) and which unit / curriculum they back-reference.

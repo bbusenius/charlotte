@@ -100,7 +100,8 @@ def test_skill_keeps_music_primary_and_is_harness_agnostic():
     assert "Generate TTS only after this preflight passes" in skill
     assert "Inspect the actual pixels of both generated images" in skill
     assert "Correct only the failed content or composition constraint" in skill
-    assert "The capability order is mandatory" in skill
-    assert "do not probe or attempt `scripts/charlotte_image.py` first" in skill
+    assert "with the `image_generate` tool" in skill
+    assert "Do not reject a result because of its provider" in skill
+    assert "charlotte_image.py" not in skill
     for harness in ("Hermes", "OpenClaw", "Codex", "Gemini", "Grok"):
         assert re.search(rf"\b{harness}\b", skill) is None

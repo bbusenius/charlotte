@@ -99,7 +99,7 @@ def test_provider_runs_quality_route_and_verifies_provenance(monkeypatch, tmp_pa
             "route": "quality",
             "source": "google",
             "model": "gemini-3-pro-image-preview",
-            "prompt_mode": "full",
+            "prompt_mode": "none",
             "kind": "slide-background",
         }
         return types.SimpleNamespace(
@@ -118,9 +118,16 @@ def test_provider_runs_quality_route_and_verifies_provenance(monkeypatch, tmp_pa
     assert result["model"] == "gemini-3-pro-image-preview"
     assert result["route"] == "quality"
     assert result["source"] == "google"
-    assert result["prompt_mode"] == "full"
+    assert result["prompt_mode"] == "none"
     assert observed["env"]["GEMINI_API_KEY"] == "google-test-key"
     assert observed["command"][observed["command"].index("--route") + 1] == "quality"
+    assert (
+        observed["command"][observed["command"].index("--prompt-mode") + 1]
+        == "none"
+    )
+    assert observed["command"][observed["command"].index("--prompt") + 1] == (
+        "A quiet watercolor landscape"
+    )
     assert (
         observed["command"][observed["command"].index("--aspect-ratio") + 1]
         == "16:9"
