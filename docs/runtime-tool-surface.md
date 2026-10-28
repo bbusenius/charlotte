@@ -31,7 +31,8 @@ Charlotte skills assume a small set of runtime capabilities. Runtime adapters ca
 | Web search/fetch | `mason-field-trip-planner`, book lookup fallback, general research | Runtime web tools or equivalent MCP |
 | Vision over local images | `lesson-log`, `hsd-book-log` | Active runtime's configured vision capability |
 | Live search fallback | `hsd-book-log` | Runtime web search |
-| Runtime-native image fallback | `mason-materials-builder`, `mindfeast-slide-builder` | Optional runtime image tool used only after `charlotte_image.py` exits `2` |
+| Runtime-native image fallback | `mason-materials-builder` | Optional runtime image tool used only after `charlotte_image.py` exits `2` |
+| Runtime image tool | `mindfeast-slide-builder` | The runtime's active image tool, preferred over `charlotte_image.py`; in Hermes, `image_gen.provider` selects `gemini` or `xai` |
 
 Skills should name the capability they need, not a host-specific installation path. Runtime adapters own the mapping from capability to tool names, MCP servers, environment variables, and permission policy.
 

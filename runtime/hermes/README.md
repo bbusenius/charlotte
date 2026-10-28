@@ -124,6 +124,33 @@ image_gen:
 
 For quality-first image generation, keep the local `quality` route pointed at the desired direct Google model. Use the `fast` route for fast/simple generation. The provider rejects any result that does not report the requested route, `source: google`, and the expected aesthetics prompt mode.
 
+### Switch images between Gemini and Grok
+
+Hermes's built-in Grok image provider registers as `image_gen.provider: xai`. To use it, set the provider in the live profile config, `~/.hermes-charlotte/config.yaml`:
+
+```yaml
+image_gen:
+  provider: "xai"
+  model: "quality"
+  xai:
+    storage:
+      enabled: false
+```
+
+Set `provider` back to `"gemini"` to switch back. Leave `model: "quality"` in place: it selects the Gemini route, and the xai provider ignores it. To choose a Grok image model, set `image_gen.xai.model`, for example `grok-imagine-image-quality`. Restart the gateway after any change.
+
+The xai provider signs in with a Grok plan first and falls back to `XAI_API_KEY`. To use a plan, sign in once:
+
+```bash
+runtime/hermes/run.sh auth add xai-oauth --no-browser
+```
+
+The command prints a link and a code to approve in a browser. Hermes stores the tokens in the mounted profile and refreshes them itself.
+
+By default the xai provider also uploads each image to xAI file storage and returns a public URL. Keep `image_gen.xai.storage.enabled: false` so images stay local. With storage on, Hermes shows a one-time notice with the retention and billing details.
+
+The xai provider does not run `scripts/charlotte_image.py`. Its results report `provider: xai` and `model` only, with no route fields. `mindfeast-slide-builder` accepts these results and puts the aesthetics skill's image-router summary in each prompt itself.
+
 `GOOGLE_MAPS_API_KEY` is for Maps-capable MCP/runtime tools. It is separate from Gemini image-generation keys and is only useful when the active Hermes toolset exposes a Google Maps capability.
 
 ### Local Charlotte Info Page

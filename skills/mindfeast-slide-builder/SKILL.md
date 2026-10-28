@@ -295,10 +295,21 @@ Use the same image route policy as `mason-materials-builder`, but with slide-spe
 
 Image generation for this skill is route-based. Use the normal `quality` route unless the user explicitly asks for a fast/cheap slide image; `image-generation.yaml` decides which provider/model supplies that route.
 
-- Prefer a runtime-native file-producing image capability when it explicitly identifies itself as Charlotte-backed and reports route/source/model/prompt-mode provenance. Otherwise use the repo-local router below from the project root through `.venv/bin/python`.
-- If the repo-local router exits `2`, no configured script-callable image provider is available. Report that image generation is unavailable unless a Charlotte-backed runtime-native capability exists.
-- If the router exits `3`, stop. That is a policy/safety rejection; do not try another provider.
-- Never bypass a failed Charlotte route with a direct provider call, handwritten HTTP request, or unrelated image tool.
+- Prefer the runtime's active file-producing image tool. In Hermes this is `image_generate`, and the profile's `image_gen.provider` picks its backend. Accept either supported backend:
+  - `gemini`: Charlotte's plugin. It runs the router, and its result reports `route`, `source`, `model`, and `prompt_mode`. Accept it only when those fields match the requested route.
+  - `xai`: Hermes's built-in Grok provider. Its result reports `provider: xai` and `model`, with no route fields.
+- When no runtime image tool is active, use the repo-local router below from the project root through `.venv/bin/python`.
+- If the repo-local router exits `2`, no configured script-callable image provider is available. Report that image generation is unavailable unless a runtime image tool is active.
+- If the router exits `3` or the image tool reports a policy or safety rejection, stop. Do not try another provider.
+- Never bypass a failed image tool or route with a direct provider call, a handwritten HTTP request, another image tool, or the other provider. The profile config chooses the provider.
+
+### Style in the prompt
+
+Put the configured aesthetics register in every generated-image prompt, whichever tool makes the image. After the content request and the slide prompt rules below, add the `#### Image-router summary` section of the configured aesthetics skill (`pedagogy.aesthetics` in `runtime.yaml`, default `skills/mason-aesthetics/SKILL.md`). If that file has no such section, add its illustration-style guidance. The xai tool adds no style of its own. The Gemini router also adds the aesthetics profile, and that is expected.
+
+### Runtime image tool
+
+Pass `aspect_ratio: landscape` for `orientation: landscape` and `aspect_ratio: portrait` for `orientation: portrait`. Copy the file named by the result's `image` field into `<out>/<slide-id>/`, keeping its extension, and set `image:` to the copied filename. If `image` is an `https://` URL instead of a local path, xAI file storage is on. Download that URL into the slide folder and say in delivery that xAI keeps a stored copy.
 
 ### Provided image
 
@@ -370,7 +381,7 @@ The route named `fast` receives the configured aesthetics skill's compact image 
 - **Compose for the panel overlay, don't reserve space for it.** The app's translucent question panel overlays the lower portion of the image. Anchor the focal subject in the upper or center portion of the frame so the panel falls over painted-but-less-essential content (foreground, ground plane, table surface, grass) — keep that region painted, just not where the focal subject lives. **Do not** ask for "empty space," "room for text," or "a text panel" at the bottom — image models interpret that literally and paint a blank rectangle into the image.
 - Use enough contrast that the subject still reads once the panel overlays the bottom.
 - Prefer calm, specific, non-novelty imagery aligned with the configured aesthetics skill.
-- Name the image source/model in delivery, or say that the user provided the image.
+- Name the image source/model in delivery, or say that the user provided the image. For the xai tool, name xAI Grok and the result's `model`.
 
 ## Media Rules
 

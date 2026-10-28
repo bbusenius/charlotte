@@ -18,9 +18,17 @@ auxiliary:
 # Generate images directly through Google with the same Gemini key. The
 # provider runs Charlotte's configured image route inside Hermes's trusted
 # process, so provider credentials never enter model-authored terminal commands.
+# Set provider to "xai" to use Hermes's built-in Grok image provider instead,
+# and back to "gemini" to switch back. `model` is the Gemini route (quality or
+# fast); the xai provider ignores it.
 image_gen:
   provider: "gemini"
   model: "quality"
+  xai:
+    # model: "grok-imagine-image-quality"
+    # Keep generated images out of xAI file storage.
+    storage:
+      enabled: false
 
 # Optional: route delegated subagents through direct xAI/Grok instead of the
 # main Gemini model. Requires XAI_API_KEY in the repo-local .env.
