@@ -9,7 +9,7 @@ import re
 import shutil
 import sys
 import unicodedata
-from datetime import date
+from datetime import date, datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
@@ -357,6 +357,7 @@ def commit_cursor(
             "date": target["date"],
             "ao_url": target["ao_url"],
             "slide_id": slide_id,
+            "committed_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         },
     }
     temporary = path.with_suffix(path.suffix + ".tmp")

@@ -10,7 +10,7 @@ import re
 import shutil
 import sys
 import unicodedata
-from datetime import date
+from datetime import date, datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
@@ -502,6 +502,7 @@ def commit_cursor(
     last_presented.update(
         work_slide_id=work_slide_id,
         podcast_slide_id=podcast_slide_id,
+        committed_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
     )
     data = {
         "schema": STATE_SCHEMA,
